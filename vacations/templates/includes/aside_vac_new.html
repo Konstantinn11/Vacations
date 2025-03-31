@@ -1,0 +1,174 @@
+<style type="text/css"> 
+	h4 {
+		margin-top: 8px;
+		color: black;
+		font-family: 'Calibri';
+		font-style: normal;
+		font-weight: 700;
+		font-size: 28px;
+		line-height: 22px;
+		text-align: left;
+	}
+	.sib {
+		width: 118px;
+		height: 37px;
+		display: flex; flex-direction: row; justify-content: center; align-items: center;
+		margin: 2px;
+		border-radius: 5px;
+		font-family: 'Calibri';
+		font-style: normal;
+		font-weight: 400;
+		font-size: 18px;
+		line-height: 22px;
+	}
+	
+	.sib:hover {
+		transition: 0.4s;
+		background-color: rgba(21, 163, 98, 0.8) !important;
+	}
+	.btn-group-vertical {
+		margin: 2px auto;
+	}
+	.circle {background: #01A86B; width: 15px; height: 15px; border-radius: 50%; margin-right: 15px; margin-top: 4px; margin-left: 5px;}
+
+	.aside {
+		background: #E6E6E6;
+		box-shadow: 0px 0px 7px rgba(0, 0, 0, 0.2);
+		padding: 1em;
+		text-align: center;
+		overflow-y: auto;
+		height: calc(100vh - 70px);
+	}
+
+	.custom-aside {
+		background: #f4f4f4;; /* Измененный фон */
+		box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+	}
+
+	/* Контейнер сотрудника */
+	.employee-container {
+		position: relative;
+		cursor: pointer;
+		border-radius: 5px;
+		transition: background-color 0.3s, border-color 0.3s;
+	}
+
+	/* Наведение на контейнер */
+	.employee-container:hover {
+		background-color: #f9f9f9;
+	}
+
+	/* Скрытие иконки по умолчанию */
+	.hover-icon {
+		display: none;
+		opacity: 0;
+		transition: opacity 0.3s;
+	}
+
+	/* Отображение иконки при наведении на весь контейнер */
+	.employee-container:hover .hover-icon {
+		display: block;
+		opacity: 1;
+	}
+</style>
+
+{% load static %}
+{% load user_filters %}
+{% with request.resolver_match.view_name as view_name %}
+	<aside class="aside custom-aside" style="margin: 4px; border-radius: 10px; width: 400px;">
+		<div style="display: flex; flex-direction: row; flex-wrap: nowrap; justify-content: center; align-items: center; margin: 5px;">
+			<h4>Отпуска сотрудников</h4>
+			<a class="btn sib" style="background: #15a362; width: 220px; color: white; font-size: 16px;" href="{% url 'vacation_new' year=year %}?employee_name={{current_user_name}}">
+				<div style="display: flex; cursor: pointer; justify-content: center; align-items: center;">
+					<img style="height: 20px; margin-right: 5px;" src="{% static 'circle_plus.png' %}">
+					Новый отпуск
+				</div>
+			</a>
+		</div>
+		<div style="display: flex; flex-direction: row; flex-wrap: wrap; justify-content: center; align-items: center; margin: 5px;">
+		<a class="all_vac" style="color: black; cursor: pointer; margin: 5px;" onclick="showAllVacs(this)">Все отпуска ({{len_vacations}})</a>
+		<a class="cross_vac" style="color: black; cursor: pointer; margin: 5px;" onclick="showCrossVacs(this)">Пересечения ({{len_cross_vacations}})</a>
+		</div>
+		
+		{% if view_name != 'vacations_start' %}
+			<div class="all_vacs">
+				{% for key, value in vacations_by_user.items %}
+					<div class="list-group-item list-group-item-action employee-container" style="display: flex; justify-content: space-between; align-items: center;">
+						<div style="display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-start;">
+							<div style="display: flex; flex-direction: row; flex-wrap: wrap; justify-content: left; align-items: center;">
+								<div style="width: 15px; height: 15px; background: {{value.color}}; border: 1px solid black; margin-right: 6px;"></div>
+								<a style="color: black" href="#">{{value.user.get_full_name}}</a>
+							</div>
+							<div style="display: flex; flex-direction: row; flex-wrap: wrap; margin-left: 20px;">
+								{% for date in value.dates %}
+									{% if key == request.user.get_full_name or request.user.get_full_name in bosses %}
+										<a id="{{ value.user_id }}_{{ date.vac_id }}" 
+										style="color: #15a362; font-size: 0.875em; text-decoration: underline;" 
+										href="{% url 'vacation_edit' year=year vac_id=date.vac_id %}?from=calendars">
+											{{ date.d }}
+										</a>
+									{% else %}
+										<a id="{{ value.user_id }}_{{ date.vac_id }}" 
+										style="color: #0a0e0c; font-size: 0.875em; text-decoration: underline;" 
+										href="#">
+											{{ date.d }}
+										</a>
+									{% endif %}
+									{% if not forloop.last %}
+										<a>,&nbsp;</a>
+									{% endif %}
+								{% endfor %}
+							</div>
+						</div>
+						
+						{% if key == request.user.get_full_name or request.user.get_full_name in bosses %}
+							<a id="creat_cur_{{value.user_id}}" 
+							style="color: black; font-size: 0.875em; text-decoration: underline; margin-left: 10px;" 
+							href="{% url 'vacation_new' year=year %}?employee_name={{ value.user.get_full_name }}">
+								<div style="cursor: pointer; justify-content: center; align-items: center;" class="hover-icon">
+									<img style="height: 20px;" src="{% static 'trello_plus.svg' %}">
+								</div>
+							</a>
+						{% endif %}
+					</div>
+				{% endfor %}
+			</div>
+			<div style="display: flex; justify-content: center;">
+			<p style="margin-top: 10px; font-size: 17px; color: #5d6778; width: 250px; text-align: left; font-style: italic;">
+				Перед тем как добавлять отпуска, надо заполнить список сотрудников. 
+				Это можно сделать на странице <a href="{% url 'employees' %}" style="color: #15a362; text-decoration: underline;">Сотрудники</a>.
+			</p>
+			</div>
+			<div class="cross_vacs" style="display: none;">
+				{% for vac in cross_vacations %}
+					<div class="list-group-item list-group-item-action">
+						<div style="display: flex; flex-direction: row; flex-wrap: wrap; justify-content: left; align-items: center;">
+							<div style="width: 15px; height: 15px; background: {{vac.color}}; border: 1px solid black; margin-right: 6px;"></div>
+							<a style="color: black; margin-right: 10px;" href="#">{{vac.vac.user.get_full_name}}:</a>
+							<a id="{{vac.vac.user.get_full_name}}_{{vac.vac.id}}_cross" style="color: #0a0e0c; font-size: 0.875em; text-decoration: underline;" href="#" onclick="openFormEditVac(this)">{{vac.range}}</a>
+						</div>
+					</div>
+				{% endfor %}
+			</div>
+		{% endif %}
+    </aside>
+	<script>
+		let crossVacs = document.getElementsByClassName("cross_vacs")[0]
+		let allVacs = document.getElementsByClassName("all_vacs")[0]
+		let all_vac_btn = document.getElementsByClassName("all_vac")[0]
+		let cross_vac_btn = document.getElementsByClassName("cross_vac")[0]
+
+		function showCrossVacs(obj) {
+			all_vac_btn.style.color = "#808080";
+			cross_vac_btn.style.color = "red";
+			crossVacs.style.display = "block";
+			allVacs.style.display = "none";
+		}
+		function showAllVacs(obj) {
+			cross_vac_btn.style.color = "#808080";
+			all_vac_btn.style.color = "red";
+			crossVacs.style.display = "none";
+			allVacs.style.display = "block";
+		}
+	</script>
+{% endwith %}

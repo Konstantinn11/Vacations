@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% load cache %}
+{% block title %}Мой отпуск{% endblock %}
+{% load user_filters %}
+{% load static %}
+{% block header %}
+<div style="display: flex; flex-direction: row; justify-content: left; align-items: center; flex-wrap: nowrap; width: 120%;">
+    <a style="color: black; font-weight: bold; font-size: 35px; text-align: left; line-height: 50px; white-space: nowrap; margin-left: 358px;">Отпуск {{ vacation_user_name }}</a>
+</div>
+
+<style>
+    .btn-edit {
+        background-color: #15a362;
+        font-family: 'Calibri';
+        font-style: normal;
+        font-weight: 700;
+        width: 170px;
+        height: 44px;
+        font-size: 20px;
+        padding: 0 10px;
+        border-radius: 5px;
+        color: white;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        margin-left: 5px;
+    }
+
+    .btn-my-vacations {
+        background-color: #f7f7f7;
+        color: #5d6778 !important;
+        border: 1px solid #ccc;
+        font-family: 'Calibri';
+        font-style: normal;
+        font-weight: 700;
+        width: 200px;
+        height: 44px;
+        font-size: 20px;
+        padding: 0 10px;
+        border-radius: 5px;
+        color: white;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        margin-left: 30px;
+    }
+
+    .btn-delete {
+        background-color: #d26d69;
+        font-family: 'Calibri';
+        font-style: normal;
+        font-weight: 700;
+        width: 140px;
+        height: 44px;
+        font-size: 20px;
+        padding: 0 10px;
+        border-radius: 5px;
+        color: white;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        margin-left: 135px;
+    }
+
+    .btn-edit:hover {
+        background-color: rgba(21, 163, 98, 0.8);
+        text-decoration: none;
+        color: white;
+    }
+
+    .btn-my-vacations:hover {
+        text-decoration: none;
+        color: #15a362 !important;
+        border: 1px solid #15a362;
+    }
+
+    .btn-delete:hover {
+        background-color: rgba(210, 109, 105, 0.9);
+        text-decoration: none;
+        color: white;
+    }
+
+    input[readonly] {
+        font-size: 19px;
+        border-radius: 5px;
+        border: 1px solid #ddd;
+        padding: 10px;
+        background-color: #e9ecef;
+        color: #5d6778;
+        text-align: left;
+        flex: 0 0 150px;
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    input[readonly]:focus {
+        border-color: #0d6efd;
+        outline: none;
+    }
+</style>    
+{% endblock %}
+
+{% block aside %}
+    {% include 'includes/aside_vac_all.html' %}
+{% endblock %}
+
+{% block content %}
+<div style="width: 750px; margin: 0 auto; margin-top: 30px; margin-left: 358px; padding: 30px; border-radius: 5px; background-color: #f7f7f7; box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.2);">
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+        <div style="display: flex; align-items: center;">
+            <label style="font-size: 21px; flex: 0 0 250px; text-align: left; color: #5d6778;">Начало отпуска:</label>
+            <input type="text" value="{{ start_date }}" readonly>
+        </div>
+        <div style="display: flex; align-items: center;">
+            <label style="font-size: 21px; flex: 0 0 250px; text-align: left; color: #5d6778;">Кол-во дней:</label>
+            <input type="text" value="{{ days_count }}" readonly>
+        </div>
+        <div style="display: flex; align-items: center;">
+            <label style="font-size: 21px; flex: 0 0 250px; text-align: left; color: #5d6778;">Окончание отпуска:</label>
+            <input type="text" value="{{ end_date }}" readonly>
+        </div>
+
+        <div style="display: flex; justify-content: flex-start; margin-top: 30px;">
+            {% if from_page == 'all_vacations' %}
+                <a class="btn-edit" href="{% url 'vacation_edit' year=year vac_id=vacation.id %}?from=all_vacations">Редактировать</a>
+                <a class="btn-my-vacations" href="{% url 'vac_all_vacations' %}">Ко всем отпускам</a>
+                <a class="btn-delete" href="{% url 'vacation_delete' vacation.id %}?from=all_vacations" onclick="confirmDeletion(event, this)">Удалить</a>
+            {% else %}
+                <a class="btn-edit" href="{% url 'vacation_edit' year=year vac_id=vacation.id %}">Редактировать</a>
+                <a class="btn-my-vacations" href="{% url 'vac_my_vacations' %}">К моим отпускам</a>
+                <a class="btn-delete" href="{% url 'vacation_delete' vacation.id %}" onclick="confirmDeletion(event, this)">Удалить</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    function confirmDeletion(event, element) {
+        event.preventDefault(); // Остановить переход по ссылке
+
+        const userConfirmed = confirm("Вы уверены, что хотите удалить отпуск?");
+        if (userConfirmed) {
+            window.location.href = element.href;
+        }
+    }
+</script>
+{% endblock %}

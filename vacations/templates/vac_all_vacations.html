@@ -1,0 +1,318 @@
+{% extends "base.html" %}
+{% load cache %}
+{% block title %}Все отпуска{% endblock %}
+{% load user_filters %}
+{% load static %}
+{% block header %}
+<div style="display: flex; flex-direction: row; justify-content: left; align-items: center; flex-wrap: nowrap; width: 120%;">
+    <a style="color: black; font-weight: bold; font-size: 35px; text-align: left; line-height: 50px; white-space: nowrap; margin-left: 358px;">
+        {% if selected_otd or selected_user or selected_year %}
+            Выбранные отпуска
+            {% if vacations %}
+                <span style="background-color: #5b99ea; color: white; padding: 0 10px; border-radius: 20px; font-size: 20px; width: 45px; height: 40px; line-height: 40px; text-align: center; display: inline-block;">
+                    {{ vacation_count }}
+                </span>
+            {% endif %}
+        {% else %}
+            Все отпуска
+        {% endif %}
+    </a>
+    
+    {% if selected_otd or selected_user or selected_year %}
+        <a href="{% url 'vac_all_vacations' %}" class="darker" style="margin-left: 10px; margin-top: 13px;">сбросить фильтры</a>
+    {% endif %}
+</div>
+
+<style>
+    select, option {
+        font-weight: normal;
+        text-align: left;
+        padding-left: 15px;
+        font-size: 20px;
+        height: 50px;
+        width: 270px;
+        border: 1px solid #ccc;
+        border-radius: 5px; 
+        background-image: url("{% static 'keyboard_arrow_down.svg' %}");
+        background-position: right 10px center;
+        background-repeat: no-repeat, no-repeat;
+        background-size: 24px 24px;
+        padding-right: 37px;
+    }
+
+    select[name="year"] {
+        width: 150px; 
+    }
+
+    select:focus {
+        border-color: #0d6efd; 
+        outline: none;
+    }
+
+    button[type="submit"] {
+        font-size: 19px;
+        font-weight: 600;
+        text-transform: none;
+        background-color: white;
+        color: #5d6778;
+        border: 1px solid #bcc1cb;
+        border-radius: 5px;
+        height: 50px;
+        width: 150px;
+        cursor: pointer;
+        transition: background-color 0.3s, box-shadow 0.3s;
+        align-self: center;
+        margin-top: 0;
+    }
+
+    button[type="submit"]:hover {
+        color: #15a362;
+        border: 1px solid #15a362;
+    }
+
+    button:focus {
+        border-color: #15a362; 
+        outline: none;
+    }
+
+    form {
+        display: flex;
+        gap: 5px;
+        align-items: center;
+    }
+
+    .form-container {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        justify-content: flex-start;
+    }
+
+    select[name="otd"] {
+        width: 270px;
+        overflow: hidden;
+    }
+
+    select[name="otd"] option:selected {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: clip;;
+    }
+
+    .darker { 
+        color: #15a362; 
+        font-size: 19px; 
+        text-decoration: underline;
+        font-weight: bold;
+    }
+
+    .darker:hover { 
+        color: green; 
+    }
+
+    .table-container { 
+        width: 1275px; 
+        display: flex; 
+        flex-direction: row; 
+        margin-top: 15px; 
+        margin-left: 359px; 
+        box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.2); 
+        border-radius: 5px;
+        padding: 25px;
+    }
+
+    .custom-table { 
+        width: 1275px; 
+        border-collapse: collapse; 
+    }
+    
+    .custom-table th, .custom-table td { 
+        text-align: left; 
+        border-bottom: 1px solid #e7e9ed; 
+        padding: 10px; 
+        font-size: 19px; 
+        vertical-align: middle; 
+    }
+
+    .custom-table th:not([colspan]), .custom-table td {
+        padding-left: 20px;
+    }
+
+    .custom-table th[colspan] {
+        border-bottom: none;
+        padding-bottom: 0px;
+    }
+
+    .custom-table th { 
+        color: #5d6778; 
+    }
+
+    #search-form {
+        margin-bottom: 15px;
+    }
+
+    #search-input {
+        font-size: 20px;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+        width: 100%;
+        padding: 8px;
+        box-sizing: border-box;
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    #search-input:focus {
+        border-color: #0d6efd;
+        outline: none;
+    }
+
+    #vacation_table { 
+        padding: 0;
+    }
+
+    #vacation_table th, #vacation-table td { 
+        padding-left: 10px;
+    }
+
+    .employee-color { 
+        width: 15px; 
+        height: 15px; 
+        border: 1px solid black; 
+        margin-right: 6px; 
+    }
+</style>
+{% endblock %}
+
+{% block aside %}
+    {% include 'includes/aside_vac_all.html' %}
+{% endblock %}
+
+{% block content %}
+<div style="display: flex; flex-direction: row; align-items: center; gap: 10px; margin-left: 358px;">
+    <form method="get" action="{% url 'vac_all_vacations' %}">
+        <select name="otd">
+            <option value="">Отдел</option>
+            {% for otd in otds_for_choise %}
+                <option value="{{ otd.title }}" {% if otd.title == selected_otd %}selected{% endif %}>{{ otd.title }}</option>
+            {% endfor %}
+        </select>
+
+        <select name="user">
+            <option value="">Сотрудник</option>
+            {% for user in users_for_filter %}
+                <option value="{{ user.get_full_name }}" {% if user.get_full_name == selected_user %}selected{% endif %}>
+                    {{ user.get_full_name }}
+                </option>
+            {% endfor %}
+        </select>
+
+        <select name="year">
+            <option value="">Год</option>
+            {% for year in year_range %}
+                <option value="{{ year }}" {% if year|stringformat:"s" == selected_year %}selected{% endif %}>{{ year }}</option>
+            {% endfor %}
+        </select>
+
+        <button type="submit">Показать</button>
+    </form>
+</div>
+
+{% if selected_otd or selected_user or selected_year %}
+    {% if vacations %}
+        <div class="table-container" id="vacation_table" style="display: block;">
+            <div style="width: 100%; padding: 10px; padding-bottom: 0;">
+                <form method="get" id="search-form" style="width: 100%;">
+                    <input type="text" id="search-input" placeholder="Поиск по имени..." oninput="filterTable()">
+                </form>
+            </div>
+
+            <table class="custom-table" id="vacation-table" style="width: 100%; margin-top: -5px;">
+                <thead>
+                    <tr>
+                        <th>Сотрудник</th>
+                        <th>Период</th>
+                        <th>Дней</th>
+                        <th>Отдел</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for vac in vacations %}
+                        <tr>
+                            <td>
+                                <div style="display: flex; align-items: center;">
+                                    <div class="employee-color" style="background-color: {{ vac.color }}"></div>
+                                    <a href="#" class="darker" style="font-weight: normal;">
+                                        {{ vac.user }}
+                                    </a>
+                                </div>
+                            </td>
+                            <td>
+                                <a href="{% url 'vacation_detail' vac_id=vac.id %}?from=all_vacations" class="darker" style="font-weight: normal; font-style: italic;">
+                                    {{ vac.period }}
+                                </a>
+                            </td>
+                            <td>{{ vac.days_count }}</td>
+                            <td>
+                                <a href="{% url 'vac_all_vacations' %}?otd={{ vac.department }}" class="darker" style="font-weight: normal;">
+                                    {{ vac.department }}
+                                </a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+    <div class="table-container">
+        <p style="font-size: 21px; color: #5d6778; text-align: left; width: 100%; margin-top: 10px;">Не найдено отпусков по выбранным фильтрам.</p>
+    </div>
+    {% endif %}
+{% else %}
+    <div class="table-container">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th colspan="2" style="color: #5d6778; text-align: left; font-size: 21px; font-weight: normal;">
+                        Выберите год для показа отпусков:
+                    </th>
+                </tr>
+                <tr>
+                    <th>Год</th>
+                    <th>Отпусков</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for year, count in years_vacations_count.items %}
+                <tr>
+                    <td>
+                        <a href="{% url 'vac_all_vacations' %}?year={{ year }}" class="darker">
+                            {{ year }}
+                        </a>
+                    </td>
+                    <td>{{ count }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endif %}
+
+<script>
+    // Функция для фильтрации таблицы по введенному тексту
+    function filterTable() {
+        let input = document.getElementById("search-input").value.toLowerCase();
+        let table = document.getElementById("vacation-table");
+        let rows = table.getElementsByTagName("tr");
+
+        for (let i = 1; i < rows.length; i++) {
+            let cells = rows[i].getElementsByTagName("td");
+            let userName = cells[0].textContent.toLowerCase();
+            if (userName.indexOf(input) > -1) {
+                rows[i].style.display = "";
+            } else {
+                rows[i].style.display = "none";
+            }
+        }
+    }
+</script>
+{% endblock %}

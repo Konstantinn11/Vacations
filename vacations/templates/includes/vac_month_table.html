@@ -1,0 +1,202 @@
+<style>
+    .day_in_week, .day_over, .day_now, .day_chil, .day_hol, .day_norm, .empty_day {
+        display: flex;
+        flex-direction: row;
+        width: 27px;
+        height: 27px;
+        margin: 0px;
+        border-radius: 0px;
+        padding: 0px;
+        align-items: center;
+        justify-content: center;
+        color: #808080;
+    }
+
+    .vacation_day:hover {
+        box-shadow: rgb(23, 54, 255) 0px 0px 0px 3px inset;
+    }
+
+    .day_in_week { background: transparent; }
+    .day_norm { background: transparent; }
+    .day_now { box-shadow: rgb(21, 163, 98) 0px 0px 0px 3px inset; }
+    .day_chil { background-color: rgb(219, 219, 219); }
+    .day_hol { background-color: rgb(219, 219, 219); color: red; }
+    .empty_day { background: transparent; } 
+
+</style>
+
+{% load user_filters %}
+
+<div style="font-weight: bold; text-align: center;">
+	<a style="color: #808080;" href="#">
+		{{key}}
+	</a>
+</div>
+<div style ="display: flex; flex-direction: row;">
+	<div class="day_in_week" style="font-weight: bold;">Пн</div>
+	<div class="day_in_week" style="font-weight: bold;">Вт</div>
+	<div class="day_in_week" style="font-weight: bold;">Ср</div>
+	<div class="day_in_week" style="font-weight: bold;">Чт</div>
+	<div class="day_in_week" style="font-weight: bold;">Пт</div>
+	<div class="day_in_week" style="font-weight: bold;">Сб</div>
+	<div class="day_in_week" style="font-weight: bold;">Вс</div>
+</div>
+
+
+{% for kk, val in value.items %}
+<div style="display: flex; flex-direction: row;">
+    {% for el in val %}
+    <div onclick="showCalendarPopup(this)" id="{{key}}_{{kk}}_{{val|index_of:el}}"
+        onmouseover="startTooltipTimeout(event, '{{ key }}', '{{ kk }}', '{{ val|index_of:el }}', '{{ year }}')" 
+        onmouseout="clearTooltipTimeout()" name='day'>
+        {% if el.name != '' %}
+            {% if key|year_month:year|today_check:el.name == "=" %}
+                <a class="btn btn-sm day_now {% if el.data|dict_len > 0 %}vacation_day{% endif %}"
+                {% if el.data|dict_len > 1 %}
+                style="background: linear-gradient(135deg, #df691a 50%, #4e5d6c 50%, #4e5d6c 100%); 
+                    color: white; 
+                    border-radius: 5px; 
+                    background-size: 28px 28px; 
+                    background-position: center; 
+                    background-repeat: no-repeat;"
+                {% else %}
+                    {% for key, value in el.data.items %}
+                    style="background: {{value.color}}; color: white;"
+                    {% endfor %}
+                {% endif %} href="#" role="button">
+                {% if el.data|dict_len > 0 %}
+                    <p class="hint-bottom-middle-small-s-med" data-hint="{% for user, date_and_color in el.data.items %}{{user}} {{date_and_color.date}} {% endfor %}"
+                    style="position: relative; padding: 5px auto; margin-bottom: 1px;">
+                    {{el.name}}</p>
+                {% else %}
+                    {{el.name}}
+                {% endif %}
+                </a>
+            {% elif val|index_of:el == 5 or val|index_of:el == 6 %}
+                {% if el.date not in special_work_days %}
+                    <a class="btn btn-sm day_chil {% if el.data|dict_len > 0 %}vacation_day{% endif %}"
+                    {% if el.data|dict_len > 1 %}
+                    style="background: linear-gradient(135deg, #df691a 50%, #4e5d6c 50%, #4e5d6c 100%); 
+                    color: white; 
+                    border-radius: 5px; 
+                    background-size: 28px 28px; 
+                    background-position: center; 
+                    background-repeat: no-repeat;"
+                    {% else %}
+                        {% for key, value in el.data.items %}
+                        style="background: {{value.color}}; color: white;"
+                        {% endfor %}
+                    {% endif %} href="#" role="button">
+                        {% if el.data|dict_len > 0 %}
+                            <p class="hint-bottom-middle-small-s-med" data-hint="{% for user, date_and_color in el.data.items %}{{user}} {{date_and_color.date}} {% endfor %}"
+                            style="position: relative; padding: 5px auto; margin-bottom: 1px;">
+                            {{el.name}}</p>
+                        {% else %}
+                            {{el.name}}
+                        {% endif %}
+                    </a>
+                {% else %}
+                    <a class="btn btn-sm day_norm {% if el.data|dict_len > 0 %}vacation_day{% endif %}"
+                    {% if el.data|dict_len > 1 %}
+                    style="background: linear-gradient(135deg, #df691a 50%, #4e5d6c 50%, #4e5d6c 100%); 
+                    color: white; 
+                    border-radius: 5px; 
+                    background-size: 28px 28px; 
+                    background-position: center; 
+                    background-repeat: no-repeat;"
+                    {% else %}
+                        {% for key, value in el.data.items %}
+                        style="background: {{value.color}}; color: white;"
+                        {% endfor %}
+                    {% endif %} href="#" role="button">
+                    {% if el.data|dict_len > 0 %}
+                        <p class="hint-bottom-middle-small-s-med" data-hint="{% for user, date_and_color in el.data.items %}{{user}} {{date_and_color.date}} {% endfor %}"
+                        style="position: relative; padding: 5px auto; margin-bottom: 1px;">
+                        {{el.name}}</p>
+                    {% else %}
+                        {{el.name}}
+                    {% endif %}
+                    </a>
+                {% endif %}
+            {% else %}
+                {% if holidays|dict_len != 0 %}
+                    {% for month, days in holidays.items %}
+                        {% if key == month %}
+                            {% if el.name in days %}
+                                <a class="btn btn-sm day_hol {% if el.data|dict_len > 0 %}vacation_day{% endif %}"
+                                {% if el.data|dict_len > 1 %}
+                                style="background: linear-gradient(135deg, #df691a 50%, #4e5d6c 50%, #4e5d6c 100%); 
+                                color: white; 
+                                border-radius: 5px; 
+                                background-size: 28px 28px; 
+                                background-position: center; 
+                                background-repeat: no-repeat;"
+                                {% else %}
+                                    {% for key, value in el.data.items %}
+                                    style="background: {{value.color}}; color: white; "
+                                    {% endfor %}
+                                {% endif %} href="#" role="button">
+                                {% if el.data|dict_len > 0 %}
+                                    <p class="hint-bottom-middle-small-s-med" data-hint="{% for user, date_and_color in el.data.items %}{{user}} {{date_and_color.date}} {% endfor %}"
+                                    style="position: relative; padding: 5px auto; margin-bottom: 1px;">
+                                    {{el.name}}</p>
+                                {% else %}
+                                    {{el.name}}
+                                {% endif %}
+                                </a>
+                            {% else %}
+                                <a class="btn btn-sm day_norm {% if el.data|dict_len > 0 %}vacation_day{% endif %}"
+                                {% if el.data|dict_len > 1 %}
+                                style="background: linear-gradient(135deg, #df691a 50%, #4e5d6c 50%, #4e5d6c 100%); 
+                                color: white; 
+                                border-radius: 5px; 
+                                background-size: 28px 28px; 
+                                background-position: center; 
+                                background-repeat: no-repeat;"
+                                {% else %}
+                                    {% for key, value in el.data.items %}
+                                    style="background: {{value.color}}; color: white;"
+                                    {% endfor %}
+                                {% endif %} href="#" role="button">
+                                {% if el.data|dict_len > 0 %}
+                                    <p class="hint-bottom-middle-small-s-med" data-hint="{% for user, date_and_color in el.data.items %}{{user}} {{date_and_color.date}} {% endfor %}"
+                                    style="position: relative; padding: 5px auto; margin-bottom: 1px;">
+                                    {{el.name}}</p>
+                                {% else %}
+                                    {{el.name}}
+                                {% endif %}
+                                </a>
+                            {% endif %}
+                        {% endif %}
+                    {% endfor %}
+                {% else %}
+                    <a class="btn btn-sm day_norm {% if el.data|dict_len > 0 %}vacation_day{% endif %}"
+                    {% if el.data|dict_len > 1 %}
+                    style="background: linear-gradient(135deg, #df691a 50%, #4e5d6c 50%, #4e5d6c 100%); 
+                    color: white; 
+                    border-radius: 5px; 
+                    background-size: 28px 28px; 
+                    background-position: center; 
+                    background-repeat: no-repeat;"
+                    {% else %}
+                        {% for key, value in el.data.items %}
+                        style="background: {{value.color}}; color: white;"
+                        {% endfor %}
+                    {% endif %} href="#" role="button">
+                        {% if el.data|dict_len > 0 %}
+                            <p class="hint-bottom-middle-small-s-med" data-hint="{% for user, date_and_color in el.data.items %}{{user}} {{date_and_color.date}} {% endfor %}"
+                            style="position: relative; padding: 5px auto; margin-bottom: 1px;">
+                            {{el.name}}</p>
+                        {% else %}
+                            {{el.name}}
+                        {% endif %}
+                    </a>
+                {% endif %}
+            {% endif %}
+        {% else %}
+            <div class="empty_day"></div>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% endfor %}

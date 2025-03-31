@@ -1,0 +1,935 @@
+{% extends "base.html" %}
+{% load cache %}
+{% block title %}Календарь{% endblock %}
+{% load user_filters %}
+{% load static %}
+{% block header %}
+<script src="{% static 'libs/html2pdf.bundle.min.js' %}"></script>
+<script src="{% static 'libs/xlsx.full.min.js' %}"></script>
+<link rel="stylesheet" href="{% static 'css/sweetalert2.min.css' %}">
+<script src="{% static 'libs/sweetalert2.min.js' %}"></script>
+<div style="display: flex; flex-direction: row; justify-content: left; align-items: center; flex-wrap: nowrap; width: 100%;">
+    <a style="color: black; font-weight: bold; font-size: 38px; text-align: left; line-height: 50px; white-space: nowrap;">Календарь отпусков на {{year}}</a>
+    <div style="display: flex; flex-direction: row; align-items: center; margin-left: 20px; gap: 20px; flex-grow: 1; justify-content: flex-end;">
+        <div class="flex-container">
+		<select name="filtr_otd" id="filtr_otd" style="font-size: 18px; padding: 5px 10px; border: 1px solid rgb(206, 202, 202); color: #808080; font-family: 'Calibri'; font-style: normal; font-weight: 400; line-height: 22px; width: 140px; height: 35px; cursor: pointer;" onchange="updateYearDropdown()">
+            <option value="0" disabled selected>Отдел</option>
+            {% for otd in otds_for_choise %}
+                <option value="{{ otd }}" {% if otd == current_otd %}selected{% endif %}>{{ otd }}</option>
+            {% endfor %}
+			{% if request.user.get_full_name == key or request.user.get_full_name in bosses %}
+            <option value="0" {% if current_otd == 0 %}selected{% endif %}>Все отделы</option>
+			{% endif %}
+        </select>
+
+        <select id="filtr_year" name="filtr_year" style="font-size: 18px; padding: 5px 10px; border: 1px solid rgb(206, 202, 202); color: #808080; font-family: 'Calibri'; font-style: normal; font-weight: 400; line-height: 22px; width: 120px; height: 35px; cursor: pointer;" onchange="updateFilters()">
+            <option value="0" disabled selected>Год</option>
+            <option value="2024">2024</option>
+            <option value="2025">2025</option>
+        </select>
+
+        <select id="viewType" name="viewType" style="font-size: 18px; padding: 5px 10px; border: 1px solid rgb(206, 202, 202); color: #808080; font-family: 'Calibri'; font-style: normal; font-weight: 400; line-height: 22px; width: 120px; height: 35px; cursor: pointer;" onchange="redirectToView()">
+            <option value="0" disabled selected>Вид</option>
+            <option value="current">Календарь</option>
+            <option value="custom">График: дни</option>
+        </select>
+
+        {% if request.user.get_full_name == key or request.user.get_full_name in bosses %}
+		<select id="actionSelect" name="actionSelect" style="font-size: 18px; padding: 5px 10px; border: 1px solid rgb(206, 202, 202); color: #808080; font-family: 'Calibri'; font-style: normal; font-weight: 400; line-height: 22px; width: 170px; height: 35px; cursor: pointer;">
+            <option value="" disabled selected>Экспорт</option>
+            <option value="export">Лист ознакомления</option>
+            <option value="excel">Файл Excel</option>
+        </select>
+		{% endif %}
+		</div>
+    </div>
+</div>
+
+<div style="display: flex; flex-direction: row; justify-content: left; align-items: center; font-family: 'Calibri'; font-style: normal; font-weight: 400; line-height: 22px; font-size: 18px; color: #808080;">
+    Параметры фильтрации: отдел<span style="margin-left: 2px; color: #20c997;">&nbsp;{% if otd == 0%}Все отделы{% else %}{{ otd }}{% endif %},&nbsp;</span>год<span style="color: #20c997;">&nbsp;{{ year }}</span>.
+</div>
+
+{% if messages %}
+    <div style="margin-bottom: 10px; font-size: 18px; text-align: center; width: 110%;">
+        {% for message in messages %}
+            <div id="message-{{ forloop.counter }}" style="padding: 10px; border-radius: 5px; 
+                {% if message.tags == 'success' %}background-color: #d4edda; color: #155724; 
+                {% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    </div>
+    
+    <script>
+        setTimeout(function() {
+            {% for message in messages %}
+                var messageElement = document.getElementById("message-{{ forloop.counter }}");
+                if (messageElement) {
+                    messageElement.style.display = "none";
+                }
+            {% endfor %}
+        }, 3000);
+    </script>
+{% endif %}
+
+<script>
+	document.addEventListener("DOMContentLoaded", function() {
+		const yearSelect = document.getElementById("filtr_year");
+
+		yearSelect.addEventListener("change", function() {
+			const defaultOption = yearSelect.querySelector('option[disabled]');
+			yearSelect.value = "0"; 
+
+			defaultOption.textContent = "Год"; 
+		});
+	});
+
+	document.addEventListener("DOMContentLoaded", function() {
+		const viewTypeSelect = document.getElementById("viewType");
+
+		viewTypeSelect.addEventListener("change", function() {
+			const defaultOption = viewTypeSelect.querySelector('option[disabled]');
+			viewTypeSelect.value = "0"; 
+
+			defaultOption.textContent = "Вид"; 
+		});
+	});
+
+    document.addEventListener('DOMContentLoaded', function () {
+		const links = document.querySelectorAll('a');
+
+		links.forEach(link => {
+			link.addEventListener('click', function (event) {
+				const cleanedUrl = cleanURL(link.href);
+				console.log("Очищенный URL перед переходом:", cleanedUrl);
+				
+				if (window.history.replaceState) {
+					window.history.replaceState(null, null, cleanedUrl);
+				}
+			});
+		});
+	});
+
+	// Функция для очистки URL
+	function cleanURL(url) {
+		console.log("Исходный URL:", url);
+
+		const cleanedUrl = url.split('#')[0].split('?')[0].trim(); 
+		
+		console.log("Очищенный URL:", cleanedUrl); 
+		return cleanedUrl;
+	}
+
+	function updateYearDropdown() {
+		var selectedOtd = document.getElementById('filtr_otd').value;
+		var yearDropdown = document.getElementById('filtr_year');
+		if (selectedOtd != "0") {
+			yearDropdown.style.display = 'inline-block'; 
+		} else {
+			yearDropdown.style.display = 'inline-block';
+		}
+	}
+
+	function updateFilters() {
+		var selectedOtd = document.getElementById('filtr_otd').value;
+		var selectedYear = document.getElementById('filtr_year').value;
+
+		if (selectedOtd === "0") {
+			selectedOtd = 0;
+		}
+
+		// Проверяем, выбраны ли год и отдел
+		if (selectedYear !== "0" && selectedOtd !== "0") {
+			window.location.href = "{% url 'vac_2' 0 0 %}".replace("0/0", selectedYear + "/" + selectedOtd);
+		} else if (selectedYear !== "0") {
+			window.location.href = "{% url 'vac_2' 0 0 %}".replace("0/0", selectedYear + "/0");
+		} else {
+			alert('Пожалуйста, выберите год.');
+		}
+	}
+
+	function getURLParameters() {
+		var url = window.location.href.split('#')[0];
+		console.log("Текущий URL: " + url); 
+
+		var urlParts = url.split('/').filter(function(part) {
+			return part.length > 0;
+		});
+
+		console.log("URL Parts: ", urlParts);
+
+		if (urlParts.length < 6) {  
+			alert("URL не содержит нужных параметров");
+			return null;
+		}
+
+		var selectedOtd = urlParts[urlParts.length - 1];  
+		var selectedYear = urlParts[urlParts.length - 2]; 
+
+		console.log("Выбранный год: " + selectedYear);
+		console.log("Выбранный отдел: " + selectedOtd);
+
+		return {
+			year: selectedYear,
+			otd: selectedOtd
+		};
+	}
+
+	function redirectToView() {
+		var viewType = document.getElementById('viewType').value;
+		var filters = getURLParameters();
+
+		if (!filters || !filters.year || !filters.otd) {
+			alert('Не удается определить выбранные фильтры.');
+			return;
+		}
+
+		if (viewType === 'current') {
+			window.location.href = "{% url 'vac_2' 0 0 %}".replace("0/0", filters.year + "/" + filters.otd);
+		} else if (viewType === 'custom') {
+			window.location.href = "{% url 'vac_2_days' 0 0 %}".replace("0/0", filters.year + "/" + filters.otd);
+		}
+	}
+
+	window.onload = function() {
+		var filters = getURLParameters();
+		if (filters) {
+			document.getElementById('filtr_year').value = filters.year;
+			document.getElementById('filtr_otd').value = filters.otd;
+			updateYearDropdown();
+		} else {
+			document.getElementById('filtr_year').value = "0";
+			document.getElementById('filtr_otd').value = "0";
+		}
+	};
+	
+    document.getElementById('actionSelect').addEventListener('change', function () { 
+    const selectedValue = this.value;
+
+    if (selectedValue === 'export') {
+        // Получаем текущую дату
+        const today = new Date();
+        const formattedDate = today.toLocaleDateString('ru-RU');
+		
+		// Создаем содержимое PDF
+        let pdfContent = `
+            <h2 align='center'>График отпусков на {{year}} год</h2>
+			<div style="height: 20px;"></div>
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead align='center'>
+                    <tr>
+                        <th style="border: 1px solid black;">ФИО</th>
+                        <th style="border: 1px solid black;">Отдел</th>
+						<th style="border: 1px solid black;">Дата отпуска</th>						
+                        <th style="border: 1px solid black;">Календарных дней</th>
+						<th style="border: 1px solid black;">Подпись</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        // Находим все строки таблицы с данными
+        const tableRows = Array.from(document.querySelectorAll('table tr')).slice(1); // Пропускаем заголовок
+
+        // Сортируем по фамилии
+        tableRows.sort((rowA, rowB) => {
+            const nameA = rowA.querySelector('th').innerText.trim();
+            const nameB = rowB.querySelector('th').innerText.trim();
+            const lastNameA = nameA.split(' ')[1]; // Получаем фамилию
+            const lastNameB = nameB.split(' ')[1]; // Получаем фамилию
+            return lastNameA.localeCompare(lastNameB, 'ru');
+        });
+
+        // Пробегаем по каждой строке таблицы и вытаскиваем данные
+        tableRows.forEach(row => {
+            const cells = row.querySelectorAll('th'); // Используем 'th' для данных
+            if (cells.length > 0) {
+                const employeeName = cells[0].innerText.trim();
+                const department = cells[1].innerText.trim();
+                const totalDays = cells[2].innerText.trim();
+
+                // Находим скрытые даты отпусков
+                const vacationDatesList = cells[3].querySelectorAll('ul li'); // Даты отпусков
+                const vacationDaysList = cells[4].querySelectorAll('ul li'); // Количество дней отпуска
+
+                // Проверяем, что даты отпусков и количество дней совпадают по количеству
+                vacationDatesList.forEach((vacationDateItem, idx) => {
+                    const vacationDate = vacationDateItem.innerText.trim();
+                    const vacationDays = vacationDaysList[idx] ? vacationDaysList[idx].innerText.trim() : '';
+
+                    // Добавляем строку в содержимое PDF для каждой даты отпуска
+                    pdfContent += `
+                        <tr style="page-break-inside: avoid;">
+                            <td style="border: 1px solid black;">${employeeName}</td>
+                            <td style="border: 1px solid black;">${department}</td>
+                            <td style="border: 1px solid black;">${vacationDate}</td>
+                            <td style="border: 1px solid black;">${vacationDays}</td>
+                            <td style="border: 1px solid black;"></td>
+                        </tr>
+                    `;
+                });
+            }
+        });
+
+        pdfContent += `
+                </tbody>
+            </table>
+			<div style="margin-top: 40px; font-size: 16px; page-break-inside: avoid;">
+                <p>Руководитель:</p>
+                <p>Подпись руководителя:</p>
+                <p>м.п.</p>
+                <p>Дата составления: ${formattedDate}</p>
+            </div>
+        `;
+
+        // Опции для html2pdf
+        const options = {
+            margin: [0.5, 0.5, 0.5, 0.5],
+            filename: 'График отпусков на {{year}}.pdf',
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2 },
+            jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' }
+        };
+
+        // Генерация PDF с помощью html2pdf
+        html2pdf().from(pdfContent).set(options).save();
+
+        this.value = ''; // Сбрасываем значение после выполнения действия
+    }
+
+	// Экспорт в Excel
+	if (selectedValue === 'excel') {
+		let tableData = [];
+		let tableHeaders = ["ФИО", "Отдел", "Дата отпуска", "Дата окончания"];
+		
+		// Заголовок
+		tableData.push([`График отпусков на {{year}}`]);
+		tableData.push(tableHeaders);  // Заголовки столбцов
+
+		// Получаем строки таблицы
+		const tableRows = Array.from(document.querySelectorAll('table tr')).slice(1);
+		
+		// Временное хранилище для строк данных
+		let rawData = [];
+		
+		tableRows.forEach(row => {
+			const cells = row.querySelectorAll('th');
+			if (cells.length > 0) {
+				const employeeName = cells[0].innerText.trim();
+				const department = cells[1].innerText.trim();
+
+				// Извлекаем даты отпуска и даты окончания из скрытых столбцов
+				const vacationDatesList = cells[3].querySelectorAll('ul li');
+				const vacationEndDatesList = cells[5].querySelectorAll('ul li'); // Список дат окончания
+
+				vacationDatesList.forEach((vacationDateItem, idx) => {
+					const vacationStartDate = vacationDateItem.innerText.trim();
+					const endDate = vacationEndDatesList[idx] ? vacationEndDatesList[idx].innerText.trim() : ''; // Дата окончания
+
+					// Сохраняем данные во временный массив
+					rawData.push([employeeName, department, vacationStartDate, endDate]);
+				});
+			}
+		});
+
+		// Функция для сортировки по фамилии (второе слово в строке ФИО)
+		rawData.sort((a, b) => {
+			const lastNameA = a[0].split(' ')[1] || '';
+			const lastNameB = b[0].split(' ')[1] || '';
+
+			return lastNameA.localeCompare(lastNameB, 'ru');
+		});
+
+		// Добавляем отсортированные данные в основной массив
+		tableData = tableData.concat(rawData);
+
+		// Создание нового листа с данными
+		const worksheet = XLSX.utils.aoa_to_sheet(tableData);
+
+		// Объединение ячеек для заголовка
+		worksheet['!merges'] = [
+			{ s: { r: 0, c: 0 }, e: { r: 0, c: 3 } }  // Объединить ячейки
+		];
+
+		// Стиль для заголовка
+		worksheet['A1'].s = {
+			font: { bold: true, sz: 14 },
+			alignment: { horizontal: 'center' },
+			border: {
+				top: { style: "medium" },
+				bottom: { style: "medium" }
+			}
+		};
+
+		// Стиль для заголовков столбцов
+		for (let C = 0; C < tableHeaders.length; C++) {
+			const cellAddress = XLSX.utils.encode_cell({ r: 1, c: C });
+			worksheet[cellAddress].s = {
+				font: { bold: true },
+				alignment: { horizontal: 'center' },
+				border: {
+					top: { style: "medium" },
+					bottom: { style: "medium" }
+				}
+			};
+		}
+
+		// Настройка ширины столбцов
+		worksheet['!cols'] = [
+			{ wch: 25 },  
+			{ wch: 30 },  
+			{ wch: 17 },  
+			{ wch: 17 }   
+		];
+
+		// Границы для ячеек с данными
+		const range = XLSX.utils.decode_range(worksheet['!ref']);
+		for (let R = range.s.r + 2; R <= range.e.r; ++R) { 
+			for (let C = range.s.c; C <= range.e.c; ++C) {
+				const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
+				if (!worksheet[cellAddress]) worksheet[cellAddress] = {}; 
+				worksheet[cellAddress].s = {
+					border: {
+						top: { style: "medium" },
+						bottom: { style: "medium" },
+						left: { style: "medium" },
+						right: { style: "medium" }
+					},
+					alignment: { horizontal: 'center' }  // Центрирование всех данных
+				};
+			}
+		}
+
+		// Создание книги и добавление листа
+		const workbook = XLSX.utils.book_new();
+		XLSX.utils.book_append_sheet(workbook, worksheet, 'Отпуска {{year}}');
+		console.log(workbook);
+		// Запись и сохранение файла
+		XLSX.writeFile(workbook, 'График отпусков на {{year}}' + '.xlsx');
+		this.value = '';
+	}
+});
+</script>	
+{% endblock %}
+
+{% block aside %}
+    {% include 'includes/aside_vac_new.html' %}
+{% endblock %}
+
+{% block content %}
+<style>
+	.flex-container {
+		display: flex;
+		flex-direction: row;
+		justify-content: flex-start;
+		align-items: center;
+		gap: 20px;
+		width: 100%;
+	}
+	
+	#filtr_otd {
+		background-image: url("{% static 'filter_alt.png' %}"), url("{% static 'arrow_drop.png' %}");
+		background-position: left 5px center, right 5px center;
+		background-repeat: no-repeat, no-repeat;
+		background-size: 24px 24px, 20px 20px;
+		padding-left: 10px;  
+		padding-right: 3px; 
+	}
+	
+	#filtr_year {
+		background-image: url("{% static 'calendar_month.png' %}"), url("{% static 'arrow_drop.png' %}");
+		background-position: left 5px center, right 5px center;
+		background-repeat: no-repeat, no-repeat;
+		background-size: 24px 24px, 20px 20px;
+		padding-left: 10px;  
+		padding-right: 3px; 
+	}
+	
+	#viewType {
+		background-image: url("{% static 'menu.png' %}"), url("{% static 'arrow_drop.png' %}");
+		background-position: left 5px center, right 5px center;
+		background-repeat: no-repeat, no-repeat;
+		background-size: 24px 24px, 20px 20px;
+		padding-left: 10px;  
+		padding-right: 3px; 
+	}
+	
+	#actionSelect {
+		background-image: url("{% static 'print.png' %}"), url("{% static 'arrow_drop.png' %}");
+		background-position: left 5px center, right 5px center;
+		background-repeat: no-repeat, no-repeat;
+		background-size: 24px 24px, 20px 20px;
+		padding-left: 10px;  
+		padding-right: 3px; 
+	}
+
+	#tooltip {
+		position: absolute;
+		background-color: rgba(0, 0, 0, 0.8);  
+		color: white;  
+		padding: 10px; 
+		border-radius: 5px;  
+		box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);  
+		display: none;  
+		z-index: 1000;  
+	}
+
+	.swal2-title {
+		font-size: 26px; 
+		color: #000000;
+	}
+
+	.table {
+		font-size: 19px; 
+	}
+
+	@keyframes slideInTop {
+	from {
+		transform: translateY(-100%);
+		opacity: 0;
+	}
+	to {
+		transform: translateY(0);
+		opacity: 1;
+	}
+	}
+
+	@keyframes slideOutTop {
+	from {
+		transform: translateY(0);
+		opacity: 1;
+	}
+	to {
+		transform: translateY(-100%);
+		opacity: 0;
+	}
+	}
+
+	.custom-popup {
+		width: 920px; 
+		top: 60px; 
+		position: fixed; 
+		animation: slideInTop 0.5s ease-out;
+	}
+
+	.custom-popup.swal2-hide {
+	animation: slideOutTop 0.5s ease-in forwards;
+	}
+</style>
+<div style="width: 110%; display: flex; flex-direction: row;">
+	<div style="margin: 5px 20px 5px 0px;">{% include "includes/vac_month_table.html" with key="Январь" value=Январь %}</div>
+	<div style="margin: 5px 20px 5px 0px;">{% include "includes/vac_month_table.html" with key="Февраль" value=Февраль %}</div>
+	<div style="margin: 5px 20px 5px 0px;">{% include "includes/vac_month_table.html" with key="Март" value=Март %}</div>
+	<div style="margin: 5px 20px 5px 0px;">{% include "includes/vac_month_table.html" with key="Апрель" value=Апрель %}</div>
+	<div style="margin: 5px 20px 5px 0px;">{% include "includes/vac_month_table.html" with key="Май" value=Май %}</div>
+	<div style="margin: 5px 20px 5px 0px;">{% include "includes/vac_month_table.html" with key="Июнь" value=Июнь %}</div>
+</div>
+
+<div style="width: 110%; display: flex; flex-direction: row;">
+	<div style="margin: 5px 20px 5px 0px;">{% include "includes/vac_month_table.html" with key="Июль" value=Июль %}</div>
+	<div style="margin: 5px 20px 5px 0px;">{% include "includes/vac_month_table.html" with key="Август" value=Август %}</div>
+	<div style="margin: 5px 20px 5px 0px;">{% include "includes/vac_month_table.html" with key="Сентябрь" value=Сентябрь %}</div>
+	<div style="margin: 5px 20px 5px 0px;">{% include "includes/vac_month_table.html" with key="Октябрь" value=Октябрь %}</div>
+	<div style="margin: 5px 20px 5px 0px;">{% include "includes/vac_month_table.html" with key="Ноябрь" value=Ноябрь %}</div>
+	<div style="margin: 5px 20px 5px 0px;">{% include "includes/vac_month_table.html" with key="Декабрь" value=Декабрь %}</div>
+</div>
+{% if len_cross_vacations > 0 %}
+<div style="width: 110%; display: flex; flex-direction: row; margin-top: 15px;">
+	<div style="background:linear-gradient(135deg, #df691a 22.22%, #4e5d6c 22.22%, #4e5d6c 50%, #df691a 50%, #df691a 72.22%, #4e5d6c 72.22%, #4e5d6c 100%);
+	width: 80px; height: 20px;">
+	</div>
+	<a>&nbsp;- дни с пересекающимися отпусками от 2 сотрудников.</a>
+</div>
+{% endif %}
+<div id="tooltip"></div>
+<div style="width: 110%; display: flex; flex-direction: row; margin-top: 15px;">
+	<table style="width: 900px;">
+		<tr style="border-bottom: 1px solid black;">
+			<th style="text-align: left;">Сотрудник</th><th>Отдел</th><th>Дней</th>
+			<th style="display: none;">Дата отпуска</th><th style="display: none;">Календарных дней</th><th style="display: none;">Дата окончания</th>
+		</tr>
+
+		{% for key, value in vacations_by_user.items %}
+			<tr style="border-bottom: 1px solid rgb(187, 185, 185); height: 40px;"
+				class="vacation-cell" 
+				data-employee-name="{{key}}" 
+				data-start-date="{% for start_date, days_count in value.vacation_start_dates %}{{start_date}}{% if not forloop.last %}, {% endif %}{% endfor %}" 
+				data-end-date="{% for end_date in value.vacation_end_dates %}{{end_date}}{% if not forloop.last %}, {% endif %}{% endfor %}"
+				data-vac-id="{% for vac in value.dates %}{{ vac.vac_id }}{% if not forloop.last %}, {% endif %}{% endfor %}">
+				<th style="text-align: left;">
+					<div style="display: flex; flex-direction: row; justify-content: left; align-items: center;">
+						<div style="width: 15px; height: 15px; background: {{value.color}}; border: 1px solid black; margin-right: 6px;"></div>
+						<a style="color: black" href="#" onclick="filtrByUser(this)">{{value.user.get_full_name}}</a>
+					</div>
+				</th>
+				<th>{{value.otd }}</th>
+				<th>{{value.sum }}</th>
+				<th style="display: none;">
+					<ul style="list-style-type: none; padding: 0; text-align: center;">
+						{% for start_date, days_count in value.vacation_start_dates %}
+							<li>{{ start_date }}</li>
+						{% endfor %}
+					</ul>
+				</th>
+
+				<th style="display: none;">
+					<ul style="list-style-type: none; padding: 0; text-align: center;">
+						{% for start_date, days_count in value.vacation_start_dates %}
+							<li>{{ days_count }} дней</li>
+						{% endfor %}
+					</ul>
+				</th>
+
+				<th style="display: none;">
+					<ul style="list-style-type: none; padding: 0; text-align: center;">
+						{% for end_date in value.vacation_end_dates %}
+							<li>{{ end_date }}</li>
+						{% endfor %}
+					</ul>
+				</th>
+			</tr>
+		{% endfor %}
+	</table>
+	<div style="border: 1px solid rgb(187, 185, 185); padding: 5px;">
+		<div id="vacation-message">В данный момент нет сотрудников в отпуске.</div>
+		<div id="info" style="margin-top: 20px; border: 1px solid rgb(187, 185, 185);"></div>
+	</div>
+</div>
+
+<script>
+	if (window.history.replaceState) {
+		window.history.replaceState(null, null, window.location.href);
+	}
+	let data = JSON.parse("{{json_data|escapejs}}");
+	let vacs = JSON.parse("{{json_data_vacs|escapejs}}");
+	
+	const bosses = JSON.parse('{{ bosses_list|escapejs }}');
+	const currentUser = "{{ current_user_name|escapejs }}";
+
+	const user_names = JSON.parse('{{ user_names|escapejs }}');
+
+	function isBoss(userName) {
+        return bosses.includes(userName);
+    }
+	
+	function showCrossData(obj) {
+		console.log(`Вызываем showCrossData: ${obj.id}`);
+		let month = obj.id.split('_')[0].toString().trim();
+		let week = obj.id.split('_')[1].toString().trim();
+		let day = Number(obj.id.split('_')[2].toString().trim());
+		let info = document.getElementById('info');
+		let messageDiv = info.previousElementSibling;
+
+		let month_for_lbl;
+		if (month == "Март" || month == "Август") {
+			month_for_lbl = month.substring(0, month.length) + 'а';
+		} else {
+			month_for_lbl = month.substring(0, month.length - 1) + 'я';
+		}
+
+		var innerHtml = data[month][week][day]["name"] + ' ' + month_for_lbl + ' {{year}}';
+
+		if (Object.keys(data[month][week][day]['date']).length > 0) {
+			// Если есть данные о отпусках
+			for (const [user_id, v] of Object.entries(data[month][week][day]['date'])) {
+				let first_date = v['date'].split(' - ')[0];
+				let dayMonthYear_day = first_date.split('-')[2];
+				let dayMonthYear_month = first_date.split('-')[1];
+
+				let second_date = v['date'].split(' - ')[1];
+				let dayMonthYear_day2 = second_date.split('-')[2];
+				let dayMonthYear_month2 = second_date.split('-')[1];
+
+				let period = `${dayMonthYear_day} ${getMonthName(dayMonthYear_month)} - ${dayMonthYear_day2} ${getMonthName(dayMonthYear_month2)}`;
+
+				let user_name = user_names[user_id] || "Неизвестный пользователь";
+
+				innerHtml += (`<div style="display: flex; flex-direction: row; justify-content: center; align-items: center;">
+					<div style="width: 15px; height: 15px; background: ${v['color']}; border: 1px solid black; margin-right: 6px;"></div>
+					<div>${user_name}</div>
+				</div>`);
+				innerHtml += `<div>${period}</div>`;
+			}
+			messageDiv.innerText = "В данный момент есть сотрудники в отпуске:";
+			info.style.display = "block";
+		} else {
+			info.innerHTML = '';
+			info.style.display = "none";
+			messageDiv.innerText = "В данный момент нет сотрудников в отпуске.";
+		}
+		info.innerHTML = innerHtml;
+		console.log("Внутренний HTML:", innerHtml);
+	}
+
+	// Функция для получения названия месяца по номеру
+	function getMonthName(monthNumber) {
+		const monthNames = [
+			"", // Пустая строка для нуля
+			"января", "февраля", "марта", "апреля", "мая", "июня", 
+			"июля", "августа", "сентября", "октября", "ноября", "декабря"
+		];
+		return monthNames[parseInt(monthNumber)];
+	}
+
+	document.addEventListener("DOMContentLoaded", function() {
+		const currentDate = new Date();
+		const currentDay = currentDate.getDate();
+		const currentMonth = currentDate.getMonth();
+		const currentYear = currentDate.getFullYear();
+
+		const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
+		const firstWeekday = firstDayOfMonth.getDay() === 0 ? 6 : firstDayOfMonth.getDay() - 1;
+		const currentWeekday = currentDate.getDay() === 0 ? 6 : currentDate.getDay() - 1;
+		const weekOffset = Math.floor((currentDay + firstWeekday - 1) / 7) + 1;
+
+		const monthNames = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", 
+							"Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
+		const month = monthNames[currentMonth];
+		const currentId = `${month}_${weekOffset}_${currentWeekday}`;
+
+		const currentDayElement = document.getElementById(currentId);
+		if (currentDayElement) {
+			showCrossData(currentDayElement);
+		}
+	});
+
+	// Функция для получения данных об отделе сотрудника по имени
+	function getEmployeeDepartment(employeeName) {
+		let tableRows = document.querySelectorAll(".vacation-cell");
+
+		for (let row of tableRows) {
+			let name = row.getAttribute("data-employee-name").trim();
+			if (name === employeeName.trim()) {
+				return row.querySelector("th:nth-child(2)").innerText.trim();
+			}
+		}
+		return "Отдел не указан";
+	}
+
+	function showCalendarPopup(obj) {
+		console.log(`Вызываем showCalendarPopup: ${obj.id}`);
+		
+		// Разбиваем идентификатор и находим нужные данные
+		let month = obj.id.split('_')[0].toString().trim();
+		let week = obj.id.split('_')[1].toString().trim();
+		let dayIndex = Number(obj.id.split('_')[2].toString().trim());
+
+		// Извлекаем день по индексу
+		let day = data[month][week][dayIndex]?.name || dayIndex;
+
+		// Форматируем месяц для заголовка
+		let month_for_lbl = (month === "Март" || month === "Август") 
+			? month + 'а' 
+			: month.substring(0, month.length - 1) + 'я';
+
+		// Приводим первую букву месяца к нижнему регистру
+		month_for_lbl = month_for_lbl.charAt(0).toLowerCase() + month_for_lbl.slice(1);
+		
+		const year = "{{year}}";
+		let title = `Отпуска на ${day} ${month_for_lbl} ${year}`;
+
+		// Преобразуем название месяца в числовой формат
+		const monthNumbers = {
+			"Январь": "01", "Февраль": "02", "Март": "03", "Апрель": "04", 
+			"Май": "05", "Июнь": "06", "Июль": "07", "Август": "08", 
+			"Сентябрь": "09", "Октябрь": "10", "Ноябрь": "11", "Декабрь": "12"
+		};
+		let monthNumber = monthNumbers[month] || "00";
+
+		// Добавляем ведущий ноль для дня, если он меньше 10
+		let formattedDay = day < 10 ? `0${day}` : day;
+
+		let formattedDate = `${formattedDay}.${monthNumber}.${year}`;
+		
+		// Подготавливаем данные об отпусках
+		let vacationData = [];
+		if (Object.keys(data[month][week][dayIndex]['date']).length > 0) {
+			for (const [user_id, info] of Object.entries(data[month][week][dayIndex]['date'])) {
+				let user_name = user_names[user_id] || "Неизвестный пользователь";
+				let period = formatVacationPeriod(info['date']);
+				let department = getEmployeeDepartment(user_id);
+				vacationData.push({ name: user_name, period: period, department: department, color: info['color'],
+				vac_id: info['vac_id'] });
+			}
+		}
+
+		// Подсчитываем количество сотрудников
+		const employeeCount = vacationData.length;
+
+		// Генерируем содержимое поп-апа
+		let content = '';
+
+		if (vacationData.length > 0) {
+			content += `<table class="table" style="width: 100%;">
+				<thead>
+					<tr>
+						<th style="width: 270px; text-align: left;">Сотрудник</th>
+						<th style="width: 350px; text-align: left;">Отдел</th>
+						<th style="width: 300px; text-align: left;">Период</th>
+					</tr>
+				</thead>
+				<tbody>`;
+			for (let entry of vacationData) {
+				content += `<tr>
+					<td style="text-align: left;">
+						<div style="display: flex; align-items: center;">
+							<div style="width: 15px; height: 15px; background: ${entry.color}; border: 1px solid black; margin-right: 6px;"></div>
+							<a href="#" style="color: #15a362; text-decoration: underline;">${entry.name}</a>
+						</div>
+					</td>
+					<td style="text-align: left;">${entry.department}</td>`;
+				
+					// Если пользователь босс, отображаем период как ссылку, иначе как текст
+					if (isBoss(currentUser) || currentUser === entry.name) {
+						const editUrl = `/auth/vacations/vacation_edit/${year}/${entry.vac_id}/?from=calendars`;
+						content += `<td style="text-align: left; font-style: italic; text-decoration: underline; color: #15a362;">
+							<a href="${editUrl}" style="color: inherit; text-decoration: inherit;">${entry.period}</a>
+						</td>`;
+					} else {
+						content += `<td style="text-align: left; font-style: italic; color: black;">
+							${entry.period}
+						</td>`;
+					}
+
+					content += `</tr>`;
+				}
+			content += `</tbody></table>`;
+		} else {
+			content = `<div style="font-size: 22px; text-align: left;">Не найдено отпусков за <strong>${formattedDate}</strong></div>`;
+		}
+
+		// Генерируем заголовок с количеством сотрудников
+		const employeeCountBadge = `<span style="background-color: #5b99ea; color: white; padding: 4px 8px; border-radius: 4px; margin-left: 10px;">${employeeCount} чел.</span>`;
+		title += employeeCountBadge; // Добавляем количество сотрудников к заголовку
+
+		// Отображаем SweetAlert2 с поп-апом
+		Swal.fire({
+			title: `<div style="text-align: left;">${title}</div>`,
+			html: content,
+			showCloseButton: true,
+			showConfirmButton: false,
+			customClass: {
+				popup: 'custom-popup'
+			},
+			didClose: () => {
+				document.querySelector('.swal2-popup').classList.add('swal2-hide');
+			}
+		});
+		
+		const closeButton = document.querySelector('.swal2-close');
+		if (closeButton) {
+			closeButton.style.outline = 'none';
+		}
+	}
+
+	// Функция для форматирования периода отпуска
+	function formatVacationPeriod(dateRange) {
+		let [start, end] = dateRange.split(' - ');
+		let [startDay, startMonth] = start.split('-').reverse();
+		let [endDay, endMonth] = end.split('-').reverse();
+
+		return `${startDay} ${getMonthName(startMonth)} - ${endDay} ${getMonthName(endMonth)}`;
+	}
+
+	let tooltipTimeout; // Переменная для хранения таймаута
+
+	function startTooltipTimeout(event, month, week, day) {
+		clearTimeout(tooltipTimeout); // Удаляем предыдущий таймаут
+		tooltipTimeout = setTimeout(() => {
+			// Проверяем наличие данных перед показом тултипа
+			if (data[month] && data[month][week] && data[month][week][day] && Object.keys(data[month][week][day]['date']).length > 0) {
+				showTooltip(event, month, week, day); // Показываем тултип
+			}
+		}, 400); // Задержка в 400 мс
+	}
+
+	function clearTooltipTimeout() {
+		clearTimeout(tooltipTimeout); // Очищаем таймаут
+		hideTooltip(); // Скрываем тултип
+	}
+
+	function showTooltip(event, month, week, day) {
+		let tooltip = document.getElementById('tooltip');
+		const monthNames = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+
+		if (data[month] && data[month][week] && data[month][week][day] && Object.keys(data[month][week][day]['date']).length > 0) {
+			let tooltipContent = '';
+
+			for (const [user_id, v] of Object.entries(data[month][week][day]['date'])) {
+				let first_date = v['date'].split(' - ')[0];
+				let second_date = v['date'].split(' - ')[1];
+
+				let firstDay = first_date.split('-')[2]; 
+				let firstMonth = monthNames[parseInt(first_date.split('-')[1], 10) - 1];
+
+				let secondDay = second_date.split('-')[2]; 
+				let secondMonth = monthNames[parseInt(second_date.split('-')[1], 10) - 1];
+
+				let user_name = user_names[user_id] || "Неизвестный пользователь";
+
+				tooltipContent += `<div style="color: ${v['color']};">${user_name}</div>`;
+				tooltipContent += `<div>${firstDay} ${firstMonth} - ${secondDay} ${secondMonth}</div>`;
+			}
+
+			tooltip.innerHTML = tooltipContent;
+			tooltip.style.display = 'block'; 
+			tooltip.style.left = event.pageX + 'px';
+			tooltip.style.top = (event.pageY - tooltip.offsetHeight - 12) + 'px'; 
+		} else {
+			tooltip.style.display = 'none'; 
+			tooltip.innerHTML = ''; 
+		}
+	}
+
+	function hideTooltip() {
+		let tooltip = document.getElementById('tooltip');
+		tooltip.style.display = 'none'; // Скрываем тултип
+		tooltip.innerHTML = ''; // Очищаем содержимое
+	}
+	
+	function filtrByUser(obj) {
+		let days = document.getElementsByName('day');
+		for (let i = 0; i < days.length; i++) {
+			let month = days[i].id.split('_')[0];
+			let week = days[i].id.split('_')[1];
+			let day = days[i].id.split('_')[2];
+			if (Object.entries(data[month][week][day]['data']).length > 1) {
+				for (const [k, v] of Object.entries(data[month][week][day]['data'])) {
+					if (k != obj.textContent) {
+						if (day == 5 | day == 6) {
+							days[i].childNodes[1].style.background = 'rgb(219, 219, 219)';
+						} else {
+							days[i].childNodes[1].style.background = 'transparent';
+						}
+						days[i].childNodes[1].style.color = '#808080';
+						
+					} else {
+						days[i].childNodes[1].style.background = 'linear-gradient(135deg, #df691a 50%, #4e5d6c 50%, #4e5d6c 100%)';
+						days[i].childNodes[1].style.color = 'white';
+						days[i].childNodes[1].style.borderRadius = '5px';
+						days[i].childNodes[1].style.backgroundSize = '28px 28px';
+						days[i].childNodes[1].style.backgroundPosition = 'center';
+						days[i].childNodes[1].style.backgroundRepeat = 'no-repeat';
+                    	break;
+					}
+				}
+			} else {
+				for (const [k, v] of Object.entries(data[month][week][day]['data'])) {
+					if (k != obj.textContent) {
+						if (day == 5 | day == 6) {
+							days[i].childNodes[1].style.background = 'rgb(219, 219, 219)';
+						} else {
+							days[i].childNodes[1].style.background = 'transparent';
+						}							
+						days[i].childNodes[1].style.color = '#808080';							
+					} else {
+						days[i].childNodes[1].style.background = obj.parentElement.childNodes[1].style.background;
+						days[i].childNodes[1].style.color = 'white';
+						break;
+					}
+				}
+			}				
+		}			
+	}		
+</script>
+{% endblock %}

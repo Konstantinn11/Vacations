@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+{% load user_filters %}
+{% load cache %}
+{% load static %}
+{% block title %}Редактировать отпуск{% endblock %}
+{% block header %}
+<div style="display: flex; flex-direction: row; justify-content: left; align-items: center; flex-wrap: nowrap; width: 120%;">
+    <a style="color: black; font-weight: bold; font-size: 35px; text-align: left; line-height: 50px; white-space: nowrap; margin-left: 358px;">Редактирование отпуска на {{ year }}</a>
+</div>
+
+<style>
+    .table-container { width: 1000px; margin: 0 auto; margin-top: 20px; margin-left: 358px; padding: 30px; background-color: #f7f7f7; box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.2); border-radius: 5px; }
+	.btn-edit { background-color: #15a362; font-family: 'Calibri'; font-style: normal; width: 200px; height: 44px; font-weight: 700; font-size: 20px; padding: 0 10px; border-radius: 5px; color: white; text-align: center; display: flex; align-items: center; justify-content: center; text-decoration: none; text-transform: none; margin: 0;}
+	.btn-my-vacations { background-color: #f7f7f7; color: #5d6778 !important; border: 1px solid #ccc; font-family: 'Calibri'; font-style: normal; font-weight: 700; width: 130px; height: 44px; font-size: 20px; padding: 0 10px; border-radius: 5px; color: white; text-align: center; display: flex; align-items: center; justify-content: center; text-decoration: none; margin-left: 30px; }
+	.btn-edit:hover { background-color: rgba(21, 163, 98, 0.8); text-decoration: none; color: white; }
+	.btn-my-vacations:hover { text-decoration: none; color: #15a362 !important; border: 1px solid #15a362; }
+    .darker { color: #15a362; font-size: 19px; text-decoration: underline; cursor: pointer; }
+    .darker:hover { color: green; }
+    .tooltip-container { position: relative; display: inline-block; }
+    .tooltip-text { visibility: hidden; width: 200px; background-color: rgba(0, 0, 0, 0.9); color: white; text-align: center; border-radius: 5px; padding: 5px; position: absolute; z-index: 2; bottom: 120%; left: 50%; transform: translateX(-50%); opacity: 0; transition: opacity 0.3s; font-size: 15px; }
+    .tooltip-container:hover .tooltip-text { visibility: visible; opacity: 1; }
+    .tooltip-text::after { content: ""; position: absolute; bottom: -9px; left: 50%; transform: translateX(-50%); width: 0; height: 0; z-index: 1; border-left: 7px solid transparent; border-right: 7px solid transparent; border-top: 9px solid rgba(0, 0, 0, 0.9); }
+    .form-control { width: 340px !important; height: 45px !important; font-size: 19px; background-color: white !important; border: 1px solid #ddd; border-radius: 5px; padding-left: 10px; transition: border-color 0.3s ease; }
+    .form-control:focus { border-color: #0d6efd; outline: none; box-shadow: none; }
+    .btn-delete { background-color: #d26d69; font-family: 'Calibri'; font-style: normal; font-weight: 700; width: 140px; height: 44px; font-size: 20px; padding: 0 10px; border-radius: 5px; color: white; text-align: center; display: flex; align-items: center; justify-content: center; text-decoration: none; margin-left: 445px; }
+    .btn-delete:hover { background-color: rgba(210, 109, 105, 0.9); text-decoration: none; color: white; }
+</style>
+{% endblock %}
+
+{% block aside %}
+    {% include 'includes/aside_vac_all.html' %}
+{% endblock %}
+
+{% block content %}
+<div class="table-container">
+    <form method="post" enctype="multipart/form-data" style="width: 100%;">
+        {% csrf_token %}
+
+        <div style="display: flex; align-items: center; margin-bottom: 30px;">
+            <label for="employee" style="font-size: 21px; flex: 0 0 250px; text-align: left; color: #5d6778;">
+                Сотрудник<span style="color: red;">&nbsp;*</span>
+            </label>
+            <div style="font-size: 21px; color: #5d6778; flex: 1; text-align: left; margin-top: -6px;">
+                {{ employee_name }}{% if employee_position %} ({{ employee_position }}){% endif %}
+            </div>
+        </div>
+
+        {% for field in form %}
+            <div style="display: flex; align-items: center; margin-bottom: 30px;">
+                <label for="{{ field.id_for_label }}" style="font-size: 21px; flex: 0 0 250px; text-align: left; color: #5d6778;">
+                    {{ field.label }}
+                    {% if field.name in "day_start day_end" %}
+                        <span style="color: red;">*</span>
+                    {% elif field.name == "how_long" %}
+                        <span class="tooltip-container">
+                            <img src="{% static 'question.svg' %}" alt="info" style="width: 24px; height: 24px; cursor: pointer;">
+                            <span class="tooltip-text">Чтобы не вводить дату окончания отпуска вручную, укажите количество дней и нажмите 'рассчитать дату окончания'</span>
+                        </span>
+                    {% endif %}
+                </label>
+                <div style="flex: 1;">
+                    {{ field }}
+                </div>
+            </div>
+            
+            {% if field.name in "how_long" %}
+                <div style="display: flex; justify-content: flex-start; margin-left: 254px; margin-top: -25px; margin-bottom: 20px;">
+                    <a href="#" id="calculate_end_date" class="darker">
+                        рассчитать дату окончания
+                    </a>
+                </div>
+            {% endif %}
+        {% endfor %}
+
+        <div style="display: flex; justify-content: flex-start; margin-top: 40px;">
+            <button class="btn-edit" type="submit">Сохранить отпуск</button>
+            {% if request.GET.from == 'all_vacations' %}
+                <a class="btn-my-vacations" href="{% url 'vac_all_vacations' %}">Отмена</a>
+                <a class="btn-delete" href="{% url 'vacation_delete' vac_id=vac_id %}?from=all_vacations" onclick="confirmDeletion(event, this)">Удалить</a>
+            {% elif request.GET.from == 'calendars' %}
+                <a class="btn-my-vacations" href="{% url 'vac_2' year=year otd=0 %}">Отмена</a>
+                <a class="btn-delete" href="{% url 'vacation_delete' vac_id=vac_id %}?from=calendars" onclick="confirmDeletion(event, this)">Удалить</a>
+            {% else %}
+                <a class="btn-my-vacations" href="{% url 'vac_my_vacations' %}">Отмена</a>
+                <a class="btn-delete" href="{% url 'vacation_delete' vac_id=vac_id %}" onclick="confirmDeletion(event, this)">Удалить</a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+<link rel="stylesheet" href="{% static 'css/flatpickr.min.css' %}">
+<script src="{% static 'libs/flatpickr.min.js' %}"></script>
+<script src="{% static 'libs/ru.js' %}"></script>
+
+<script>
+    function confirmDeletion(event, element) {
+        event.preventDefault(); // Остановить переход по ссылке
+
+        const userConfirmed = confirm("Вы уверены, что хотите удалить отпуск?");
+        if (userConfirmed) {
+            window.location.href = element.href;
+        }
+    }
+
+    const holidays = JSON.parse('{{ holidays_json|escapejs }}');
+
+    $(document).ready(function() {
+        var year = {{ year }};
+
+        function setDatepicker(year) {
+            var minDate = new Date(year, 0, 1);
+            var maxDate = new Date(year, 11, 31);
+
+            flatpickr('#id_day_start', {
+                minDate: minDate,
+                maxDate: maxDate,
+                locale: 'ru',
+                dateFormat: "Y-m-d",
+                altInput: true,
+                altFormat: "d.m.Y",
+                allowInput: true,
+            });
+
+            flatpickr('#id_day_end', {
+                minDate: minDate,
+                maxDate: maxDate,
+                locale: 'ru',
+                dateFormat: "Y-m-d",
+                altInput: true,
+                altFormat: "d.m.Y",
+                allowInput: true,
+            });
+        }
+
+        function updateEndDatePicker(endDate) {
+            var minDate = new Date(year, 0, 1);
+            var maxDate = new Date(year, 11, 31);
+
+            flatpickr('#id_day_end', {
+                defaultDate: endDate,
+                minDate: minDate,
+                maxDate: maxDate,
+                locale: 'ru',
+                dateFormat: "Y-m-d",
+                altInput: true,
+                altFormat: "d.m.Y",
+            });
+        }
+
+        setDatepicker(year);
+
+        $('#calculate_end_date').click(function(e) {
+            e.preventDefault();
+
+            const startDateStr = $('#id_day_start').val();
+            const vacationDaysStr = $('#id_how_long').val();
+            const vacationDays = parseInt(vacationDaysStr);
+
+            if (!startDateStr) {
+                alert('Укажите дату начала отпуска.');
+                return;
+            }
+
+            // Если количество дней не указано или указано некорректно, дата окончания равна дате начала
+            if (!vacationDaysStr || isNaN(vacationDays) || vacationDays <= 0) {
+                $('#id_day_end').val(startDateStr);
+                updateEndDatePicker(startDateStr);
+                return;
+            }
+
+            const monthNames = [
+                'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+                'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
+            ];
+
+            const startDateParts = startDateStr.split('-');
+            if (startDateParts.length !== 3) {
+                alert('Неверный формат даты начала.');
+                return;
+            }
+
+            // Устанавливаем дату с нулевым временем для точности
+            let currentDate = new Date(Date.UTC(startDateParts[0], startDateParts[1] - 1, startDateParts[2]));
+            let daysLeft = vacationDays;
+
+            while (daysLeft > 0) {
+
+                const currentMonthName = monthNames[currentDate.getUTCMonth()];
+                const currentDay = currentDate.getUTCDate();
+                const monthHolidays = holidays[currentMonthName] || [];
+
+                if (!monthHolidays.includes(currentDay)) {
+                    daysLeft--;
+                }
+
+                currentDate.setUTCDate(currentDate.getUTCDate() + 1);
+            }
+
+            currentDate.setUTCDate(currentDate.getUTCDate() - 1);
+
+            const endDateStr = currentDate.toISOString().split('T')[0];
+            $('#id_day_end').val(endDateStr);
+            updateEndDatePicker(endDateStr);
+        });
+
+        $('form').submit(function(event) {
+            var startDate = $('#id_day_start').val();
+            var endDate = $('#id_day_end').val();
+
+            if (!startDate || !endDate) {
+                alert('Заполните обязательные поля.');
+                event.preventDefault();
+                return false;
+            }
+
+            var startParts = startDate.split('-');
+            var endParts = endDate.split('-');
+
+            var start = new Date(startParts[0], startParts[1] - 1, startParts[2]);
+            var end = new Date(endParts[0], endParts[1] - 1, endParts[2]);
+
+            if (start > end) {
+                alert('Дата начала должна быть до даты окончания отпуска.');
+                event.preventDefault();
+                return false;
+            }
+        });
+    });
+</script>
+{% endblock %}

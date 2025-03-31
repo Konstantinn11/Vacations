@@ -1,0 +1,319 @@
+{% extends "base.html" %}
+{% load cache %}
+{% block title %}Графики отпусков{% endblock %}
+{% load user_filters %}
+{% load static %}
+{% block header %}
+<div style="display: flex; flex-direction: row; justify-content: left; align-items: center; flex-wrap: nowrap; width: 120%;">
+    <a style="color: black; font-weight: bold; font-size: 34px; text-align: left; line-height: 50px; white-space: nowrap; margin-left: 358px;">Графики отпусков</a>
+    {% if request.user.get_full_name in bosses %}
+    <div style="display: flex; flex-direction: row; align-items: center; margin-left: 375px; gap: 20px; justify-content: flex-end;">
+        <a class="btn sib" style="background-color:#15a362; font-family: 'Calibri'; font-style: normal; font-weight: 400; width: 290px; height: 44px; font-size: 20px;
+            padding: 0 10px; border-radius: 5px; color: white; text-align: center; display: flex; align-items: center; justify-content: center;" href="{% url 'import_vacations' %}">
+            <img style="height: 19px; margin-right: 5px; vertical-align: middle;" src="{% static 'box-arrow-in-down.svg' %}">Импорт отпусков из файла
+        </a>
+        <a class="btn sib" style="background-color:#15a362; font-family: 'Calibri'; font-style: normal; font-weight: 400; width: 290px; height: 44px; font-size: 20px;
+            padding: 0 10px; border-radius: 5px; color: white; text-align: center; display: flex; align-items: center; justify-content: center;" href="#">
+            <img style="height: 19px; margin-right: 5px; vertical-align: middle;" src="{% static 'printer-svgrepo.svg' %}">Экспорт отпусков за год
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    .btn.sib:hover { background-color: rgba(21, 163, 98, 0.8) !important; }
+
+    .year-tab {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        cursor: pointer;
+        font-size: 19px;
+        transition: background-color 0.3s ease;
+        color: #5d6778;
+    }
+
+    .year-tab:hover {
+        background-color: rgba(21, 163, 98, 0.1);
+        color: #15a362;
+    }
+
+    .year-tab.active {
+        border-bottom: 3px solid #15a362;
+        color: #15a362;
+    }
+
+    .table-container {
+        display: flex;
+        gap: 40px;
+        justify-content: center;
+        align-items: stretch;
+        margin-top: 40px;
+        margin-left: 358px;
+        width: 115%;
+    }
+
+    .styled-table {
+        border-collapse: collapse;
+        flex: 1;
+        text-align: left;
+        box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.2);
+        background-color: #fff;
+        border-radius: 5px;
+    }
+
+    .header-cell {
+        font-weight: bold;
+        padding: 10px;
+        font-size: 24px;
+        text-align: left;
+        border-bottom: 2px solid #ddd;
+    }
+
+    .column-cell {
+        padding: 10px;
+        color: #828d9f;
+        font-size: 18px;
+        padding-left: 25px;
+        padding-top: 25px;
+        padding-right: 25px;
+    }
+
+    .no-data {
+        padding: 10px;
+        color: gray;
+        font-size: 18px;
+        font-weight: normal;
+        padding: 25px;
+    }
+
+    .cell {
+        padding: 10px;
+        padding-left: 25px;
+        font-size: 18px;
+    }
+
+    .clickable {
+        color: #15a362;
+        text-decoration: underline;
+    }
+
+    .clickable:hover {
+        color: green;
+    }
+
+    .table-spacing td {
+        height: 25px;
+        background-color: transparent;
+        border: none;
+    }
+
+    button {
+        transition: background-color 0.3s ease, opacity 0.3s ease;
+    }
+
+    button:hover {
+        background-color: rgba(0, 0, 0, 0.01) !important;
+    }
+
+    .disabled {
+        opacity: 0.5;
+        pointer-events: none;
+        cursor: default;
+    }
+</style>
+{% endblock %}
+
+{% block aside %}
+    {% include 'includes/aside_vac_all.html' %}
+{% endblock %}
+
+{% block content %}
+<div id="year-slider-container" style="display: flex; align-items: center; justify-content: center; margin-top: 30px; margin-left: 358px; width: 105%;">
+    <button id="prev-year" style="outline: none; background: white; border: none; border-radius: 50%; width: 60px; height: 60px; box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.2); display: flex; align-items: center; justify-content: center; cursor: pointer; margin-right: 35px;">
+        <img src="{% static 'arrow-left.svg' %}" alt="Previous" style="width: 25px; height: 25px;">
+    </button>
+
+    <div id="year-slider" style="display: flex; gap: 40px; width: auto;">
+        {% for year, count in years_vacations_count.items %}
+        <a href="{% url 'vac_2' year=year otd=0 %}" class="year-card" style="background-color: #f7f7f7; box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.2); border-radius: 5px; width: 300px; height: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-decoration: none; transition: transform 0.3s ease;">
+            <span style="color: black; font-size: 35px; font-weight: bold;">{{ year }}</span>
+            {% if count > 0 %}
+                <span style="color: #15a362; font-size: 18px;">Все отпуска ({{ count }})</span>
+            {% else %}
+                <span style="color: #dc3545; font-size: 18px;">еще нет отпусков</span>
+            {% endif %}
+            <span style="color: #828d9f; font-size: 18px; display: flex; align-items: center; justify-content: center;">
+                <img src="{% static 'check-square.svg' %}" style="width: 20px; height: 20px; margin-right: 5px;">
+                Произв. календарь загружен
+            </span>
+        </a>
+        {% endfor %}
+    </div>
+
+    <button id="next-year" style="outline: none; background: white; border: none; border-radius: 50%; width: 60px; height: 60px; box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.2); display: flex; align-items: center; justify-content: center; cursor: pointer; margin-left: 35px;">
+        <img src="{% static 'arrow-right.svg' %}" alt="Nextious" style="width: 25px; height: 25px;">
+    </button>
+</div>
+
+
+<div style="display: flex; width: 115%; background-color: #f7f7f7; height: 50px; margin-top: 40px; box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.2); margin-left: 358px; border-radius: 5px; overflow: hidden;">
+    {% if has_vacations_in_linked_units %}
+        {% for year in years_range %}
+            <div class="year-tab {% if forloop.counter == 2 %}active{% endif %}" onclick="showYearData({{ year }}, this)">
+                {{ year }} г.
+            </div>
+        {% endfor %}
+    {% else %}
+        <div style="display: flex; align-items: center; justify-content: left; height: 100%; width: 100%; color: #5d6778; font-size: 21px; padding-left: 15px;">
+            Отпусков еще не добавлено.
+        </div>
+    {% endif %}
+</div>
+
+{% if has_vacations_in_linked_units %}
+<div class="table-container">
+    <table id="otd-table" class="styled-table">
+        <thead>
+            <tr>
+                <th colspan="3" class="header-cell">Графики по отделам</th>
+            </tr>
+            <tr>
+                <th class="column-cell">Отдел</th>
+                <th class="column-cell">Сотрудников</th>
+                <th class="column-cell">Отпусков</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+        <tr class="table-spacing">
+            <td colspan="3"></td>
+        </tr>
+    </table>
+
+    <table class="styled-table">
+        <thead>
+            <tr>
+                <th colspan="3" class="header-cell">Графики по тегам</th>
+            </tr>
+            <tr>
+                <th class="no-data">Не найдено сотрудников с тегами.</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="cell"></td>
+                <td class="cell"></td>
+                <td class="cell"></td>
+            </tr>
+        </tbody>
+        <tr class="table-spacing">
+            <td colspan="3"></td>
+        </tr>
+    </table>
+</div>
+{% endif %}
+
+<div style="text-align: left; font-size: 19px; color: #5d6778; margin-top: 35px; margin-left: 358px; width: 100%;">
+    <span style="font-weight: bold; font-style: italic;">Подсказка:</span> чтобы просматривать графики по произвольным сотрудникам, присвойте им 
+    <a href="#" style="color: #15a362; text-decoration: underline;">теги</a>.
+</div>
+
+<script>
+    function showYearData(year, element) {
+        // Снять активность со всех вкладок
+        document.querySelectorAll('.year-tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+
+        element.classList.add('active');
+
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.set('year', year);
+        history.pushState({}, '', currentUrl); 
+
+        fetch(`${currentUrl.pathname}?year=${year}`, { 
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            const tableBody = document.querySelector('#otd-table tbody');
+            tableBody.innerHTML = '';
+
+            if (data.otd_data.length > 0) {
+                data.otd_data.forEach(otd => {
+                    const row = document.createElement('tr');
+                    const url = `/auth/vacations/vac_2/${year}/${otd.otd_description}/`;
+
+                    row.innerHTML = `
+                        <td class="cell">
+                            <a class="clickable" href="${url}">${otd.otd}</a>
+                        </td>
+                        <td class="cell"><strong>${otd.employees}</strong></td>
+                        <td class="cell">${otd.vacations}</td>`;
+                    tableBody.appendChild(row);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка при загрузке данных:', error);
+        });
+    }
+
+    const currentYear = "{{ current_year }}";
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const tabs = document.querySelectorAll('.year-tab');
+        const currentYear = new Date().getFullYear().toString();
+        let selectedYearTab = Array.from(tabs).find(tab => tab.textContent.includes(currentYear));
+        
+        if (!selectedYearTab) {
+            const previousYear = (new Date().getFullYear() - 1).toString();
+            selectedYearTab = Array.from(tabs).find(tab => tab.textContent.includes(previousYear));
+        }
+        
+        if (selectedYearTab) {
+            const year = selectedYearTab.textContent.trim().split(' ')[0];
+            showYearData(year, selectedYearTab);
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const slider = document.getElementById('year-slider');
+        const yearCards = document.querySelectorAll('.year-card');
+        const prevButton = document.getElementById('prev-year');
+        const nextButton = document.getElementById('next-year');
+
+        let currentIndex = 0;
+        const visibleCards = 3;
+
+        function updateSlider() {
+            yearCards.forEach((card, index) => {
+                card.style.display = (index >= currentIndex && index < currentIndex + visibleCards) ? 'flex' : 'none';
+            });
+
+            // Управляем классами кнопок
+            prevButton.classList.toggle('disabled', currentIndex === 0);
+            nextButton.classList.toggle('disabled', currentIndex >= yearCards.length - visibleCards);
+        }
+
+        prevButton.addEventListener('click', function() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                updateSlider();
+            }
+        });
+
+        nextButton.addEventListener('click', function() {
+            if (currentIndex < yearCards.length - visibleCards) {
+                currentIndex++;
+                updateSlider();
+            }
+        });
+
+        updateSlider();
+    });
+</script>
+{% endblock %}

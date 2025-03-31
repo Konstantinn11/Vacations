@@ -1,0 +1,222 @@
+<style>
+	.all_flex {
+		display: flex; flex-direction: row;
+	}
+	.main_text {
+		margin-left: 10px; padding-left: 10px; color: gray; margin-right: 20px; width: 350px auto; line-height: 40px;
+	}
+
+	.navbar {
+		background: #E6E6E6;
+	}
+
+	.navbar.custom-navbar {
+		background: #f4f4f4;
+		box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+		height: 60px;
+	}
+
+	.darker-nav {
+		font-size: 20px;
+		font-weight: normal;
+		color: #15a362;
+		text-decoration: underline;
+		display: inline;
+	}
+
+	.darker-nav:hover {
+		color: green;
+	}
+
+	.btn.sib:hover { 
+		background-color: rgba(21, 163, 98, 0.8) !important; 
+	}
+</style>
+{% load static %}
+{% load user_filters %}
+{% with request.resolver_match.view_name as view_name %}
+<nav class="navbar navbar-expand-md {% if navbar_style %}{{ navbar_style }}{% endif %}" style="font-weight: bold;">
+	<div class="navbar-collapse collapse w-100 order-1 order-md-0 dual-collapse2">
+		{% if show_add_leave_button %}
+				<a id="toggle-info-block">
+					<img class="menu-icon" style="height: 40px; width: 40px; display: flex; align-items: center; justify-content: center; margin-left: 4px; cursor: pointer;" src="{% static 'menu.svg' %}">
+				</a>
+		{% endif %}
+		{% if navbar_style == 'custom-navbar' %}
+			{% if show_vacation_link %}
+			<a style="margin-left: 25px;" class="darker-nav" href="{% url 'vac_calendars' 0 %}">
+				Графики отпусков
+			</a>
+			<span style="font-size: 20px; color: #5d6778; font-weight: normal; display: inline;">
+				&nbsp;/ Единый график, {{ year }} г.
+			</span>
+			{% elif show_my_vacations %}
+			<a style="margin-left: 375px;" class="darker-nav" href="{% url 'vac_all' 0 %}">
+				Ближайшие отпуска
+			</a>
+			<span style="font-size: 20px; color: #5d6778; font-weight: normal; display: inline;">
+				&nbsp;/ Мои отпуска
+			</span>
+			{% elif show_person %}
+				{% if employee_name %}
+					<a style="margin-left: 375px;" class="darker-nav" href="{% url 'vac_2' year=year otd=0 %}">
+						График отпусков
+					</a>
+					<span style="font-size: 20px; color: #5d6778; font-weight: normal; display: inline;">
+						&nbsp;/ Добавление отпуска
+					</span>
+				{% else %}
+					<a style="margin-left: 375px;" class="darker-nav" href="{% url 'vac_my_vacations' %}">
+						Мои отпуска
+					</a>
+					<span style="font-size: 20px; color: #5d6778; font-weight: normal; display: inline;">
+						&nbsp;/ Новый отпуск
+					</span>
+				{% endif %}
+			{% elif show_all_vacations %}
+			<a style="margin-left: 375px;" class="darker-nav" href="{% url 'vac_all' 0 %}">
+				Ближайшие отпуска
+			</a>
+			<span style="font-size: 20px; color: #5d6778; font-weight: normal; display: inline;">
+				&nbsp;/ Все отпуска
+			</span>
+			{% elif my_profile %}
+			<span style="margin-left: 375px; font-size: 20px; color: #5d6778; font-weight: bold; display: inline;">
+				Мой профиль
+			</span>
+			{% elif employees %}
+			<span style="margin-left: 375px; font-size: 20px; color: #5d6778; font-weight: bold; display: inline;">
+				Центр комплексирования
+			</span>
+			{% elif import_vac %}
+			<a style="margin-left: 375px;" class="darker-nav" href="{% url 'vac_calendars' 0 %}">
+				Графики отпусков
+			</a>
+			<span style="font-size: 20px; color: #5d6778; font-weight: normal; display: inline;">
+				&nbsp;/ Импорт отпусков из файла
+			</span>
+			{% elif profile_edit %}
+			<a style="margin-left: 375px;" class="darker-nav" href="#">
+				Сотрудники
+			</a>
+			<span style="font-size: 20px; color: #5d6778; font-weight: normal; display: inline;">
+				&nbsp;/ {{request.user.get_full_name}}
+			</span>
+			{% elif show_vacation_detail %}
+				{% if request.GET.from == 'all_vacations' %}
+					<a style="margin-left: 375px;" class="darker-nav" href="{% url 'vac_all_vacations' %}">
+						Все отпуска
+					</a>
+					<span style="font-size: 20px; color: #5d6778; font-weight: normal; display: inline;">
+						&nbsp;/ Отпуск {{ vacation_user_name }}
+					</span>
+				{% else %}
+					<a style="margin-left: 375px;" class="darker-nav" href="{% url 'vac_my_vacations' %}">
+						Мои отпуска
+					</a>
+					<span style="font-size: 20px; color: #5d6778; font-weight: normal; display: inline;">
+						&nbsp;/ Отпуск {{ vacation_user_name }}
+					</span>
+				{% endif %}
+			{% elif redact_vac %}
+				{% if request.GET.from == 'all_vacations' %}
+					<a style="margin-left: 375px;" class="darker-nav" href="{% url 'vac_all_vacations' %}">
+						Все отпуска
+					</a>
+					<span style="font-size: 20px; color: #5d6778; font-weight: normal; display: inline;">
+						&nbsp;/ Редактирование отпуска
+					</span>
+				{% elif request.GET.from == 'calendars' %}
+					<a style="margin-left: 375px;" class="darker-nav" href="{% url 'vac_2' year=year otd=0 %}">
+						График отпусков
+					</a>
+					<span style="font-size: 20px; color: #5d6778; font-weight: normal; display: inline;">
+						&nbsp;/ Редактирование отпуска
+					</span>
+				{% else %}
+					<a style="margin-left: 375px;" class="darker-nav" href="{% url 'vac_my_vacations' %}">
+						Мои отпуска
+					</a>
+					<span style="font-size: 20px; color: #5d6778; font-weight: normal; display: inline;">
+						&nbsp;/ Редактирование отпуска
+					</span>
+				{% endif %}
+			{% endif %}
+		{% else %}
+			<img style="height: 45px; margin-left: 30px; margin-right: 100px;"
+				src="{% static 'logo_ya_removebg.png' %}" alt="Логотип">
+		{% endif %}
+		<ul class="navbar-nav mr-auto">
+			{% if page_noname is not none %}
+			<div class="main_text all_flex" style="font-size: 40px;">
+				{{page_noname}}
+			</div>
+			
+			{% elif page_name %}
+			<div class="all_flex">
+				<div class="main_text all_flex" style="font-size: 40px;">
+					{{page_name}}
+				</div>
+			</div>
+
+			{% elif request.resolver_match.url_name == "user_space" %}
+			<div class="all_flex">
+				<div class="main_text all_flex" style="font-size: 40px;">Личный кабинет</div>
+				<div class="all_flex main_btn" onclick="OpenAllCard(this)">
+					<img class="img_for_btn" 
+					
+					style="margin: 0px;"
+					src={% static "size_up.png" %}>
+				</div>
+				<div class="all_flex main_btn btn_off" onclick="CloseAllCard(this)">
+					<img class="img_for_btn"
+					
+					style="margin: 0px;"
+					src={% static "size_down.png" %}>
+				</div>
+				{% include 'user_space/dropdown.html' %}
+			</div>
+			{% endif %}
+		</ul>
+	</div>
+
+	<div class="navbar-collapse collapse w-100 order-3 dual-collapse2">
+		<ul class="navbar-nav ml-auto"> 
+			{% if user.is_authenticated %}
+				{% if show_button %}
+					<li>
+						<a id="add-leave-button" class="btn sib" onclick="showDropdown(event)" style="background-color:#15a362; font-family: 'Calibri'; font-style: normal; font-weight: 400; width: 190px; height: 38px; font-size: 19px; border-radius: 5px;
+						color: white; text-align: center; display: flex; align-items: center; justify-content: center; margin-right: 20px; cursor: pointer;">
+							Добавить отпуск
+							<img style="height: 22px; margin-left: 3px;" src="{% static 'arrow_down.png' %}">
+						</a>
+					</li>
+				{% endif %}
+				{% if not navbar_style == 'custom-navbar' %}
+					<li>
+						<a id="username" class="p-2" style="color: rgb(74, 177, 236); display: flex; align-items: center; justify-content: center;" href="#">{{ request.user.get_full_name }}</a>
+					</li> 
+				{% else %}
+					<li>
+						<a id="username" class="p-2" style="color: rgb(74, 177, 236); display: flex; align-items: center; justify-content: center;" href="{% url 'vac_my_profile' %}">Мой профиль</a>
+					</li>
+				{% endif %}
+					<span style="display: flex; align-items: center;">|</span>
+				{% if not navbar_style == 'custom-navbar' %}
+					<li>
+						<a class="p-2" style="color: black; display: flex; align-items: center; justify-content: center;" href="#">Изменить пароль</a>
+					</li>
+					<span style="display: flex; align-items: center;">|</span>
+				{% endif %}
+				<li>
+					<a class="p-2" style="color: black; display: flex; align-items: center; justify-content: center;" href="{% url 'logout' %}">Выход</a>
+				</li>    
+			{% else %}
+				<li>
+					<a class="p-2" style="color: black; display: flex; align-items: center; justify-content: center;" href="{% url 'login' %}">Вход</a>
+				</li>
+			{% endif %}
+		</ul>
+	</div>
+</nav>
+{% endwith %}

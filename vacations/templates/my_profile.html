@@ -1,0 +1,325 @@
+{% extends "base.html" %}
+{% load cache %}
+{% block title %}Мой профиль{% endblock %}
+{% load user_filters %}
+{% load static %}
+{% block header %}
+
+{% endblock %}
+
+{% block aside %}
+    {% include 'includes/aside_vac_all.html' %}
+{% endblock %}
+
+{% block content %}
+<style>
+    .table-container {
+        display: flex;
+        gap: 40px;
+        justify-content: center;
+        align-items: stretch;
+        margin-top: 40px;
+        margin-left: 358px;
+        width: 115%;
+    }
+
+    .styled-table {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        border-collapse: collapse;
+        flex: 1;
+        text-align: left;
+        box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.2);
+        background-color: #fff;
+        border-radius: 5px;
+        font-size: 19px;
+        color: #5d6778;
+    }
+
+    .styled-table tbody {
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+    }
+
+    .styled-table tr {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        width: 100%;
+        flex-grow: 0;
+    }
+
+    .header-row {
+        display: flex;
+        align-items: center;
+        padding: 20px 0;
+        gap: 15px;
+        margin-left: -5px;
+    }
+
+    .circle {
+        width: 60px; 
+        height: 60px;
+        background-color: rgba(21, 163, 98, 0.2);
+        border-radius: 50%; 
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
+    }
+
+    .circle img {
+        width: 60%; 
+        height: 60%;
+        object-fit: cover;
+    }
+
+    .header-title {
+        color: black;
+        font-size: 26px;
+        margin: 0;
+    }
+
+    .btn-edit {
+        background-color: white;
+        font-family: 'Calibri';
+        font-style: normal;
+        font-weight: 400;
+        width: 180px;
+        height: 40px;
+        font-size: 20px;
+        border-radius: 5px;
+        color: #5d6778;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        border: 1px solid #5d6778;
+        text-decoration: none;
+        margin-left: 10px;
+    }
+
+    .btn-edit:hover {
+        color: #15a362;
+        border-color: #15a362;
+        text-decoration: none;
+    }
+
+    .darker { 
+        color: #15a362; 
+        font-size: 19px; 
+        text-decoration: underline;
+        font-style: italic;
+    }
+
+    .darker:hover { 
+        color: green; 
+    }
+
+    .styled-table td {
+        padding: 3px 30px;
+    }
+
+    .styled-table tr {
+        vertical-align: top;
+    }
+
+    .buttons-container {
+        display: flex;
+        justify-content: space-between;
+        gap: 185px;
+    }
+
+    .no-border-row td { 
+        padding-bottom: 5px; 
+    }
+
+    #leave-dropdown-my ul li a { 
+        text-decoration: none; 
+        color: #000; 
+        font-size: 16px; 
+        transition: color 0.3s ease; 
+    }
+    #leave-dropdown-my { 
+        padding: 6px; 
+        box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.1); 
+    }
+    #leave-dropdown-my ul { 
+        padding: 6px 0; 
+        text-align: center; 
+        list-style-type: none; 
+        margin: 0; 
+    }
+    #leave-dropdown-my ul li { 
+        margin: 6px 0; 
+    }
+
+    .btn-edit:hover img {
+        filter: brightness(0) saturate(100%) invert(42%) sepia(76%) saturate(231%) hue-rotate(129deg) brightness(93%) contrast(101%);
+    }
+</style>
+
+{% if messages %}
+    <div style="margin-top: 10px; margin-left: 384px; font-size: 18px; text-align: center; width: 110%;">
+        {% for message in messages %}
+            <div id="message-{{ forloop.counter }}" style="padding: 10px; border-radius: 5px; max-width: 800px; margin: 0 auto; margin-bottom: -23px;
+                {% if message.tags == 'success' %}background-color: #d4edda; color: #155724; 
+                {% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    </div>
+    
+    <script>
+        setTimeout(function() {
+            {% for message in messages %}
+                var messageElement = document.getElementById("message-{{ forloop.counter }}");
+                if (messageElement) {
+                    messageElement.style.display = "none";
+                }
+            {% endfor %}
+        }, 3000);
+    </script>
+{% endif %}
+
+<div class="table-container">
+    <table class="styled-table">
+        <tr>
+            <td colspan="3">
+                <div class="header-row">
+                    <div class="circle">
+                        <img src="{% static 'person_profile.svg' %}">
+                    </div>
+                    <h4 class="header-title">Личные данные</h4>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding-top: 10px;"><strong>ФИО</strong></td>
+        </tr>
+        <tr style="border-bottom: 1px solid #ddd;">
+        <td style="padding-bottom: 20px;">{{ user_info.user.first_name }} {{ user_info.user.last_name }}</td>
+        </tr>
+        <tr>
+            <td style="padding-top: 20px;"><strong>Email</strong></td>
+        </tr>
+        <tr style="border-bottom: 1px solid #ddd;">
+            <td style="padding-bottom: 20px;">{{ user_info.user.email }}</td>
+        </tr>
+        <tr>
+            <td style="padding-top: 20px;"><strong>Должность</strong></td>
+        </tr>
+        <tr style="border-bottom: 1px solid #ddd;">
+            <td style="padding-bottom: 20px;">{{ user_info.position.position }}</td>
+        </tr>
+        <tr>
+            <td style="padding-top: 20px;"><strong>Отдел</strong></td>
+        </tr>
+        <tr style="border-bottom: 1px solid #ddd;">
+            <td style="padding-bottom: 20px;">{{ user_info.otd_number.title }}</td>
+        </tr>
+
+        <tr>
+            <td colspan="3" style="padding: 20px;">
+                <div class="buttons-container">
+                    <a class="btn-edit" href="{% url 'profile_edit' %}">
+                        <img src="{% static 'gear_profile.svg' %}" alt="Edit" style="height: 20px; margin-right: 8px;">Редактировать
+                    </a>
+                    <a class="btn-edit" href="#">Изменить пароль</a>
+                </div>
+            </td>
+        </tr>
+    </table>
+    
+    <table class="styled-table">
+        <tr>
+            <td colspan="3">
+                <div class="header-row">
+                    <div class="circle">
+                        <img src="{% static 'sliders_profile.svg' %}">
+                    </div>
+                    <h4 class="header-title">Общая информация</h4>
+                </div>
+            </td>
+        </tr>
+        {% if vacations_list %}
+        <tr>
+            <th style="padding: 10px 30px;">Следующие отпуска</th>
+        </tr>
+        <tr>
+            <td>
+                <ul>
+                    {% for vacation in vacations_list %}
+                        <li>
+                            <a class="darker" href="{% url 'vacation_detail' vacation.id %}">{{ vacation.period }}</a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </td>
+        </tr>
+        {% else %}
+        <tr class="no-border-row">
+            <td colspan="3" style="text-align: left; font-size: 20px; color: #5d6778;">Не найдено ближайших отпусков.</td>
+        </tr>
+        {% endif %}
+        <tr style="border-bottom: 1px solid #ddd; padding-bottom: 15px;">
+            <td colspan="3">
+                <a id="add-leave-button-my" class="btn sib" style="background-color:#15a362; font-family: 'Calibri'; font-style: normal; font-weight: 400; width: 200px; height: 42px; font-size: 20px; border-radius: 5px;
+                color: white; text-align: center; display: flex; align-items: center; justify-content: center; margin-right: 20px; cursor: pointer;">
+                    Добавить отпуск
+                    <img style="height: 22px; margin-left: 3px;" src="{% static 'arrow_down.png' %}">
+                </a>
+            </td>
+        </tr>
+    </table>
+</div>
+<div id="leave-dropdown-my" style="width: 212px; display: none; position: absolute; background-color: #fff; border: 1px solid #ccc; padding: 10px; border-radius: 5px; z-index: 2000; margin-top: 10px;">
+    <ul style="list-style-type: none; padding: 0; margin: 0;">
+        <li class="vacation-item">
+            <a href="{% url 'vacation_new' 2025 %}" class="vacation-link">
+                <span class="text">Отпуск на</span> <span class="year">2025</span> <span class="text">год</span>
+            </a>
+        </li>
+        <li class="vacation-item">
+            <a href="{% url 'vacation_new' 2026 %}" class="vacation-link">
+                <span class="text">Отпуск на</span> <span class="year">2026</span> <span class="text">год</span>
+            </a>
+        </li>
+    </ul>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const addLeaveButton = document.getElementById("add-leave-button-my");
+        const leaveDropdown = document.getElementById("leave-dropdown-my");
+
+        // Показать/скрыть список по кнопке
+        addLeaveButton.addEventListener("click", function (event) {
+            event.stopPropagation(); // Остановка всплытия события
+            leaveDropdown.style.display = leaveDropdown.style.display === "block" ? "none" : "block";
+
+            if (leaveDropdown.style.display === "block") {
+                // Расположить список под кнопкой
+                const buttonRect = addLeaveButton.getBoundingClientRect();
+                const dropdownWidth = leaveDropdown.offsetWidth;
+
+                leaveDropdown.style.top = `${buttonRect.bottom + window.scrollY + 20}px`; // 20px отступа
+                leaveDropdown.style.left = `${buttonRect.left + window.scrollX + (buttonRect.width - dropdownWidth) / 2}px`; // Центрирование
+            }
+        });
+
+        // Скрытие списка при клике вне
+        document.addEventListener("click", function () {
+            leaveDropdown.style.display = "none";
+        });
+
+        // Остановка всплытия события внутри списка
+        leaveDropdown.addEventListener("click", function (event) {
+            event.stopPropagation();
+        });
+    });
+</script>
+{% endblock %}

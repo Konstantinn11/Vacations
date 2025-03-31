@@ -1,0 +1,182 @@
+{% load user_filters %}
+{% load static %}
+<style>
+    .aside-vac {
+        position: fixed;
+        top: 0;
+        width: 350px;
+        height: 100%;
+        background-color: #f4f4f4;
+        box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+    }
+
+    .tabs-container {
+        display: flex;
+        flex-direction: column;
+        margin-top: 14px;
+    }
+
+    .vertical-tab {
+        display: flex;
+        align-items: center;
+        padding: 10px 15px;
+        font-size: 20px;
+        cursor: pointer;
+        border-left: 3px solid transparent;
+        width: 100%;
+        height: 60px;
+        background-color: transparent;
+    }
+
+    .vertical-tab.active-tab {
+        background-color: rgba(21, 163, 98, 0.06); /* Зеленый фон при активной кнопке */
+        border-left: 3px solid #15a362; /* Зеленая левая граница при активной кнопке */
+        color: #15a362;
+    }
+
+    .vertical-tab.active-tab.no-background {
+        background-color: transparent; /* Убираем зеленый фон */
+        color: #15a362; /* Зеленый текст */
+        border-left: 3px solid transparent;/* Зеленая левая граница */
+    }
+
+    .vertical-tab.active-tab .tab-icon{
+        filter: brightness(0) saturate(100%) invert(42%) sepia(76%) saturate(231%) hue-rotate(129deg) brightness(93%) contrast(101%);
+    }
+
+    .vertical-tab:hover {
+        color: #15a362;
+    }
+
+    .vertical-tab:hover .tab-icon {
+        filter: brightness(0) saturate(100%) invert(42%) sepia(76%) saturate(231%) hue-rotate(129deg) brightness(93%) contrast(101%);
+    }
+
+    .vertical-tab:hover .tab-arrow {
+        filter: brightness(0) saturate(100%) invert(42%) sepia(76%) saturate(231%) hue-rotate(129deg) brightness(93%) contrast(101%);
+    }
+
+    .tab-icon {
+        height: 25px;
+        margin-right: 10px;
+    }
+
+    .tab-arrow {
+        margin-left: 75px;
+        margin-right: auto;
+        height: 20px;
+        transition: none;
+    }
+
+    .sub-menu.open + .vertical-tab .tab-arrow {
+        transform: rotate(180deg); /* Поворот стрелки на 180 градусов */
+    }
+
+    .sub-menu {
+        display: none;
+        flex-direction: column;
+        margin-left: 35px;
+        display: flex;
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.4s ease-in-out;
+    }
+
+    .sub-menu.open {
+        display: flex;
+        max-height: 100px;
+    }
+
+    .submenu-tab {
+        font-size: 20px;
+        font-weight: normal;
+        color: #5d6778;
+        text-decoration: underline;
+        border-left: 3px solid rgba(160, 160, 160, 0.2);
+    }
+
+    .submenu-tab:hover {
+        color: #000;
+    }
+
+    .submenu-tab.active-tab {
+        background-color: transparent;
+        border-left: 3px solid #15a362;
+        color: #15a362;
+    }
+</style>
+
+<div class="aside-vac">
+    <a href="{% url 'vac_all' otd=0 %}">
+        <img style="height: 45px; margin-top: 15px; margin-left: 20px; margin-bottom: 5px;" src={% static "logo_ya_removebg.png" %}>
+    </a>
+    <div class="tabs-container">
+        <div class="vertical-tab {% if request.path == '/auth/vac_calendars/0/' %}active-tab{% endif %}" onclick="showLoader(this); window.location.href='{% url 'vac_calendars' 0 %}'">
+            <img class="tab-icon" src="{% static 'list.svg' %}" alt="Графики отпусков"> Графики отпусков
+        </div>
+
+        {% if key == request.user.get_full_name or request.user.get_full_name in bosses %}
+            <div class="vertical-tab {% if request.path == '/auth/vac_all_vacations/' or request.path == '/auth/vac_my_vacations/' %}active-tab{% endif %} {% if request.path == '/auth/vac_all_vacations/' or request.path == '/auth/vac_my_vacations/' %}no-background{% endif %}" onclick="toggleSubMenu()">
+                <img class="tab-icon" src="{% static 'mood.svg' %}" alt="Отпуска"> Отпуска
+                <img id="submenu-arrow" src="{% static 'keyboard_arrow_down.svg' %}" class="tab-arrow">
+            </div>
+            <!-- Выпадающий список -->
+            <div id="sub-menu" class="sub-menu {% if request.path == '/auth/vac_all_vacations/' or request.path == '/auth/vac_my_vacations/' %}open{% endif %}">
+                <div class="vertical-tab submenu-tab {% if request.path == '/auth/vac_all_vacations/' %}active-tab{% endif %}" onclick="showLoader(this); window.location.href='{% url 'vac_all_vacations' %}'">
+                    Все отпуска
+                </div>
+                <div class="vertical-tab submenu-tab {% if request.path == '/auth/vac_my_vacations/' %}active-tab{% endif %}" onclick="showLoader(this); window.location.href='{% url 'vac_my_vacations' %}'">
+                    Мои отпуска
+                </div>
+            </div>
+        {% else %}
+            <div class="vertical-tab {% if request.path == '/auth/vac_my_vacations/' %}active-tab{% endif %}" onclick="showLoader(this); window.location.href='{% url 'vac_my_vacations' %}'">
+                <img class="tab-icon" src="{% static 'mood.svg' %}" alt="Мои отпуска"> Мои отпуска
+            </div>
+        {% endif %}
+
+        <div class="vertical-tab {% if request.path == '/auth/employees/' %}active-tab{% endif %}" onclick="showLoader(this); window.location.href='{% url 'employees' %}'">
+            <img class="tab-icon" src="{% static 'group.svg' %}" alt="Сотрудники"> Сотрудники
+        </div>
+        <div class="vertical-tab {% if request.path == '/auth/vac_my_profile/' %}active-tab{% endif %}" onclick="showLoader(this); window.location.href='{% url 'vac_my_profile' %}'">
+            <img class="tab-icon" src="{% static 'account.svg' %}" alt="Мой профиль"> Мой профиль
+        </div>
+    </div>
+</div>
+
+<script>    
+    document.addEventListener("DOMContentLoaded", function () {
+        var subMenu = document.getElementById("sub-menu");
+        var arrow = document.getElementById("submenu-arrow");
+
+        // Устанавливаем начальное положение стрелки
+        if (subMenu.classList.contains("open")) {
+            arrow.style.transform = "rotate(180deg)";
+        } else {
+            arrow.style.transform = "rotate(0deg)";
+        }
+    });
+
+    function toggleSubMenu() {
+        var subMenu = document.getElementById("sub-menu");
+        var arrow = document.getElementById("submenu-arrow");
+
+        // Переключаем состояние подменю
+        subMenu.classList.toggle("open");
+
+        // Меняем положение стрелки
+        if (subMenu.classList.contains("open")) {
+            arrow.style.transform = "rotate(180deg)";
+        } else {
+            arrow.style.transform = "rotate(0deg)";
+        }
+    }
+
+    function showLoader(button) {
+        const img = button.querySelector('img');
+        if (img) {
+            img.src = "{% static 'load.gif' %}";
+        }
+    }
+</script>

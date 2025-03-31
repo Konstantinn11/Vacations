@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% load cache %}
+{% block title %}Мои отпуска{% endblock %}
+{% load user_filters %}
+{% load static %}
+{% block header %}
+<div style="display: flex; flex-direction: row; justify-content: left; align-items: center; flex-wrap: nowrap; width: 120%;">
+    <a style="color: black; font-weight: bold; font-size: 35px; text-align: left; line-height: 50px; white-space: nowrap; margin-left: 358px;">Мои отпуска</a>
+</div>
+
+<style>
+    /* Стили таблицы и кнопок */
+    .btn-icon { border: none; background: none; cursor: pointer; }
+    .btn-icon img { width: 28px; height: 28px; }
+    .table-container { width: 1275px; display: flex; flex-direction: row; margin-top: 20px; margin-left: 360px; box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.2); border-collapse: collapse; border-radius: 5px; }
+    .custom-table { width: 1275px; border-collapse: collapse; }
+    .custom-table th, .custom-table td { text-align: left; border-bottom: 1px solid rgb(187, 185, 185); padding: 10px; font-size: 18px; vertical-align: middle; }
+    .custom-table th { color: #5d6778; }
+    .custom-table .employee-cell { display: flex; flex-direction: row; justify-content: left; align-items: center; }
+    .darker { color: #15a362; font-size: 19px; text-decoration: underline; font-style: italic; }
+    .darker:hover { color: green; }
+    .vacation-cell:hover { background-color: rgba(0, 0, 0, 0.01); transition: background-color 0.3s ease; }
+    #leave-dropdown-my ul li a { text-decoration: none; color: #000; font-size: 16px; transition: color 0.3s ease; }
+    #leave-dropdown-my { padding: 6px; box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.1); }
+    #leave-dropdown-my ul { padding: 6px 0; text-align: center; list-style-type: none; margin: 0; }
+    #leave-dropdown-my ul li { margin: 6px 0; }
+    .vacation-link { display: block; background-color: white; color: #000; text-decoration: none; padding: 10px; margin: -10px; transition: background-color 0.3s ease; border-radius: 5px; }
+    .vacation-link:hover { background-color: rgba(93, 103, 120, 0.05); }
+    .btn.sib:hover { background-color: rgba(21, 163, 98, 0.8) !important; }
+    .custom-table tr:last-child td { border-bottom: none; }
+    .no-border-row td { border-bottom: none !important; padding-bottom: 5px; }
+</style>
+{% endblock %}
+
+{% block aside %}
+    {% include 'includes/aside_vac_all.html' %}
+{% endblock %}
+
+{% block content %}
+<div class="table-container">
+    <table class="custom-table">
+        {% if vacations_list %}
+        <tr>
+            <th>Период</th>
+            <th>Дней</th>
+            <th>Действия</th>
+        </tr>
+        {% for vacation in vacations_list %}
+        <tr class="vacation-cell">
+            <td>
+                <a class="darker" href="{% url 'vacation_detail' vacation.id %}">{{ vacation.period }}</a>
+            </td>
+            <td>
+                <span style="font-size: 19px;">{{ vacation.days_count }}</span>
+            </td>
+            <td>
+                <div style="display: flex; gap: 10px;">
+                    <a class="btn-icon" href="{% url 'vacation_edit' year=vacation.vacation_year vac_id=vacation.id %}" title="Редактировать отпуск">
+                        <img src="{% static 'edit.svg' %}" alt="Редактировать">
+                    </a>
+                    <a class="btn-icon delete-btn" href="{% url 'vacation_delete' vacation.id %}" title="Удалить отпуск"
+                    onclick="confirmDeletion(event, this)">
+                        <img src="{% static 'delete.svg' %}" alt="Удалить">
+                    </a>
+                </div>
+            </td>
+        </tr>
+        {% endfor %}
+        {% else %}
+        <tr class="no-border-row">
+            <td colspan="3" style="text-align: left; font-size: 20px; color: #5d6778;">Не найдено ближайших отпусков.</td>
+        </tr>
+        {% endif %}
+        <tr>
+            <td colspan="3">
+                <a id="add-leave-button-my" class="btn sib" style="background-color:#15a362; font-family: 'Calibri'; font-style: normal; font-weight: 400; width: 190px; height: 38px; font-size: 19px; border-radius: 5px;
+                color: white; text-align: center; display: flex; align-items: center; justify-content: center; margin-right: 20px; cursor: pointer;">
+                    Добавить отпуск
+                    <img style="height: 22px; margin-left: 3px;" src="{% static 'arrow_down.png' %}">
+                </a>
+            </td>
+        </tr>
+    </table>
+</div>
+<div id="leave-dropdown-my" style="width: 212px; display: none; position: absolute; background-color: #fff; border: 1px solid #ccc; padding: 10px; border-radius: 5px; z-index: 2000;">
+    <ul style="list-style-type: none; padding: 0; margin: 0;">
+        <li class="vacation-item">
+            <a href="{% url 'vacation_new' 2025 %}" class="vacation-link">
+                <span class="text">Отпуск на</span> <span class="year">2025</span> <span class="text">год</span>
+            </a>
+        </li>
+        <li class="vacation-item">
+            <a href="{% url 'vacation_new' 2026 %}" class="vacation-link">
+                <span class="text">Отпуск на</span> <span class="year">2026</span> <span class="text">год</span>
+            </a>
+        </li>
+    </ul>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const addLeaveButton = document.getElementById("add-leave-button-my");
+        const leaveDropdown = document.getElementById("leave-dropdown-my");
+
+        // Показать/скрыть список по кнопке
+        addLeaveButton.addEventListener("click", function (event) {
+            event.stopPropagation(); // Остановка всплытия события
+            leaveDropdown.style.display = leaveDropdown.style.display === "block" ? "none" : "block";
+
+            if (leaveDropdown.style.display === "block") {
+                // Расположить список под кнопкой
+                const buttonRect = addLeaveButton.getBoundingClientRect();
+                const dropdownWidth = leaveDropdown.offsetWidth;
+
+                leaveDropdown.style.top = `${buttonRect.bottom + window.scrollY + 20}px`; // 20px отступа
+                leaveDropdown.style.left = `${buttonRect.left + window.scrollX + (buttonRect.width - dropdownWidth) / 2}px`; // Центрирование
+            }
+        });
+
+        // Скрытие списка при клике вне
+        document.addEventListener("click", function () {
+            leaveDropdown.style.display = "none";
+        });
+
+        // Остановка всплытия события внутри списка
+        leaveDropdown.addEventListener("click", function (event) {
+            event.stopPropagation();
+        });
+    });
+
+    function confirmDeletion(event, element) {
+        event.preventDefault(); // Остановить переход по ссылке
+
+        const userConfirmed = confirm("Вы уверены, что хотите удалить отпуск?");
+        if (userConfirmed) {
+            // Если пользователь нажал "Да", перенаправляем на URL удаления
+            window.location.href = element.href;
+        }
+        // Если пользователь нажал "Нет", ничего не делаем
+    }
+</script>
+{% endblock %}

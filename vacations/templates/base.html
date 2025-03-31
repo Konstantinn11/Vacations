@@ -1,0 +1,484 @@
+<!doctype html>
+<style type="text/css">
+    body {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        margin: 0;
+        line-height: 100%;
+        text-align: center;
+        font-family: sans-serif;
+        font-size: 1.5em;
+        color: #333;
+    }
+    .nav {
+        order: -1;
+        background: #E6E6E6;
+    }
+    .footer {
+        text-align: center;
+        height: 49px;
+        padding: 1em;
+    }
+    .wrapper {
+        display: flex;
+        flex-direction: column;
+        flex: 1 0 auto;
+        background: #f7f7f7;
+    }
+    .main {
+		background: #f7f7f7;
+		text-align: center;
+		overflow-y: auto;
+
+		height: calc(100vh - 65px);
+    }
+    .aside {
+		background: #E6E6E6;
+        box-shadow: 0px 0px 7px rgba(0, 0, 0, 0.2);
+		padding: 1em;
+		text-align: center;
+		overflow-y: auto;
+		height: calc(100vh - 70px);
+    }
+    .container {
+        width: 100%;
+        max-width: 800px;
+        padding-left: 1rem;
+        padding-right: 1rem;
+        margin: 0 auto;
+    }
+    @media (max-width: 30em) {
+        .main {
+            flex: 1 0 auto;
+        }
+    }
+    @media (min-width: 30em) {
+        .nav {
+            display: block;
+        }
+        .wrapper {
+            flex-direction: row;
+        }
+        .main {
+            flex: 1 1 auto;
+        }
+        .aside {
+            width: 300px;  
+        }
+    }
+    .preloader {
+        position: fixed;
+        left: 0;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        background: #e0e0e0;
+        z-index: 1001;
+    }
+    .preloader__row {
+        position: relative;
+        top: 50%;
+        left: 50%;
+        width: 70px;
+        height: 70px;
+        margin-top: -35px;
+        margin-left: -35px;
+        text-align: center;
+        animation: preloader-rotate 2s infinite linear;
+    }
+    .preloader__item {
+        position: absolute;
+        display: inline-block;
+        top: 0;
+        background-color: #337ab7;
+        border-radius: 100%;
+        width: 35px;
+        height: 35px;
+        animation: preloader-bounce 2s infinite ease-in-out;
+    }
+    .preloader__item:last-child {
+        top: auto;
+        bottom: 0;
+        animation-delay: -1s;
+    }
+    @keyframes preloader-rotate {
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+    @keyframes preloader-bounce {
+        0%,
+        100% {
+            transform: scale(0);
+        }
+        50% {
+            transform: scale(1);
+        }
+    }
+    .loaded_hiding .preloader {
+        transition: 0.3s opacity;
+        opacity: 0;
+    }
+    .loaded .preloader {
+        display: none;
+    }
+
+    .text {color: black; font-weight: normal; font-size: 21px; font-family: 'Calibri';}
+    .year {color: black; font-weight: bold; font-size: 21px; font-family: 'Calibri';}
+    #leave-dropdown ul li a {
+        text-decoration: none;
+    }
+
+    #leave-dropdown {
+        padding: 6px; /* Отступ от краев контейнера */
+    }
+
+    #leave-dropdown ul {
+        padding: 6px 0; /* Отступы для списка */
+        text-align: center;
+    }
+
+    #leave-dropdown ul li {
+        margin: 6px 0; /* Расстояние между элементами */
+    }
+
+    /* Скрытый блок */
+    #info-block {
+        position: fixed;
+        top: 0;
+        left: -407px; /* Скрыть блок слева */
+        width: 407px;
+        height: 100%;
+        background-color: #f4f4f4;
+        box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+        transition: left 0.3s ease-in-out; /* Плавная анимация */
+        padding: 20px;
+        z-index: 1000;
+    }
+
+    /* Открытый блок */
+    #info-block.open {
+        left: 0; /* При добавлении класса 'open', блок выезжает */
+    }
+
+    /* Стиль для кнопки закрытия */
+    .close-btn {
+        position: absolute;
+        top: -9px;
+        right: -39px;
+        font-size: 40px;
+        font-weight: normal;
+        cursor: pointer;
+        color: #f4f4f4;
+        background: transparent;
+        border: none;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease, visibility 0s linear 0.3s;
+        text-decoration: underline;
+    }
+
+    #info-block.open .close-btn {
+        opacity: 1; /* Крестик становится видимым */
+        visibility: visible; /* Становится видимым */
+        transition: opacity 0.3s ease, visibility 0s linear 0s; /* Плавное появление */
+    }
+
+    .overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5); /* Полупрозрачный черный фон */
+        z-index: 900; /* Меньше, чем у info-block, но больше, чем у основного контента */
+        display: none; /* Скрыто по умолчанию */
+    }
+
+    /* Показ overlay при открытии info-block */
+    #info-block.open ~ .overlay {
+        display: block;
+    }
+
+    .tabs-container {
+        display: flex;
+        flex-direction: column;
+        margin-top: 14px;
+    }
+
+    .vertical-tab {
+        display: flex;
+        align-items: center;
+        padding: 10px 0px;
+        font-size: 20px;
+        cursor: pointer;
+        border-left: 3px solid transparent;
+        width: 100%;
+        height: 60px;
+        background-color: transparent;
+    }
+
+    .vertical-tab:hover {
+        color: #15a362;
+    }
+
+    .vertical-tab:hover .tab-icon {
+        filter: brightness(0) saturate(100%) invert(42%) sepia(76%) saturate(231%) hue-rotate(129deg) brightness(93%) contrast(101%);
+    }
+
+    .vertical-tab:hover .tab-arrow {
+        filter: brightness(0) saturate(100%) invert(42%) sepia(76%) saturate(231%) hue-rotate(129deg) brightness(93%) contrast(101%);
+    }
+
+    .tab-icon {
+        height: 25px;
+        margin-right: 10px;
+    }
+
+    .tab-arrow {
+        margin-left: 75px;
+        margin-right: auto;
+        height: 20px;
+        transition: none;
+    }
+
+    .sub-menu-base.open + .vertical-tab .tab-arrow {
+        transform: rotate(180deg); /* Поворот стрелки на 180 градусов */
+    }
+
+    .sub-menu-base {
+        display: none;
+        flex-direction: column;
+        margin-left: 20px;
+        display: flex;
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.4s ease-in-out;
+    }
+
+    .sub-menu-base.open {
+        display: flex;
+        max-height: 100px;
+    }
+
+    .submenu-tab {
+        font-size: 20px;
+        font-weight: normal;
+        color: #5d6778;
+        text-decoration: underline;
+        border-left: 3px solid rgba(160, 160, 160, 0.2);
+        padding-left: 15px;
+    }
+
+    .submenu-tab:hover {
+        color: #000;
+    }
+
+    .vacation-link { 
+        display: block; 
+        background-color: white; 
+        color: #000; 
+        text-decoration: none; 
+        padding: 10px; 
+        margin: -10px; 
+        transition: background-color 0.3s ease; 
+        border-radius: 5px;
+    }
+
+    .vacation-link:hover {
+        background-color: rgba(93, 103, 120, 0.05);
+    }
+</style>
+
+{% load static %}
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        
+        <link rel="stylesheet" href="{% static 'bootstrap/dist/css/bootstrap.min.css' %}">
+        <script src="{% static 'jquery/dist/jquery.min.js' %}"></script>
+        <script src="{% static 'bootstrap/dist/js/bootstrap.min.js' %}"></script>
+		<link rel="stylesheet" href="{% static 'css/my_try.css'%}">
+    </head>
+
+    <body>
+        <div class="preloader">
+            <div class="preloader__row"> 
+                <div class="preloader__item"></div>
+                <div class="preloader__item"></div>
+            </div>
+        </div>
+        {% include 'includes/nav.html' with show_button=show_button show_add_leave_button=show_add_leave_button navbar_style=navbar_style %}
+        <div id="info-block" class="info-block">
+            <a href="{% url 'vac_all' otd=0 %}">
+                <img style="height: 45px; margin-bottom: 5px;" src={% static "logo_ya_removebg.png" %}>
+            </a>
+            <div class="tabs-container">
+                <div class="vertical-tab" onclick="showLoader(this); window.location.href='{% url 'vac_calendars' 0 %}'">
+                    <img class="tab-icon" src="{% static 'list.svg' %}" alt="Графики отпусков"> Графики отпусков
+                </div>
+        
+                {% if key == request.user.get_full_name or request.user.get_full_name in bosses %}
+                    <div class="vertical-tab" onclick="toggleSubMenuBase()">
+                        <img class="tab-icon" src="{% static 'mood.svg' %}" alt="Отпуска"> Отпуска
+                        <img id="submenu-arrow-base" src="{% static 'keyboard_arrow_down.svg' %}" class="tab-arrow">
+                    </div>
+                    <!-- Выпадающий список -->
+                    <div id="sub-menu-base" class="sub-menu-base">
+                        <div class="vertical-tab submenu-tab" onclick="showLoader(this); window.location.href='{% url 'vac_all_vacations' %}'">
+                            Все отпуска
+                        </div>
+                        <div class="vertical-tab submenu-tab" onclick="showLoader(this); window.location.href='{% url 'vac_my_vacations' %}'">
+                            Мои отпуска
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="vertical-tab" onclick="showLoader(this); window.location.href='{% url 'vac_my_vacations' %}'">
+                        <img class="tab-icon" src="{% static 'mood.svg' %}" alt="Мои отпуска"> Мои отпуска
+                    </div>
+                {% endif %}
+        
+                <div class="vertical-tab" onclick="showLoader(this); window.location.href='{% url 'employees' %}'">
+                    <img class="tab-icon" src="{% static 'group.svg' %}" alt="Сотрудники"> Сотрудники
+                </div>
+                <div class="vertical-tab" onclick="showLoader(this); window.location.href='{% url 'vac_my_profile' %}'">
+                    <img class="tab-icon" src="{% static 'account.svg' %}" alt="Мой профиль"> Мой профиль
+                </div>
+            </div>
+            <span id="close-info" class="close-btn">×</span>
+        </div>
+
+        <div id="leave-dropdown" style="width: 212px; display: none; position: absolute; background-color: #fff; border: 1px solid #ccc; padding: 10px; border-radius: 5px; z-index: 2000;">
+            <ul style="list-style-type: none; padding: 0; margin: 0;">
+                <li class="vacation-item">
+                    <a href="{% url 'vacation_new' 2025 %}" class="vacation-link">
+                        <span class="text">Отпуск на</span> <span class="year">2025</span> <span class="text">год</span>
+                    </a>
+                </li>
+                <li class="vacation-item">
+                    <a href="{% url 'vacation_new' 2026 %}" class="vacation-link">
+                        <span class="text">Отпуск на</span> <span class="year">2026</span> <span class="text">год</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+        
+        <div class="wrapper">
+            {% block aside %}
+                {% include 'includes/aside_vac_all.html' %}
+            {% endblock %}
+            
+            <main class="main">
+                <div class="container" style="margin: 1em;">
+                    <h1>{% block header %}{% endblock %}</h1>
+                    {% block content %}
+                    <!-- Содержимое страницы -->
+                    {% endblock %}
+                </div>
+            </main> 
+        </div>
+        <div id="overlay" class="overlay"></div>
+        <script>
+            window.onload = function() {
+                document.body.classList.add('loaded_hiding');
+                window.setTimeout(function() {
+                    document.body.classList.add('loaded');
+                    document.body.classList.remove('loaded_hiding');
+                }, 500);
+            };
+
+            document.addEventListener('DOMContentLoaded', () => {
+                const button = document.getElementById('add-leave-button');
+                const dropdown = document.getElementById('leave-dropdown');
+
+                // Проверка существования кнопки для избежания ошибок
+                if (button) {
+                    button.addEventListener('click', (event) => {
+                        event.preventDefault(); // Предотвращаем переход по ссылке
+                        
+                        // Переключение видимости выпадающего списка
+                        dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+
+                        // Позиционирование выпадающего списка по центру под кнопкой
+                        const buttonRect = button.getBoundingClientRect();
+                        const dropdownWidth = dropdown.offsetWidth;
+
+                        dropdown.style.top = `${buttonRect.bottom + window.scrollY + 20}px`;
+                        dropdown.style.left = `${buttonRect.left + window.scrollX + (buttonRect.width - dropdownWidth) / 2}px`;
+                    });
+                }
+
+                // Скрытие выпадающего списка при клике вне его области
+                document.addEventListener('click', (event) => {
+                    if (button && dropdown && !button.contains(event.target) && !dropdown.contains(event.target)) {
+                        dropdown.style.display = 'none';
+                    }
+                });
+
+                // Обработка показа и скрытия info-block и overlay
+                const toggleButton = document.getElementById('toggle-info-block');
+                const infoBlock = document.getElementById('info-block');
+                const overlay = document.getElementById('overlay');
+                const closeButton = document.getElementById('close-info');
+
+                if (toggleButton) {
+                    toggleButton.addEventListener('click', function(e) {
+                        e.preventDefault(); // Чтобы не было перехода по ссылке
+                        infoBlock.classList.toggle('open');  // Показ или скрытие info-block
+                        overlay.classList.toggle('open');    // Показ или скрытие overlay
+                    });
+                }
+
+                // Закрытие info-block по кнопке "×" внутри него
+                if (closeButton) {
+                    closeButton.addEventListener('click', function() {
+                        infoBlock.classList.remove('open');
+                        overlay.classList.remove('open');
+                    });
+                }
+
+                // Закрытие info-block при клике вне его области
+                document.addEventListener('click', function(event) {
+                    if (infoBlock.classList.contains('open') &&
+                        !infoBlock.contains(event.target) &&
+                        !toggleButton.contains(event.target)) {
+                        infoBlock.classList.remove('open');
+                        overlay.classList.remove('open');
+                    }
+                });
+
+                // Дополнительно: Закрытие info-block при клике на overlay
+                if (overlay) {
+                    overlay.addEventListener('click', function() {
+                        infoBlock.classList.remove('open');
+                        overlay.classList.remove('open');
+                    });
+                }
+            });
+
+            function toggleSubMenuBase() {
+                var subMenu = document.getElementById("sub-menu-base");
+                var arrow = document.getElementById("submenu-arrow-base");
+
+                // Переключаем класс 'open' для sub-menu
+                subMenu.classList.toggle("open");
+
+                // Проверяем, открыт ли subMenu, и меняем направление стрелки
+                if (subMenu.classList.contains("open")) {
+                    arrow.style.transform = "rotate(180deg)"; // Поворот стрелки
+                } else {
+                    arrow.style.transform = "rotate(0deg)"; // Восстановление стрелки в исходное положение
+                }
+            }
+
+            function showLoader(button) {
+                const img = button.querySelector('img');
+                if (img) {
+                    img.src = "{% static 'load.gif' %}";
+                }
+            }
+        </script>
+    </body>
+</html> 
