@@ -26,9 +26,9 @@ handler500 = "users.views.server_error"
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', views.home_view, name='home_view'),
-    path('', include('users.urls')),
     path('auth/', include('django.contrib.auth.urls')),
+    path('', views.home_view, name='home_view'),
+    path('users/', include('users.urls')),
 ]
 
 if settings.DEBUG:

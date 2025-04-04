@@ -13,28 +13,23 @@
     }
     .nav {
         order: -1;
-        background: #E6E6E6;
-    }
-    .footer {
-        text-align: center;
-        height: 49px;
-        padding: 1em;
+        background: white;
     }
     .wrapper {
         display: flex;
         flex-direction: column;
         flex: 1 0 auto;
-        background: #f7f7f7;
+        background: white;
     }
     .main {
-		background: #f7f7f7;
+		background: white;
 		text-align: center;
 		overflow-y: auto;
 
 		height: calc(100vh - 65px);
     }
     .aside {
-		background: #E6E6E6;
+		background: white;
         box-shadow: 0px 0px 7px rgba(0, 0, 0, 0.2);
 		padding: 1em;
 		text-align: center;
@@ -150,7 +145,7 @@
         left: -407px; /* Скрыть блок слева */
         width: 407px;
         height: 100%;
-        background-color: #f4f4f4;
+        background-color: white;
         box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
         transition: left 0.3s ease-in-out; /* Плавная анимация */
         padding: 20px;
@@ -170,7 +165,7 @@
         font-size: 40px;
         font-weight: normal;
         cursor: pointer;
-        color: #f4f4f4;
+        color: white;
         background: transparent;
         border: none;
         opacity: 0;
@@ -293,6 +288,7 @@
 
 {% load static %}
 <html>
+    <link rel="icon" type="image/x-icon" href="{% static 'favicon.ico' %}">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
@@ -310,7 +306,9 @@
                 <div class="preloader__item"></div>
             </div>
         </div>
+        {% block navbar %}
         {% include 'includes/nav.html' with show_button=show_button show_add_leave_button=show_add_leave_button navbar_style=navbar_style %}
+        {% endblock %}
         <div id="info-block" class="info-block">
             <a href="{% url 'vac_all' otd=0 %}">
                 <img style="height: 45px; margin-bottom: 5px;" src={% static "logo_ya_removebg.png" %}>
@@ -352,16 +350,16 @@
 
         <div id="leave-dropdown" style="width: 212px; display: none; position: absolute; background-color: #fff; border: 1px solid #ccc; padding: 10px; border-radius: 5px; z-index: 2000;">
             <ul style="list-style-type: none; padding: 0; margin: 0;">
-                <li class="vacation-item">
-                    <a href="{% url 'vacation_new' 2025 %}" class="vacation-link">
-                        <span class="text">Отпуск на</span> <span class="year">2025</span> <span class="text">год</span>
-                    </a>
-                </li>
-                <li class="vacation-item">
-                    <a href="{% url 'vacation_new' 2026 %}" class="vacation-link">
-                        <span class="text">Отпуск на</span> <span class="year">2026</span> <span class="text">год</span>
-                    </a>
-                </li>
+                {% now "Y" as current_year %}
+                {% for i in "012" %}
+                    {% with year=current_year|add:i %}
+                        <li class="vacation-item">
+                            <a href="{% url 'vacation_new' year %}" class="vacation-link">
+                                <span class="text">Отпуск на</span> <span class="year">{{ year }}</span> <span class="text">год</span>
+                            </a>
+                        </li>
+                    {% endwith %}
+                {% endfor %}
             </ul>
         </div>
         

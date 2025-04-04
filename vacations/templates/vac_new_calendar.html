@@ -4,6 +4,7 @@
 {% load user_filters %}
 {% load static %}
 {% block header %}
+<title>Календарь отпусков</title>
 <script src="{% static 'libs/html2pdf.bundle.min.js' %}"></script>
 <script src="{% static 'libs/xlsx.full.min.js' %}"></script>
 <link rel="stylesheet" href="{% static 'css/sweetalert2.min.css' %}">
@@ -781,7 +782,7 @@
 				
 					// Если пользователь босс, отображаем период как ссылку, иначе как текст
 					if (isBoss(currentUser) || currentUser === entry.name) {
-						const editUrl = `/auth/vacations/vacation_edit/${year}/${entry.vac_id}/?from=calendars`;
+						const editUrl = `/users/vacations/vacation_edit/${year}/${entry.vac_id}/?from=calendars`;
 						content += `<td style="text-align: left; font-style: italic; text-decoration: underline; color: #15a362;">
 							<a href="${editUrl}" style="color: inherit; text-decoration: inherit;">${entry.period}</a>
 						</td>`;

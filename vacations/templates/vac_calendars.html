@@ -4,6 +4,7 @@
 {% load user_filters %}
 {% load static %}
 {% block header %}
+<title>Графики отпусков</title>
 <div style="display: flex; flex-direction: row; justify-content: left; align-items: center; flex-wrap: nowrap; width: 120%;">
     <a style="color: black; font-weight: bold; font-size: 34px; text-align: left; line-height: 50px; white-space: nowrap; margin-left: 358px;">Графики отпусков</a>
     {% if request.user.get_full_name in bosses %}
@@ -245,7 +246,7 @@
             if (data.otd_data.length > 0) {
                 data.otd_data.forEach(otd => {
                     const row = document.createElement('tr');
-                    const url = `/auth/vacations/vac_2/${year}/${otd.otd_description}/`;
+                    const url = `/users/vacations/vac_2/${year}/${otd.otd_description}/`;
 
                     row.innerHTML = `
                         <td class="cell">

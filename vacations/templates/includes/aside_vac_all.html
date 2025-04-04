@@ -6,7 +6,7 @@
         top: 0;
         width: 350px;
         height: 100%;
-        background-color: #f4f4f4;
+        background-color: white;
         box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
         z-index: 1000;
     }
@@ -112,34 +112,34 @@
         <img style="height: 45px; margin-top: 15px; margin-left: 20px; margin-bottom: 5px;" src={% static "logo_ya_removebg.png" %}>
     </a>
     <div class="tabs-container">
-        <div class="vertical-tab {% if request.path == '/auth/vac_calendars/0/' %}active-tab{% endif %}" onclick="showLoader(this); window.location.href='{% url 'vac_calendars' 0 %}'">
+        <div class="vertical-tab {% if request.path == '/users/vac_calendars/0/' %}active-tab{% endif %}" onclick="showLoader(this); window.location.href='{% url 'vac_calendars' 0 %}'">
             <img class="tab-icon" src="{% static 'list.svg' %}" alt="Графики отпусков"> Графики отпусков
         </div>
 
         {% if key == request.user.get_full_name or request.user.get_full_name in bosses %}
-            <div class="vertical-tab {% if request.path == '/auth/vac_all_vacations/' or request.path == '/auth/vac_my_vacations/' %}active-tab{% endif %} {% if request.path == '/auth/vac_all_vacations/' or request.path == '/auth/vac_my_vacations/' %}no-background{% endif %}" onclick="toggleSubMenu()">
+            <div class="vertical-tab {% if request.path == '/users/vac_all_vacations/' or request.path == '/users/vac_my_vacations/' %}active-tab{% endif %} {% if request.path == '/users/vac_all_vacations/' or request.path == '/users/vac_my_vacations/' %}no-background{% endif %}" onclick="toggleSubMenu()">
                 <img class="tab-icon" src="{% static 'mood.svg' %}" alt="Отпуска"> Отпуска
                 <img id="submenu-arrow" src="{% static 'keyboard_arrow_down.svg' %}" class="tab-arrow">
             </div>
             <!-- Выпадающий список -->
-            <div id="sub-menu" class="sub-menu {% if request.path == '/auth/vac_all_vacations/' or request.path == '/auth/vac_my_vacations/' %}open{% endif %}">
-                <div class="vertical-tab submenu-tab {% if request.path == '/auth/vac_all_vacations/' %}active-tab{% endif %}" onclick="showLoader(this); window.location.href='{% url 'vac_all_vacations' %}'">
+            <div id="sub-menu" class="sub-menu {% if request.path == '/users/vac_all_vacations/' or request.path == '/users/vac_my_vacations/' %}open{% endif %}">
+                <div class="vertical-tab submenu-tab {% if request.path == '/users/vac_all_vacations/' %}active-tab{% endif %}" onclick="showLoader(this); window.location.href='{% url 'vac_all_vacations' %}'">
                     Все отпуска
                 </div>
-                <div class="vertical-tab submenu-tab {% if request.path == '/auth/vac_my_vacations/' %}active-tab{% endif %}" onclick="showLoader(this); window.location.href='{% url 'vac_my_vacations' %}'">
+                <div class="vertical-tab submenu-tab {% if request.path == '/users/vac_my_vacations/' %}active-tab{% endif %}" onclick="showLoader(this); window.location.href='{% url 'vac_my_vacations' %}'">
                     Мои отпуска
                 </div>
             </div>
         {% else %}
-            <div class="vertical-tab {% if request.path == '/auth/vac_my_vacations/' %}active-tab{% endif %}" onclick="showLoader(this); window.location.href='{% url 'vac_my_vacations' %}'">
+            <div class="vertical-tab {% if request.path == '/users/vac_my_vacations/' %}active-tab{% endif %}" onclick="showLoader(this); window.location.href='{% url 'vac_my_vacations' %}'">
                 <img class="tab-icon" src="{% static 'mood.svg' %}" alt="Мои отпуска"> Мои отпуска
             </div>
         {% endif %}
 
-        <div class="vertical-tab {% if request.path == '/auth/employees/' %}active-tab{% endif %}" onclick="showLoader(this); window.location.href='{% url 'employees' %}'">
+        <div class="vertical-tab {% if request.path == '/users/employees/' %}active-tab{% endif %}" onclick="showLoader(this); window.location.href='{% url 'employees' %}'">
             <img class="tab-icon" src="{% static 'group.svg' %}" alt="Сотрудники"> Сотрудники
         </div>
-        <div class="vertical-tab {% if request.path == '/auth/vac_my_profile/' %}active-tab{% endif %}" onclick="showLoader(this); window.location.href='{% url 'vac_my_profile' %}'">
+        <div class="vertical-tab {% if request.path == '/users/vac_my_profile/' %}active-tab{% endif %}" onclick="showLoader(this); window.location.href='{% url 'vac_my_profile' %}'">
             <img class="tab-icon" src="{% static 'account.svg' %}" alt="Мой профиль"> Мой профиль
         </div>
     </div>

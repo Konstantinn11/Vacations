@@ -4,6 +4,7 @@
 {% load user_filters %}
 {% load static %}
 {% block header %}
+<title>Календарь отпусков</title>
 <script src="{% static 'libs/html2pdf.bundle.min.js' %}"></script>
 <script src="{% static 'libs/xlsx.full.min.js' %}"></script>
 <div style="display: flex; flex-direction: row; justify-content: left; align-items: center; flex-wrap: nowrap; width: 100%;">
@@ -961,7 +962,7 @@
 							const newTooltip = tooltip.cloneNode(true);
 							newTooltip.style.visibility = 'visible';
 
-							const editUrl = `/auth/vacations/vacation_edit/${year}/${vacId}/?from=calendars`;
+							const editUrl = `/users/vacations/vacation_edit/${year}/${vacId}/?from=calendars`;
 
 							newTooltip.innerHTML = `
 								<div class="tooltip-content">
