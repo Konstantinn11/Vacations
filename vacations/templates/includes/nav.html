@@ -31,6 +31,42 @@
 	.btn.sib:hover { 
 		background-color: rgba(21, 163, 98, 0.8) !important; 
 	}
+
+	.navbar-nav .nav-item.dropdown {
+		position: relative;
+	}
+
+	#profileDropdown img {
+		vertical-align: middle;
+	}
+
+	.dropdown-menu {
+		background-color: #ffffff;
+		border-radius: 5px;
+		min-width: 250px;
+		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+		font-family: Calibri, sans-serif;
+		font-size: 16px;
+		z-index: 1000;
+	}
+
+	.dropdown-item {
+		padding: 10px 20px;
+		color: #333;
+		display: block;
+		text-decoration: none;
+		overflow: hidden; 
+		text-overflow: ellipsis; 
+		white-space: nowrap; 
+	}
+
+	.dropdown-toggle::after {
+		border-top-color: #5d6778;
+	}
+
+	.dropdown-toggle:hover::after {
+		border-top-color: black; 
+	}
 </style>
 {% load static %}
 {% load user_filters %}
@@ -146,38 +182,6 @@
 			<img style="height: 45px; margin-left: 30px; margin-right: 100px;"
 				src="{% static 'logo_ya_removebg.png' %}" alt="Логотип">
 		{% endif %}
-		<ul class="navbar-nav mr-auto">
-			{% if page_noname is not none %}
-			<div class="main_text all_flex" style="font-size: 40px;">
-				{{page_noname}}
-			</div>
-			
-			{% elif page_name %}
-			<div class="all_flex">
-				<div class="main_text all_flex" style="font-size: 40px;">
-					{{page_name}}
-				</div>
-			</div>
-
-			{% elif request.resolver_match.url_name == "user_space" %}
-			<div class="all_flex">
-				<div class="main_text all_flex" style="font-size: 40px;">Личный кабинет</div>
-				<div class="all_flex main_btn" onclick="OpenAllCard(this)">
-					<img class="img_for_btn" 
-					
-					style="margin: 0px;"
-					src={% static "size_up.png" %}>
-				</div>
-				<div class="all_flex main_btn btn_off" onclick="CloseAllCard(this)">
-					<img class="img_for_btn"
-					
-					style="margin: 0px;"
-					src={% static "size_down.png" %}>
-				</div>
-				{% include 'user_space/dropdown.html' %}
-			</div>
-			{% endif %}
-		</ul>
 	</div>
 
 	<div class="navbar-collapse collapse w-100 order-3 dual-collapse2">
@@ -192,28 +196,24 @@
 						</a>
 					</li>
 				{% endif %}
-				{% if not navbar_style == 'custom-navbar' %}
-					<li>
-						<a id="username" class="p-2" style="color: rgb(74, 177, 236); display: flex; align-items: center; justify-content: center;" href="#">{{ request.user.get_full_name }}</a>
-					</li> 
-				{% else %}
-					<li>
-						<a id="username" class="p-2" style="color: rgb(74, 177, 236); display: flex; align-items: center; justify-content: center;" href="{% url 'vac_my_profile' %}">Мой профиль</a>
-					</li>
+				{% if request.user.is_superuser %}
+				<li class="d-flex align-items-center mr-3">
+					<a href="#" style="display: flex; align-items: center;">
+						<img src="{% static 'gear_profile.svg' %}" style="height: 24px; width: 24px; object-fit: contain; cursor: pointer;">
+					</a>
+				</li>
 				{% endif %}
-					<span style="display: flex; align-items: center;">|</span>
-				{% if not navbar_style == 'custom-navbar' %}
-					<li>
-						<a class="p-2" style="color: black; display: flex; align-items: center; justify-content: center;" href="#">Изменить пароль</a>
-					</li>
-					<span style="display: flex; align-items: center;">|</span>
-				{% endif %}
-				<li>
-					<a class="p-2" style="color: black; display: flex; align-items: center; justify-content: center;" href="{% url 'logout' %}">Выход</a>
-				</li>    
-			{% else %}
-				<li>
-					<a class="p-2" style="color: black; display: flex; align-items: center; justify-content: center;" href="{% url 'login' %}">Вход</a>
+				<li class="nav-item dropdown d-flex align-items-center">
+					<a class="nav-link dropdown-toggle p-0 d-flex align-items-center" href="#" id="profileDropdown"
+					   role="button" onclick="toggleProfileDropdown(event)">
+						<img src="{% static 'user.png' %}" alt="Профиль"
+							 style="height: 32px; width: 32px; border-radius: 50%; object-fit: cover; cursor: pointer;">
+					</a>
+					<div class="dropdown-menu dropdown-menu-right" id="profileDropdownMenu" style="display: none; margin-top: 20px;">
+						<a class="dropdown-item" style="color: #15a362; text-decoration: underline;" href="{% url 'vac_my_profile' %}">{{ request.user.get_full_name }}</a>
+						<div class="dropdown-divider"></div>
+						<a class="dropdown-item" href="{% url 'logout' %}">Выход</a>
+					</div>
 				</li>
 			{% endif %}
 		</ul>

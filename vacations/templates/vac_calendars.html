@@ -8,15 +8,38 @@
 <div style="display: flex; flex-direction: row; justify-content: left; align-items: center; flex-wrap: nowrap; width: 120%;">
     <a style="color: black; font-weight: bold; font-size: 34px; text-align: left; line-height: 50px; white-space: nowrap; margin-left: 358px;">Графики отпусков</a>
     {% if request.user.get_full_name in bosses %}
-    <div style="display: flex; flex-direction: row; align-items: center; margin-left: 375px; gap: 20px; justify-content: flex-end;">
-        <a class="btn sib" style="background-color:#15a362; font-family: 'Calibri'; font-style: normal; font-weight: 400; width: 290px; height: 44px; font-size: 20px;
+    <div style="display: flex; flex-direction: row; align-items: center; margin-left: 515px; gap: 20px; justify-content: flex-end;">
+        <a class="btn sib" style="background-color:#15a362; font-family: 'Calibri'; font-style: normal; font-weight: 400; width: 220px; height: 44px; font-size: 20px;
             padding: 0 10px; border-radius: 5px; color: white; text-align: center; display: flex; align-items: center; justify-content: center;" href="{% url 'import_vacations' %}">
-            <img style="height: 19px; margin-right: 5px; vertical-align: middle;" src="{% static 'box-arrow-in-down.svg' %}">Импорт отпусков из файла
+            <img style="height: 19px; margin-right: 5px; vertical-align: middle;" src="{% static 'box-arrow-in-down.svg' %}">Импорт отпусков
         </a>
-        <a class="btn sib" style="background-color:#15a362; font-family: 'Calibri'; font-style: normal; font-weight: 400; width: 290px; height: 44px; font-size: 20px;
-            padding: 0 10px; border-radius: 5px; color: white; text-align: center; display: flex; align-items: center; justify-content: center;" href="#">
-            <img style="height: 19px; margin-right: 5px; vertical-align: middle;" src="{% static 'printer-svgrepo.svg' %}">Экспорт отпусков за год
+        <a class="btn sib" id="exportBtn" style="background-color:#15a362; font-family: 'Calibri'; font-style: normal; font-weight: 400; width: 220px; height: 44px; font-size: 20px; padding: 0 10px; border-radius: 5px; color: white; text-align: center; display: flex; align-items: center; justify-content: center;"
+        href="javascript:void(0);">
+            <img style="height: 19px; margin-right: 5px; vertical-align: middle;" src="{% static 'printer-svgrepo.svg' %}">
+            Экспорт отпусков
         </a>
+    </div>
+
+    <div id="exportDropdown" class="export-dropdown">
+        <div class="export-dropdown-inner">
+            <select id="exportDept" name="exportDept" class="export-select">
+                <option value="0" disabled selected>Выберите отдел</option>
+                {% for dept in otds_for_choise %}
+                    <option value="{{ dept }}">{{ dept }}</option>
+                {% endfor %}
+            </select>
+    
+            <select id="exportYear" name="exportYear" class="export-select">
+                <option value="0" disabled selected>Выберите год</option>
+                {% for y in years_range reversed %}
+                    <option value="{{ y }}">{{ y }}</option>
+                {% endfor %}
+            </select>
+    
+            <button id="confirmExport" class="export-select export-button">
+                Экспорт
+            </button>
+        </div>
     </div>
     {% endif %}
 </div>
@@ -124,6 +147,47 @@
         pointer-events: none;
         cursor: default;
     }
+
+    .export-dropdown {
+        display: none;
+        position: absolute;
+        z-index: 1000;
+        background: white;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+    }
+
+    .export-dropdown-inner {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .export-select {
+        font-size: 14px;
+        padding: 8px 10px;
+        width: 200px;
+        border: 1px solid #5d6778;
+        border-radius: 4px;
+        color: #5d6778;
+        cursor: pointer;
+        background-color: white;
+    }
+
+    .export-button {
+        background-color: white;
+        text-align: center;
+        font-weight: bold;
+        font-size: 14px;
+        height: 34px;
+        text-transform: none;
+        margin-top: 0px;
+    }
+
+    .export-button:focus {
+        outline: none;
+    }
 </style>
 {% endblock %}
 
@@ -139,7 +203,7 @@
 
     <div id="year-slider" style="display: flex; gap: 40px; width: auto;">
         {% for year, count in years_vacations_count.items %}
-        <a href="{% url 'vac_2' year=year otd=0 %}" class="year-card" style="background-color: #f7f7f7; box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.2); border-radius: 5px; width: 300px; height: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-decoration: none; transition: transform 0.3s ease;">
+        <a href="{% url 'vac_2' year=year otd=0 %}" class="year-card" data-year="{{ year }}" style="background-color: white; box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.2); border-radius: 5px; width: 300px; height: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-decoration: none; transition: transform 0.3s ease;">
             <span style="color: black; font-size: 35px; font-weight: bold;">{{ year }}</span>
             {% if count > 0 %}
                 <span style="color: #15a362; font-size: 18px;">Все отпуска ({{ count }})</span>
@@ -160,12 +224,14 @@
 </div>
 
 
-<div style="display: flex; width: 115%; background-color: #f7f7f7; height: 50px; margin-top: 40px; box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.2); margin-left: 358px; border-radius: 5px; overflow: hidden;">
+<div style="display: flex; width: 115%; background-color: white; height: 50px; margin-top: 40px; box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.2); margin-left: 358px; border-radius: 5px; overflow: hidden;">
     {% if has_vacations_in_linked_units %}
         {% for year in years_range %}
-            <div class="year-tab {% if forloop.counter == 2 %}active{% endif %}" onclick="showYearData({{ year }}, this)">
-                {{ year }} г.
-            </div>
+            {% if years_vacations_count|get_item:year > 0 %}
+                <div class="year-tab {% if forloop.counter == 2 %}active{% endif %}" onclick="showYearData({{ year }}, this)">
+                    {{ year }} г.
+                </div>
+            {% endif %}
         {% endfor %}
     {% else %}
         <div style="display: flex; align-items: center; justify-content: left; height: 100%; width: 100%; color: #5d6778; font-size: 21px; padding-left: 15px;">
@@ -218,8 +284,11 @@
 {% endif %}
 
 <div style="text-align: left; font-size: 19px; color: #5d6778; margin-top: 35px; margin-left: 358px; width: 100%;">
-    <span style="font-weight: bold; font-style: italic;">Подсказка:</span> чтобы просматривать графики по произвольным сотрудникам, присвойте им 
-    <a href="#" style="color: #15a362; text-decoration: underline;">теги</a>.
+    <span style="font-weight: bold; font-style: italic;">Подсказки:</span>
+    <ul style="margin-top: 10px; list-style-type: disc;">
+        <li>Чтобы просматривать графики по произвольным сотрудникам, присвойте им <a href="{% url 'employees' %}?tab=tags" style="color: #15a362; text-decoration: underline;">теги</a>;</li>
+        <li>Чтобы экспортировать отпуска, необходимо выбрать отдел и год, а затем нажать кнопку «Экспорт».</li>
+    </ul>
 </div>
 
 <script>
@@ -288,7 +357,21 @@
         const nextButton = document.getElementById('next-year');
 
         let currentIndex = 0;
+        const currentYear = new Date().getFullYear();
+        const yearCardsArray = Array.from(yearCards);
+
+        const currentYearIndex = yearCardsArray.findIndex(card => {
+            return card.dataset.year == currentYear;
+        });
+
         const visibleCards = 3;
+
+        if (
+            currentYearIndex > 0 &&
+            currentYearIndex < yearCardsArray.length - 1
+        ) {
+            currentIndex = currentYearIndex - 1;
+        }
 
         function updateSlider() {
             yearCards.forEach((card, index) => {
@@ -315,6 +398,44 @@
         });
 
         updateSlider();
+    });
+
+    document.getElementById('exportBtn').addEventListener('click', function(e) {
+        var dropdown = document.getElementById('exportDropdown');
+        var rect = e.target.getBoundingClientRect();
+        dropdown.style.top = (rect.bottom + window.scrollY + 5) + 'px';
+        dropdown.style.left = (rect.left + window.scrollX) + 'px';
+        dropdown.style.display = dropdown.style.display === 'none' || dropdown.style.display === '' ? 'block' : 'none';
+    });
+
+    document.getElementById('confirmExport').addEventListener('click', function(){
+        var dept = document.getElementById('exportDept').value;
+        var year = document.getElementById('exportYear').value;
+        if (dept === "0" || !dept) {
+            alert("Пожалуйста, выберите отдел для экспорта отпусков.");
+            return;
+        }
+        if (year === "0" || !year) {
+            alert("Пожалуйста, выберите год для экспорта отпусков.");
+            return;
+        }
+        window.location.href = `/users/vacations/export/${year}/${dept}/`;
+    });
+
+    document.addEventListener('click', function(event) {
+        const dropdown = document.getElementById('exportDropdown');
+        const toggleButton = document.getElementById('exportBtn');
+        
+        if (dropdown && !dropdown.contains(event.target) && !toggleButton.contains(event.target)) {
+            dropdown.style.display = 'none';
+
+            // Сброс значений select
+            const deptSelect = document.getElementById('exportDept');
+            const yearSelect = document.getElementById('exportYear');
+
+            if (deptSelect) deptSelect.selectedIndex = 0;
+            if (yearSelect) yearSelect.selectedIndex = 0;
+        }
     });
 </script>
 {% endblock %}

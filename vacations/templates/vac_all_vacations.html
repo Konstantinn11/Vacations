@@ -32,7 +32,7 @@
         font-size: 20px;
         height: 50px;
         width: 270px;
-        border: 1px solid #ccc;
+        border: 1px solid #bcc1cb;
         border-radius: 5px; 
         background-image: url("{% static 'keyboard_arrow_down.svg' %}");
         background-position: right 10px center;
@@ -191,14 +191,14 @@
 {% block content %}
 <div style="display: flex; flex-direction: row; align-items: center; gap: 10px; margin-left: 358px;">
     <form method="get" action="{% url 'vac_all_vacations' %}">
-        <select name="otd">
+        <select name="otd" id="otd-select">
             <option value="">Отдел</option>
             {% for otd in otds_for_choise %}
                 <option value="{{ otd.title }}" {% if otd.title == selected_otd %}selected{% endif %}>{{ otd.title }}</option>
             {% endfor %}
         </select>
 
-        <select name="user">
+        <select name="user" id="user-select">
             <option value="">Сотрудник</option>
             {% for user in users_for_filter %}
                 <option value="{{ user.get_full_name }}" {% if user.get_full_name == selected_user %}selected{% endif %}>
@@ -315,5 +315,39 @@
             }
         }
     }
+
+    function loadEmployees(department) {
+        let url = "{% url 'get_department_employees' %}?department=" + encodeURIComponent(department);
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                let userSelect = document.getElementById("user-select");
+                // Очистка и добавление опции по умолчанию
+                userSelect.innerHTML = '<option value="">Сотрудник</option>';
+                data.forEach(function(emp) {
+                    let option = document.createElement("option");
+                    option.value = emp.full_name;
+                    option.textContent = emp.full_name;
+                    userSelect.appendChild(option);
+                });
+            })
+            .catch(error => {
+                console.error("Ошибка при получении сотрудников:", error);
+            });
+    }
+
+    const otdSelect = document.getElementById("otd-select");
+
+    // Обработка изменения значения select
+    otdSelect.addEventListener("change", function() {
+        loadEmployees(this.value);
+    });
+
+    // При загрузке страницы, если отдел уже выбран, загружаем сотрудников для него
+    document.addEventListener("DOMContentLoaded", function() {
+        if (otdSelect.value) {
+            loadEmployees(otdSelect.value);
+        }
+    });
 </script>
 {% endblock %}

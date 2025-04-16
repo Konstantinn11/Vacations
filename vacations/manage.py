@@ -1,4 +1,12 @@
 #!/usr/bin/env python
+import inspect
+
+def my_getargspec(func):
+    spec = inspect.getfullargspec(func)
+    return spec.args, spec.varargs, spec.varkw, spec.defaults
+
+inspect.getargspec = my_getargspec
+
 """Django's command-line utility for administrative tasks."""
 import os
 import sys

@@ -27,6 +27,9 @@
     select#employee { font-size: 19px; width: 520px; border-radius: 5px; border: 1px solid #ddd; background-color: white; height: 45px; font-weight: normal; text-align: left; padding-left: 10px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transition: border-color 0.3s ease;
     background-image: url("{% static 'keyboard_arrow_down.svg' %}"); background-repeat: no-repeat; background-position: right 10px center; background-size: 24px; padding-right: 50px; }
     select#employee:focus { border-color: #0d6efd; outline: none; }
+    select#department { font-size: 19px; width: 520px; border-radius: 5px; border: 1px solid #ddd; background-color: white; height: 45px; font-weight: normal; text-align: left; padding-left: 10px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transition: border-color 0.3s ease;
+    background-image: url("{% static 'keyboard_arrow_down.svg' %}"); background-repeat: no-repeat; background-position: right 10px center; background-size: 24px; padding-right: 50px; }
+    select#department:focus { border-color: #0d6efd; outline: none; }
     .form-control { width: 340px !important; height: 45px !important; font-size: 19px; background-color: white !important; border: 1px solid #ddd; border-radius: 5px; padding-left: 10px; transition: border-color 0.3s ease; }
     .form-control:focus { border-color: #0d6efd; outline: none; box-shadow: none; }
 </style>
@@ -42,6 +45,26 @@
         {% csrf_token %}
 
         {% if is_boss %}
+            <div style="display: flex; align-items: center; margin-bottom: 30px;">
+                <label for="department" style="font-size: 21px; flex: 0 0 250px; text-align: left; color: #5d6778;">
+                    Фильтр по отделу
+                </label>
+                <select name="department" id="department">
+                    <option value=""
+                        {% if selected_department|default:"" == "0" or selected_department|default:"" == "" %}
+                            selected
+                        {% endif %}>
+                        Все отделы
+                    </option>
+                    {% for dept in departments %}
+                        <option value="{{ dept.description }}"
+                            {% if selected_department|default:'' == dept.description|stringformat:"s" %}selected{% endif %}>
+                            {{ dept.title }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+        
             <div style="display: flex; align-items: center; margin-bottom: 30px;">
                 <label for="employee" style="font-size: 21px; flex: 0 0 250px; text-align: left; color: #5d6778;">
                     Сотрудник<span style="color: red;">&nbsp;*</span>
@@ -240,6 +263,20 @@
                 return false;
             }
         });
+    });
+
+    document.addEventListener("DOMContentLoaded", function() {
+        const departmentSelect = document.getElementById("department");
+        if (departmentSelect) {
+            departmentSelect.addEventListener("change", function() {
+                const selectedDept = this.value;
+                const url = new URL(window.location.href);
+                
+                url.searchParams.set('department', selectedDept);
+
+                window.location.href = url.toString();
+            });
+        }
     });
 </script>
 {% endblock %}

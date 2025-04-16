@@ -311,7 +311,7 @@
         {% endblock %}
         <div id="info-block" class="info-block">
             <a href="{% url 'vac_all' otd=0 %}">
-                <img style="height: 45px; margin-bottom: 5px;" src={% static "logo_ya_removebg.png" %}>
+                <img style="height: 45px; margin-bottom: 5px;" src="{% static 'logo_ya_removebg.png' %}">
             </a>
             <div class="tabs-container">
                 <div class="vertical-tab" onclick="showLoader(this); window.location.href='{% url 'vac_calendars' 0 %}'">
@@ -477,6 +477,31 @@
                     img.src = "{% static 'load.gif' %}";
                 }
             }
+
+            function toggleProfileDropdown(event) {
+                event.preventDefault();
+                event.stopPropagation();
+
+                const leaveDropdown = document.getElementById('leave-dropdown');
+                if (leaveDropdown) leaveDropdown.style.display = 'none';
+
+                // Переключить текущее меню
+                const menu = document.getElementById('profileDropdownMenu');
+                if (menu.style.display === 'block') {
+                    menu.style.display = 'none';
+                } else {
+                    menu.style.display = 'block';
+                }
+            }
+
+            // Закрыть dropdown при клике вне его
+            document.addEventListener('click', function (event) {
+                const menu = document.getElementById('profileDropdownMenu');
+                const icon = document.getElementById('profileDropdown');
+                if (menu && !icon.contains(event.target)) {
+                    menu.style.display = 'none';
+                }
+            });
         </script>
     </body>
 </html> 

@@ -276,18 +276,18 @@
         </tr>
     </table>
 </div>
-<div id="leave-dropdown-my" style="width: 212px; display: none; position: absolute; background-color: #fff; border: 1px solid #ccc; padding: 10px; border-radius: 5px; z-index: 2000; margin-top: 10px;">
+<div id="leave-dropdown-my" style="width: 212px; display: none; position: absolute; background-color: #fff; border: 1px solid #ccc; padding: 10px; border-radius: 5px; z-index: 2000;">
     <ul style="list-style-type: none; padding: 0; margin: 0;">
-        <li class="vacation-item">
-            <a href="{% url 'vacation_new' 2025 %}" class="vacation-link">
-                <span class="text">Отпуск на</span> <span class="year">2025</span> <span class="text">год</span>
-            </a>
-        </li>
-        <li class="vacation-item">
-            <a href="{% url 'vacation_new' 2026 %}" class="vacation-link">
-                <span class="text">Отпуск на</span> <span class="year">2026</span> <span class="text">год</span>
-            </a>
-        </li>
+        {% now "Y" as current_year %}
+        {% for i in "012" %}
+            {% with year=current_year|add:i %}
+                <li class="vacation-item">
+                    <a href="{% url 'vacation_new' year %}" class="vacation-link">
+                        <span class="text">Отпуск на</span> <span class="year">{{ year }}</span> <span class="text">год</span>
+                    </a>
+                </li>
+            {% endwith %}
+        {% endfor %}
     </ul>
 </div>
 

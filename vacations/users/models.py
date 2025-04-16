@@ -30,6 +30,14 @@ class Unit(models.Model):
         max_length=200, 
         verbose_name='Название отдела'
     )
+    boss = models.ForeignKey(
+        CustomUser,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='managed_units',
+        verbose_name='Руководитель отдела'
+    )
 
     class Meta:
         ordering = ('title',)
@@ -38,6 +46,22 @@ class Unit(models.Model):
 
     def __str__(self) -> str:
         return self.title
+    
+
+class Tag(models.Model):
+    name = models.CharField(
+        max_length=100,
+        unique=True,
+        verbose_name='Название тега'
+    )
+
+    class Meta:
+        verbose_name = 'Тег'
+        verbose_name_plural = 'Теги'
+
+    def __str__(self):
+        return self.name
+    
 
 class User_info(models.Model):
     user = models.ForeignKey(
@@ -54,13 +78,13 @@ class User_info(models.Model):
         blank=True,
         verbose_name='Должность'
     )
-    boss = models.ForeignKey(
+    supervisor = models.ForeignKey(
         CustomUser,
-        on_delete=models.CASCADE,
-        related_name='boss_info',
+        on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        verbose_name='Руководитель'
+        related_name='subordinate_leaders',
+        verbose_name='Вышестоящий руководитель'
     )
     otd_number = models.ForeignKey(
         Unit,
@@ -69,11 +93,11 @@ class User_info(models.Model):
         blank=True,
         verbose_name='Номер отдела'
     )
-    vacs_access = models.BooleanField(
-        null=True,
+    tags = models.ManyToManyField(
+        Tag,
         blank=True,
-        default=True,
-        verbose_name='Доступ к отпускам'
+        verbose_name='Теги',
+        related_name='tags_info'
     )
     phone_number = models.TextField(
         blank=True,
@@ -88,7 +112,7 @@ class User_info(models.Model):
     )
 
     class Meta:
-        ordering = ('boss', )
+        ordering = ('user', )
         verbose_name = 'Информация о пользователе'
         verbose_name_plural = 'Информация о пользователях'
 

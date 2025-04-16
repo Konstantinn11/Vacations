@@ -1,5 +1,4 @@
 from django.urls import reverse, reverse_lazy
-from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model, logout
 User = get_user_model()
 from django.conf import settings
@@ -14,9 +13,17 @@ from calendar import monthrange
 import json
 from users.vacation_data import holidays, month_num_str, special_work_days, bosses, months_ru, color_cycle
 from django.http import JsonResponse, Http404
-from django.contrib.auth.views import PasswordResetDoneView
-from django.contrib.auth.views import PasswordResetView
+from django.contrib.auth.views import PasswordResetDoneView, PasswordResetView
 from django.contrib.auth.forms import PasswordResetForm
+import openpyxl
+from django.http import HttpResponse
+import os
+from openpyxl import load_workbook
+import urllib.parse
+import copy
+import re
+import pymorphy2
+from openpyxl.styles import Alignment, Border, Side, Font
 
 class CustomPasswordResetView(PasswordResetView):
     form_class = PasswordResetForm
@@ -49,12 +56,8 @@ class CustomPasswordResetDoneView(PasswordResetDoneView):
         return context
     
 
-@login_required(login_url='/auth/login/')
 def home_view(request):
     return redirect(reverse('vac_all', kwargs={'otd': 0}))
-
-def vac_access_check(request):
-    return get_object_or_404(User_info, user_id=request.user.id).vacs_access
 
 
 def server_error(request):
@@ -64,6 +67,14 @@ def server_error(request):
 def page_not_found(request, exception):
     # Переменная exception содержит отладочную информацию,
     return render(request, "misc/404.html",{"path": request.path},status=404)
+
+
+def superuser_required(view_func):
+    def _wrapped_view(request, *args, **kwargs):
+        if not request.user.is_superuser:
+            return render(request, 'no_rights.html')
+        return view_func(request, *args, **kwargs)
+    return _wrapped_view
 
 
 def get_key_from_dict_by_value(dict, value):
@@ -153,9 +164,6 @@ def full_year(year):
 
 
 def vac_all(request, otd):
-    if not vac_access_check(request):
-        return render(request, 'no_rights.html',)
-
     today = dt.datetime.today().date()
     year = today.year
 
@@ -284,7 +292,6 @@ def vac_all(request, otd):
          'vacations_by_user': vacations_by_user,
          'holidays': holidays.get(year, {}),
          'otds_for_choise': otds_for_choise,
-         'otd_users_full_names': [request.user],
          'vacation_start_dates': vacation_start_dates,
          'show_button': True,
          'navbar_style': 'custom-navbar',
@@ -293,13 +300,10 @@ def vac_all(request, otd):
         }
     )
 
-
+# @superuser_required
 def vac_calendars(request, otd, year=None):
-    if not vac_access_check(request):
-        return render(request, 'no_rights.html')
-
     current_year = dt.datetime.now().year
-    next_year = current_year + 1
+    future_years = [current_year + 1, current_year + 2]
     current_user_name = request.user.get_full_name()
     today = dt.datetime.today().date()
 
@@ -307,7 +311,7 @@ def vac_calendars(request, otd, year=None):
     year = int(year)
 
     years_in_vacations = set(Vacation.objects.values_list('year', flat=True))  # Исключаем дубликаты
-    years_in_vacations.add(str(next_year))
+    years_in_vacations.update([str(y) for y in future_years])
     years_range = sorted([int(y) for y in years_in_vacations], reverse=True)
 
     # Проверка, является ли пользователь боссом
@@ -369,7 +373,6 @@ def vac_calendars(request, otd, year=None):
         {   'today': today,
             'year': year,
             'current_year': current_year,
-            'next_year': next_year,
             'otd': otd,
             'years_vacations_count': filtered_years_vacations_count,
             'otds_for_choise': otds_for_choise,
@@ -384,9 +387,6 @@ def vac_calendars(request, otd, year=None):
 
 
 def vac_2(request, year, otd):
-    if not vac_access_check(request):
-        return render(request, 'no_rights.html',)
-
     if year == 0:
         year = dt.datetime.today().year
     today = dt.datetime.today().date()
@@ -394,6 +394,13 @@ def vac_2(request, year, otd):
 
     bosses_list = list(bosses.keys())
     current_user_name = request.user.get_full_name()
+
+    current_year = dt.datetime.now().year
+    future_years = [current_year + 1, current_year + 2]
+
+    years_in_vacations = set(Vacation.objects.values_list('year', flat=True))
+    years_in_vacations.update([str(y) for y in future_years])
+    years_range = sorted([int(y) for y in years_in_vacations])
 
     if request.user.get_full_name() not in bosses.keys():
         otd_id = User_info.objects.filter(user_id=request.user.id)[0].otd_number_id
@@ -406,10 +413,13 @@ def vac_2(request, year, otd):
         otd_users_id = [user.user_id for user in otd_users] 
         vacations = Vacation.objects.filter(user_id__in=otd_users_id, year=str(year))
         otds_for_choise = [otd]
-        otd_users_full_names = [request.user]
     else:
-        if otd == 0:  # Все
-            vacations = Vacation.objects.filter(year=str(year))
+        if otd == 0:
+            boss_departments = bosses[request.user.get_full_name()]
+            otd_ids = [Unit.objects.filter(description=str(descr))[0].id for descr in boss_departments]
+            otd_users = User_info.objects.filter(otd_number_id__in=otd_ids)
+            otd_users_id = [user.user_id for user in otd_users]
+            vacations = Vacation.objects.filter(user_id__in=otd_users_id, year=str(year))
         else:
             otd_id = Unit.objects.filter(description=otd)[0].id  
             otd_users = User_info.objects.filter(otd_number_id=otd_id)  
@@ -422,7 +432,6 @@ def vac_2(request, year, otd):
 
         otd_users = User_info.objects.filter(otd_number_id__in=otd_ids) 
         otd_users_id = [user.user_id for user in otd_users]
-        otd_users_full_names = [user for user in User.objects.filter(id__in=otd_users_id)]
 
 
     vacation_start_dates = {}
@@ -513,11 +522,6 @@ def vac_2(request, year, otd):
                 month_all[month][week][i] = {'name': days_in_week[i], 'data': data, 'date': date}
 
     month_all_for_js = copy_dict_for_js(month_all)
-    
-    if year in holidays.keys():
-        h_days = holidays[year]
-    else:
-        h_days = {}
 
     all_vac_for_js = {}
     for vac in vacations:
@@ -535,135 +539,16 @@ def vac_2(request, year, otd):
          'json_data': json.dumps(month_all_for_js),
          'json_data_vacs': json.dumps(all_vac_for_js),
          'user_names': json.dumps(user_names),
-         
+         'years_range': years_range,
          'cross_vacations': cross_vacations,
          'len_cross_vacations': len(cross_vacations),
          'len_vacations': vacations.count,
          'special_work_days': special_work_days,
          'vacations_by_user': vacations_by_user,
-         'holidays': h_days,
          'otds_for_choise': otds_for_choise,
          'bosses': [key for key in bosses.keys()],
-         'otd_users_full_names': otd_users_full_names,
          'vacation_start_dates': vacation_start_dates,
-
-         'show_button': True,
-         'show_add_leave_button': True,
-         'bosses_list': json.dumps(bosses_list),
-         'current_user_name': current_user_name,
-         'navbar_style': 'custom-navbar',
-         'show_vacation_link': True,
-        }
-    )
-      
-
-def vac_2_days(request, year, otd):
-    if not vac_access_check(request):
-        return render(request, 'no_rights.html',)
-
-    if year == 0:
-        year = dt.datetime.today().year
-
-    today = dt.datetime.today().date()
-    bosses_list = list(bosses.keys())
-    current_user_name = request.user.get_full_name()
-
-    user_names = {}
-    vacation_start_dates = {}
-    users_colors = {}
-    vacations_by_user = {}
-
-    # Определяем отделы для выбора и отпуска
-    if current_user_name not in bosses.keys():
-        otd_id = User_info.objects.filter(user_id=request.user.id).first().otd_number_id
-        unit = Unit.objects.filter(id=otd_id).first()
-        if unit:
-            otd = int(unit.description)
-        else:
-            otd = 0
-        otd_users = User_info.objects.filter(otd_number_id=otd_id)
-        otd_users_id = [user.user_id for user in otd_users]
-        vacations = Vacation.objects.filter(user_id__in=otd_users_id, year=str(year))
-        otds_for_choise = [otd]
-        otd_users_full_names = [request.user]
-        user_names = {user.id: user.get_full_name() for user in User.objects.filter(id__in=otd_users_id)}
-    else:
-        if otd == 0:  # Все отделы
-            vacations = Vacation.objects.filter(year=str(year))
-        else:
-            otd_id = Unit.objects.filter(description=otd).first().id
-            otd_users = User_info.objects.filter(otd_number_id=otd_id)
-            otd_users_id = [user.user_id for user in otd_users]
-            vacations = Vacation.objects.filter(user_id__in=otd_users_id, year=str(year))
-        otds_for_choise = bosses[current_user_name]
-        otd_ids = [Unit.objects.filter(description=descr).first().id for descr in otds_for_choise]
-        otd_users = User_info.objects.filter(otd_number_id__in=otd_ids)
-        otd_users_id = [user.user_id for user in otd_users]
-        otd_users_full_names = [user for user in User.objects.filter(id__in=otd_users_id)]
-        user_names = {user.id: user.get_full_name() for user in User.objects.filter(id__in=otd_users_id)}
-
-    # Обработка данных отпусков
-    for vac in vacations:
-        if vac.user_id not in vacation_start_dates:
-            vacation_start_dates[vac.user_id] = []
-        vacation_start_dates[vac.user_id].append(vac.day_start)
-
-        if vac.user_id not in users_colors:
-            users_colors[vac.user_id] = next(color_cycle)
-
-        if vac.user_id not in vacations_by_user:
-            vacations_by_user[vac.user_id] = {
-                'color': users_colors[vac.user_id],
-                'dates': [],
-                'sum': 0,
-                'otd': '',
-                'user_id': vac.user_id,
-                'vacation_start_dates': [],
-                'vacation_end_dates': [],
-                'employee_name': user_names.get(vac.user_id, "Неизвестный сотрудник"),
-            }
-            for u in User_info.objects.all():
-                if u.user_id == vac.user_id:
-                    vacations_by_user[vac.user_id]['otd'] = u.otd_number
-                    break
-
-        start_date = vac.day_start
-        days_count = (vac.day_end - vac.day_start).days + 1
-
-        holidays_count = sum(
-            1
-            for y, m_d in holidays.items()
-            for m, d in m_d.items()
-            for day in d
-            if vac.day_start <= today.replace(year=int(y), month=get_key_from_dict_by_value(month_num_str, m), day=day) <= vac.day_end
-        )
-
-        days_count -= holidays_count
-        end_date = start_date + dt.timedelta(days=days_count - 1) + dt.timedelta(days=holidays_count)
-
-        vacations_by_user[vac.user_id]['vacation_start_dates'].append((start_date, days_count))
-        vacations_by_user[vac.user_id]['dates'].append({
-            'd': f"{vac.day_start.day} {month_num_str[vac.day_start.month][:3]} - {vac.day_end.day} {month_num_str[vac.day_end.month][:3]}",
-            'vac_id': vac.id,
-        })
-        vacations_by_user[vac.user_id]['sum'] += (vac.day_end - vac.day_start).days + 1
-        vacations_by_user[vac.user_id]['vacation_end_dates'].append(end_date)
-
-    h_days = holidays.get(year, {})
-
-    return render(
-        request,
-        'vac_schedule_days.html',
-        {'today': today,
-         'year': year,
-         'otd': otd,
-         'len_vacations': vacations.count(),
-         'vacations_by_user': vacations_by_user,
-         'holidays': h_days,
-         'otds_for_choise': otds_for_choise,
-         'bosses': [key for key in bosses.keys()],
-         'otd_users_full_names': otd_users_full_names,
-         'vacation_start_dates': vacation_start_dates,
+         'current_user_id': request.user.id,
          'show_button': True,
          'show_add_leave_button': True,
          'bosses_list': json.dumps(bosses_list),
@@ -674,11 +559,7 @@ def vac_2_days(request, year, otd):
     )
 
 
-@login_required
 def vacation_new(request, year):
-    if not vac_access_check(request):  # Проверяем доступ к отпуску
-        return render(request, 'no_rights.html')
-
     # Инициализация формы и модели отпуска
     vacation = Vacation(user_id=request.user.id)
     form = VacationForm(request.POST or None, files=request.FILES or None, instance=vacation)
@@ -688,13 +569,18 @@ def vacation_new(request, year):
     is_boss = current_user_name in bosses
 
     employees = None
+    departments = Unit.objects.all()
 
     employee_name = request.GET.get('employee_name', None)
+    selected_department = request.GET.get('department', None)
 
     if is_boss:
         boss_departments = bosses[current_user_name]
         department_ids = Unit.objects.filter(description__in=boss_departments).values_list('id', flat=True)
         employees = User_info.objects.filter(otd_number_id__in=department_ids).select_related('user', 'position')
+
+        if selected_department and selected_department != "0":
+            employees = employees.filter(otd_number__description=selected_department)
 
     selected_employee_name = current_user_name
     
@@ -761,16 +647,14 @@ def vacation_new(request, year):
         'show_person': True,
         'holidays_json': holidays_json,
         'employee_name': employee_name,
+        'departments': departments,
+        'selected_department': selected_department,
     }
 
     return render(request, 'vacation_new.html', context)
 
 
-@login_required
 def vacation_edit(request, year, vac_id):
-    if not vac_access_check(request):  
-        return render(request, 'no_rights.html')
-
     vac = get_object_or_404(Vacation, id=vac_id)
 
     if vac.day_start and vac.day_end:
@@ -784,9 +668,6 @@ def vacation_edit(request, year, vac_id):
             current_date += timedelta(days=1)
 
         vac.how_long = working_days
-
-    vac.day_start = str(vac.day_start)[:-15]
-    vac.day_end = str(vac.day_end)[:-15]
 
     form = VacationForm(request.POST or None, files=request.FILES or None, instance=vac)
 
@@ -872,11 +753,7 @@ def vacation_edit(request, year, vac_id):
     )
 
 
-@login_required
 def vacation_delete(request, vac_id):
-    if not vac_access_check(request):
-        return render(request, 'no_rights.html',)
-    
     redirect_from = request.GET.get('from', None)
 
     vac = get_object_or_404(Vacation, id=vac_id)
@@ -892,9 +769,6 @@ def vacation_delete(request, vac_id):
 
 
 def vacation_detail(request, vac_id):
-    if not vac_access_check(request):
-        return render(request, 'no_rights.html')
-
     current_user_name = request.user.get_full_name()
 
     if current_user_name not in bosses:
@@ -956,8 +830,8 @@ def vacation_detail(request, vac_id):
 
 def vac_all_vacations(request):
     today = dt.datetime.today()
-    current_year = today.year
-    year_range = range(current_year - 1, current_year + 2)
+    years_in_vacations = set(Vacation.objects.values_list('year', flat=True))
+    year_range = sorted([int(y) for y in years_in_vacations], reverse=True)
 
     selected_otd = request.GET.get('otd', '') 
     selected_user = request.GET.get('user', '')
@@ -1040,7 +914,7 @@ def vac_all_vacations(request):
             'period': f"{start_date.day} {months_ru[start_date.month]} {start_date.year} - {end_date.day} {months_ru[end_date.month]} {end_date.year}",
             'days_count': actual_days_count,
             'id': vac.id,
-            'is_current': start_date <= today.date() <= vac.day_end.date(),
+            'is_current': start_date <= today.date() <= vac.day_end,
             'department': department,
             'color': user_colors[user_name],
         })
@@ -1068,17 +942,13 @@ def vac_all_vacations(request):
 
 
 def vac_my_vacations(request):
-    if not vac_access_check(request):
-        return render(request, 'no_rights.html')
-
     today = dt.datetime.today().date()
     year = today.year
 
     # Получаем все отпуска текущего пользователя, начиная с текущей даты
     vacations = Vacation.objects.filter(
-        user_id=request.user.id,
-        day_end__gte=today
-    ).order_by('day_start')
+        user_id=request.user.id
+    ).order_by('-day_start')
 
     vacations_list = []
 
@@ -1102,7 +972,7 @@ def vac_my_vacations(request):
             'period': f"{start_date.day} {months_ru[start_date.month]} {start_date.year} - {end_date.day} {months_ru[end_date.month]} {end_date.year}",
             'days_count': actual_days_count,
             'id': vac.id,
-            'is_current': start_date <= today <= vac.day_end.date(),
+            'is_current': start_date <= today <= vac.day_end,
         })
     
     vacation_year = None
@@ -1241,9 +1111,6 @@ def import_vacations(request):
 
 
 def vac_my_profile(request):
-    if not vac_access_check(request):
-        return render(request, 'no_rights.html')
-
     today = dt.datetime.today().date()
     year = today.year
     user_info = User_info.objects.get(user=request.user)
@@ -1274,7 +1141,7 @@ def vac_my_profile(request):
             'period': f"{start_date.day} {months_ru[start_date.month]} {start_date.year} - {end_date.day} {months_ru[end_date.month]} {end_date.year}",
             'days_count': actual_days_count,
             'id': vac.id,
-            'is_current': start_date <= today <= vac.day_end.date(),
+            'is_current': start_date <= today <= vac.day_end,
         })
     
     vacation_year = None
@@ -1300,7 +1167,6 @@ def vac_my_profile(request):
     )
 
 
-@login_required
 def profile_edit(request):
     user_info = User_info.objects.get(user=request.user)
     departments = Unit.objects.all()
@@ -1355,14 +1221,10 @@ def profile_edit(request):
     })
 
 
-@login_required
 def delete_account(request):
     user = request.user
-
     User_info.objects.filter(user=user).delete()
-
     user.delete()
-
     logout(request)
 
     msg.success(request, "Ваш аккаунт был успешно удален.")
@@ -1376,3 +1238,226 @@ def employees(request):
         'employees': True,
         'show_button': True,
     })
+
+
+def get_department_employees(request):
+    department_title = request.GET.get("department")
+    if department_title:
+        otd = Unit.objects.filter(title=department_title).first()
+        if otd:
+            employees = User.objects.filter(user_info__otd_number=otd)
+        else:
+            employees = User.objects.none()
+    else:
+        # Если отдел не выбран, возвращаем всех сотрудников
+        employees = User.objects.all()
+    
+    employee_list = [
+        {"id": emp.id, "full_name": emp.get_full_name()} for emp in employees
+    ]
+    return JsonResponse(employee_list, safe=False)
+
+
+def get_initials(user):
+    """
+    Форматирует ФИО пользователя в виде "И.О. Фамилия".
+    Предполагается, что у объекта user есть поля: first_name, patronymic, last_name.
+    Если отчество состоит из нескольких частей (через дефис), каждая часть сокращается до первой буквы с точкой.
+    """
+    first = user.first_name.strip() if user.first_name else ""
+    patronymic = user.patronymic.strip() if hasattr(user, 'patronymic') and user.patronymic else ""
+    last = user.last_name.strip() if user.last_name else ""
+    
+    initial_first = first[0] + "." if first else ""
+    
+    if patronymic:
+        parts = patronymic.split('-')
+        initial_patronymic = "-".join([p.strip()[0] + "." for p in parts if p.strip()])
+    else:
+        initial_patronymic = ""
+    
+    initials = f"{initial_first}{initial_patronymic}".strip()
+    
+    result = f"{initials} {last}".strip() if last else initials
+    return result
+
+
+def export_vacations(request, year, otd):
+    if otd == 0:
+        msg.error(request, "Пожалуйста, выберите отдел для экспорта отпусков.")
+        return redirect('vac_2', year=year, otd=otd)
+
+    template_path = os.path.join(settings.BASE_DIR, 'export_templates', 'vacation_template.xlsx')
+    if not os.path.exists(template_path):
+        return HttpResponse("Шаблон не найден", status=404)
+
+    wb = load_workbook(template_path)
+    ws = wb.active
+
+    # Получаем объект отдела по описанию
+    otd_obj = Unit.objects.filter(description=otd).first()
+    if not otd_obj:
+        return HttpResponse("Такой отдел не найден", status=404)
+    
+    # Преобразуем title отдела в родительный падеж
+    morph = pymorphy2.MorphAnalyzer()
+    title = otd_obj.title
+    match = re.match(r"(.+?)(\s*\(.*\))?$", title)
+    if match:
+        text_part = match.group(1).strip()
+        num_part = match.group(2) or ""
+    else:
+        text_part = title
+        num_part = ""
+        
+    words = text_part.split()
+    inflected_words = []
+    for word in words:
+        parsed = morph.parse(word)[0]
+        inflected = parsed.inflect({'gent'})
+        if inflected:
+            inflected_words.append(inflected.word)
+        else:
+            inflected_words.append(word)
+    title_gen = " ".join(inflected_words) + num_part
+
+    ws['A2'] = f"График отпусков на {year} год {title_gen}"
+
+    # Получаем пользователей отдела
+    otd_users = User_info.objects.filter(otd_number=otd_obj)
+    user_ids = [user.user_id for user in otd_users]
+    vacations = Vacation.objects.filter(user_id__in=user_ids, year=str(year))
+
+    start_employee_row = 5
+
+    template_styles = []
+    for col in range(1, 6):
+        cell = ws.cell(row=start_employee_row, column=col)
+        template_styles.append({
+            "font": copy.copy(cell.font),
+            "border": copy.copy(cell.border),
+            "fill": copy.copy(cell.fill),
+            "number_format": copy.copy(cell.number_format),
+            "protection": copy.copy(cell.protection),
+            "alignment": copy.copy(cell.alignment),
+        })
+
+    template_row_height = ws.row_dimensions[start_employee_row].height
+
+    for index, vac in enumerate(vacations):
+        current_row = start_employee_row + index
+        ws.row_dimensions[current_row].height = template_row_height
+
+        if index > 0:
+            for col in range(1, 6):
+                new_cell = ws.cell(row=current_row, column=col)
+                style = template_styles[col - 1]
+                new_cell.font = style["font"]
+                new_cell.border = style["border"]
+                new_cell.fill = style["fill"]
+                new_cell.number_format = style["number_format"]
+                new_cell.protection = style["protection"]
+                new_cell.alignment = style["alignment"]
+
+        ws.cell(row=current_row, column=1).value = index + 1
+        ws.cell(row=current_row, column=2).value = vac.user.get_full_name()
+        try:
+            position = vac.user.user_info.first().position.position
+        except Exception:
+            position = ""
+        ws.cell(row=current_row, column=3).value = position
+        ws.cell(row=current_row, column=4).value = vac.day_start.strftime('%d.%m.%Y')
+        ws.cell(row=current_row, column=5).value = vac.how_long
+
+    filename = f"График отпусков {otd} {year}.xlsx"
+    encoded_filename = urllib.parse.quote(filename)
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename*=UTF-8\'\'{encoded_filename}'
+
+    #Формирование нижнего блока
+    footer_start_row = start_employee_row + len(vacations) + 2
+
+    custom_font = Font(name="Times New Roman", size=14)
+    thin_border = Border(bottom=Side(style='thin'))
+
+    ws.merge_cells(start_row=footer_start_row, start_column=1, end_row=footer_start_row, end_column=2)
+    cell = ws.cell(row=footer_start_row, column=1)
+    cell.value = "СОГЛАСОВАНО:"
+    cell.font = Font(name="Times New Roman", size=14)
+    cell.alignment = Alignment(horizontal="left", vertical="top", wrap_text=True)
+
+    boss = otd_obj.boss
+    boss_info = User_info.objects.filter(user=boss).first() if boss else None
+    dept_manager_position = boss_info.position.position if boss_info and boss_info.position else ""
+    dept_manager_full_name = boss.get_full_name() if boss else ""
+
+    if boss_info and boss_info.supervisor:
+        supervisor = boss_info.supervisor
+        supervisor_info = User_info.objects.filter(user=supervisor).first()
+        supervisor_position = supervisor_info.position.position if supervisor_info and supervisor_info.position else ""
+        supervisor_full_name = supervisor.get_full_name()
+    else:
+        supervisor_position = ""
+        supervisor_full_name = ""
+
+    if supervisor_full_name:
+        supervisor_row = footer_start_row + 1
+        ws.row_dimensions[supervisor_row].height = 63
+
+        ws.merge_cells(start_row=supervisor_row, start_column=1, end_row=supervisor_row, end_column=2)
+        sup_cell1 = ws.cell(row=supervisor_row, column=1)
+        sup_cell1.value = supervisor_position
+        sup_cell1.font = custom_font
+        sup_cell1.alignment = Alignment(horizontal="left", vertical="bottom", wrap_text=True)
+
+        ws.merge_cells(start_row=supervisor_row, start_column=4, end_row=supervisor_row, end_column=5)
+        sup_cell2 = ws.cell(row=supervisor_row, column=4)
+        sup_cell2.value = get_initials(supervisor)
+        sup_cell2.font = custom_font
+        sup_cell2.alignment = Alignment(horizontal="left", vertical="bottom", wrap_text=True)
+
+        cell_3 = ws.cell(row=supervisor_row, column=3)
+        cell_3.border = thin_border
+        cell_3.font = custom_font
+
+        dept_manager_row = supervisor_row + 2
+        ws.row_dimensions[dept_manager_row].height = 63
+
+        ws.merge_cells(start_row=dept_manager_row, start_column=1, end_row=dept_manager_row, end_column=2)
+        dm_cell1 = ws.cell(row=dept_manager_row, column=1)
+        dm_cell1.value = dept_manager_position
+        dm_cell1.font = custom_font
+        dm_cell1.alignment = Alignment(horizontal="left", vertical="bottom", wrap_text=True)
+
+        ws.merge_cells(start_row=dept_manager_row, start_column=4, end_row=dept_manager_row, end_column=5)
+        dm_cell2 = ws.cell(row=dept_manager_row, column=4)
+        dm_cell2.value = get_initials(boss)
+        dm_cell2.font = custom_font
+        dm_cell2.alignment = Alignment(horizontal="left", vertical="bottom", wrap_text=True)
+
+        final_cell3 = ws.cell(row=dept_manager_row, column=3)
+        final_cell3.border = thin_border
+        final_cell3.font = custom_font
+
+    else:
+        dept_manager_row = footer_start_row + 1
+        ws.row_dimensions[dept_manager_row].height = 63
+
+        ws.merge_cells(start_row=dept_manager_row, start_column=1, end_row=dept_manager_row, end_column=2)
+        dm_cell1 = ws.cell(row=dept_manager_row, column=1)
+        dm_cell1.value = dept_manager_position
+        dm_cell1.font = custom_font
+        dm_cell1.alignment = Alignment(horizontal="left", vertical="bottom", wrap_text=True)
+
+        ws.merge_cells(start_row=dept_manager_row, start_column=4, end_row=dept_manager_row, end_column=5)
+        dm_cell2 = ws.cell(row=dept_manager_row, column=4)
+        dm_cell2.value = get_initials(boss)
+        dm_cell2.font = custom_font
+        dm_cell2.alignment = Alignment(horizontal="left", vertical="bottom", wrap_text=True)
+
+        cell_3 = ws.cell(row=dept_manager_row, column=3)
+        cell_3.border = thin_border
+        cell_3.font = custom_font
+
+    wb.save(response)
+    return response

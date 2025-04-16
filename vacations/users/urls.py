@@ -1,6 +1,6 @@
 from django.urls import path
 from . import views
-from .views import CustomPasswordResetView, CustomPasswordResetDoneView
+from .views import CustomPasswordResetView, CustomPasswordResetDoneView, get_department_employees
 
 urlpatterns = [
     path('password_reset/', CustomPasswordResetView.as_view(), name='password_reset'),
@@ -8,7 +8,6 @@ urlpatterns = [
     path('vac_all/<int:otd>/', views.vac_all, name='vac_all'),
     path('vac_calendars/<int:otd>/', views.vac_calendars, name='vac_calendars'),
     path('vacations/vac_2/<int:year>/<int:otd>/', views.vac_2, name='vac_2'),
-    path('vacations/vac_2_days/<int:year>/<int:otd>/', views.vac_2_days, name='vac_2_days'),
     path('vacations/new/<int:year>/', views.vacation_new, name='vacation_new'),
     path('vacations/vacation_edit/<int:year>/<int:vac_id>/', views.vacation_edit, name='vacation_edit'),
     path('vacations/vacation_delete/<int:vac_id>/', views.vacation_delete, name='vacation_delete'),
@@ -20,4 +19,6 @@ urlpatterns = [
     path('profile_edit/', views.profile_edit, name='profile_edit'),
     path('delete_account/', views.delete_account, name='delete_account'),
     path('employees/', views.employees, name='employees'),
+    path('ajax/get_department_employees/', get_department_employees, name='get_department_employees'),
+    path('vacations/export/<int:year>/<int:otd>/', views.export_vacations, name='export_vacations'),
 ]

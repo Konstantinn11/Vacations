@@ -26,8 +26,7 @@ admin.site.register(CustomUser, CustomUserAdmin)
 class User_infoAdmin(admin.ModelAdmin):
     """Информация о пользователях"""
     list_display = (
-        'user', 'boss', 'otd_number',
-        'vacs_access', 'vacs_archiv'
+        'user', 'otd_number', 'vacs_archiv',
     )
     search_fields = ('username', )
 

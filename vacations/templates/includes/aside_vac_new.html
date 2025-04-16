@@ -78,7 +78,7 @@
 	<aside class="aside custom-aside" style="margin: 4px; border-radius: 10px; width: 400px;">
 		<div style="display: flex; flex-direction: row; flex-wrap: nowrap; justify-content: center; align-items: center; margin: 5px;">
 			<h4>Отпуска сотрудников</h4>
-			<a class="btn sib" style="background: #15a362; width: 220px; color: white; font-size: 16px;" href="{% url 'vacation_new' year=year %}?employee_name={{current_user_name}}">
+			<a class="btn sib" style="background: #15a362; width: 220px; color: white; font-size: 16px;" href="{% url 'vacation_new' year=year %}?employee_name={{current_user_name}}&department={{ otd }}">
 				<div style="display: flex; cursor: pointer; justify-content: center; align-items: center;">
 					<img style="height: 20px; margin-right: 5px;" src="{% static 'circle_plus.png' %}">
 					Новый отпуск
@@ -101,7 +101,7 @@
 							</div>
 							<div style="display: flex; flex-direction: row; flex-wrap: wrap; margin-left: 20px;">
 								{% for date in value.dates %}
-									{% if key == request.user.get_full_name or request.user.get_full_name in bosses %}
+									{% if key == current_user_id or request.user.get_full_name in bosses %}
 										<a id="{{ value.user_id }}_{{ date.vac_id }}" 
 										style="color: #15a362; font-size: 0.875em; text-decoration: underline;" 
 										href="{% url 'vacation_edit' year=year vac_id=date.vac_id %}?from=calendars">
@@ -121,7 +121,7 @@
 							</div>
 						</div>
 						
-						{% if key == request.user.get_full_name or request.user.get_full_name in bosses %}
+						{% if key == current_user_id or request.user.get_full_name in bosses %}
 							<a id="creat_cur_{{value.user_id}}" 
 							style="color: black; font-size: 0.875em; text-decoration: underline; margin-left: 10px;" 
 							href="{% url 'vacation_new' year=year %}?employee_name={{ value.user.get_full_name }}">
@@ -133,22 +133,30 @@
 					</div>
 				{% endfor %}
 			</div>
-			<div style="display: flex; justify-content: center;">
-			<p style="margin-top: 10px; font-size: 17px; color: #5d6778; width: 250px; text-align: left; font-style: italic;">
-				Перед тем как добавлять отпуска, надо заполнить список сотрудников. 
-				Это можно сделать на странице <a href="{% url 'employees' %}" style="color: #15a362; text-decoration: underline;">Сотрудники</a>.
-			</p>
-			</div>
 			<div class="cross_vacs" style="display: none;">
 				{% for vac in cross_vacations %}
 					<div class="list-group-item list-group-item-action">
 						<div style="display: flex; flex-direction: row; flex-wrap: wrap; justify-content: left; align-items: center;">
 							<div style="width: 15px; height: 15px; background: {{vac.color}}; border: 1px solid black; margin-right: 6px;"></div>
 							<a style="color: black; margin-right: 10px;" href="#">{{vac.vac.user.get_full_name}}:</a>
-							<a id="{{vac.vac.user.get_full_name}}_{{vac.vac.id}}_cross" style="color: #0a0e0c; font-size: 0.875em; text-decoration: underline;" href="#" onclick="openFormEditVac(this)">{{vac.range}}</a>
+							{% if vac.vac.user.id == current_user_id or request.user.get_full_name in bosses %}
+								<a id="{{vac.vac.user.get_full_name}}_{{vac.vac.id}}_cross"
+								style="color: #15a362; font-size: 0.875em; text-decoration: underline;"
+								href="{% url 'vacation_edit' year=year vac_id=vac.vac.id %}?from=calendars">
+								{{vac.range}}
+								</a>
+							{% else %}
+								<span style="color: #0a0e0c; font-size: 0.875em;">{{vac.range}}</span>
+							{% endif %}
 						</div>
 					</div>
 				{% endfor %}
+			</div>
+			<div style="display: flex; justify-content: center;">
+				<p style="margin-top: 10px; font-size: 17px; color: #5d6778; width: 250px; text-align: left; font-style: italic;">
+					Перед тем как добавлять отпуска, надо заполнить список сотрудников. 
+					Это можно сделать на странице <a href="{% url 'employees' %}" style="color: #15a362; text-decoration: underline;">Сотрудники</a>.
+				</p>
 			</div>
 		{% endif %}
     </aside>

@@ -7,15 +7,23 @@ class VacationForm(forms.ModelForm):
         exclude = ['user', 'year', 'can_redact']
         widgets = {
             'id': forms.Textarea(attrs={"cols": 40, "rows": 1}),
-            'day_start': forms.DateInput(attrs={'id': 'id_day_start', 'placeholder': 'Выберите дату'}),
-            'day_end': forms.DateInput(attrs={'id': 'id_day_end', 'placeholder': 'Выберите дату'}),
-            'how_long': forms.NumberInput(attrs={
-                'id': 'id_how_long',
-                'placeholder': 'календарных дней',
-                'min': '1', 
-                'step': '1',
-                'class': 'form-control'
-            }),
+            'day_start': forms.DateInput(
+                format='%Y-%m-%d', 
+                attrs={'id': 'id_day_start', 'placeholder': 'Выберите дату'}
+            ),
+            'day_end': forms.DateInput(
+                format='%Y-%m-%d', 
+                attrs={'id': 'id_day_end', 'placeholder': 'Выберите дату'}
+            ),
+            'how_long': forms.NumberInput(
+                attrs={ 
+                    'id': 'id_how_long', 
+                    'placeholder': 'календарных дней', 
+                    'min': '1', 
+                    'step': '1', 
+                    'class': 'form-control'
+                }
+            ),
         }
         labels = {
             'day_start': 'Начало отпуска',
