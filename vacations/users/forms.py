@@ -4,7 +4,7 @@ from .models import Vacation
 class VacationForm(forms.ModelForm):
     class Meta:
         model = Vacation
-        exclude = ['user', 'year', 'can_redact']
+        exclude = ['user', 'year']
         widgets = {
             'id': forms.Textarea(attrs={"cols": 40, "rows": 1}),
             'day_start': forms.DateInput(

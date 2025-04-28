@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+{% block content %}
+  <style>
+    input[name="date"] {
+      width: 350px;
+      margin: 0 auto;
+    }
+  </style>
+  
+  <div class="container mt-4" style="margin-left: 358px;">
+    <title>
+      {% if form.instance.pk %}
+        Редактировать
+      {% else %}
+        Добавить
+      {% endif %} запись
+    </title>
+
+    <h1 style="color: black;">
+      {% if form.instance.pk %}
+        Редактировать
+      {% else %}
+        Добавить
+      {% endif %} запись
+    </h1>
+
+    <form method="post">
+      {% csrf_token %}
+
+      <div class="mb-4" style="margin-top: 25px;">
+        <div class="d-flex align-items-end gap-4">
+          <div class="text-center">
+            <label for="{{ form.date.id_for_label }}" class="form-label d-block">Дата</label>
+            {{ form.date|add_class:"form-control" }}
+            {{ form.date.errors }}
+          </div>
+
+          <div class="form-check d-flex align-items-center mt-3" style="margin-left: 20px; margin-bottom: 10px;">
+            {{ form.is_workday }}
+            <label class="form-check-label ms-2" for="{{ form.is_workday.id_for_label }}">
+              Специальный рабочий день
+            </label>
+            {{ form.is_workday.errors }}
+          </div>
+
+          <div class="d-flex gap-2 ms-auto">
+            <button type="submit" class="btn btn-success" style="margin-left: 20px; height: 38px; margin-bottom: 2px; text-transform: none; background-color: #15a362;">Сохранить</button>
+            <a href="{% url 'holiday_calendar:holiday_list' %}" class="btn btn-secondary" style="margin-left: 20px; height: 38px; margin-top: 19px; width: 140px; background-color: #5d6778;">Отмена</a>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+{% endblock %}

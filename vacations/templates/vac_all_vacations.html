@@ -200,9 +200,9 @@
 
         <select name="user" id="user-select">
             <option value="">Сотрудник</option>
-            {% for user in users_for_filter %}
-                <option value="{{ user.get_full_name }}" {% if user.get_full_name == selected_user %}selected{% endif %}>
-                    {{ user.get_full_name }}
+            {% for u in users_for_filter %}
+                <option value="{{ u.id }}" {% if u.id|stringformat:"s" == selected_user %}selected{% endif %}>
+                    {{ u.get_full_name }}
                 </option>
             {% endfor %}
         </select>
@@ -299,6 +299,7 @@
 {% endif %}
 
 <script>
+    const selectedUserId = "{{ selected_user }}";
     // Функция для фильтрации таблицы по введенному тексту
     function filterTable() {
         let input = document.getElementById("search-input").value.toLowerCase();
@@ -317,23 +318,21 @@
     }
 
     function loadEmployees(department) {
-        let url = "{% url 'get_department_employees' %}?department=" + encodeURIComponent(department);
-        fetch(url)
-            .then(response => response.json())
-            .then(data => {
-                let userSelect = document.getElementById("user-select");
-                // Очистка и добавление опции по умолчанию
-                userSelect.innerHTML = '<option value="">Сотрудник</option>';
-                data.forEach(function(emp) {
-                    let option = document.createElement("option");
-                    option.value = emp.full_name;
-                    option.textContent = emp.full_name;
-                    userSelect.appendChild(option);
-                });
-            })
-            .catch(error => {
-                console.error("Ошибка при получении сотрудников:", error);
+        fetch("{% url 'get_department_employees' %}?department=" + encodeURIComponent(department))
+        .then(res => res.json())
+        .then(data => {
+            let userSelect = document.getElementById("user-select");
+            userSelect.innerHTML = '<option value="">Сотрудник</option>';
+            data.forEach(emp => {
+                let option = document.createElement("option");
+                option.value = emp.id;
+                option.textContent = emp.full_name;
+                if (emp.id.toString() === selectedUserId) {
+                    option.selected = true;
+                }
+                userSelect.appendChild(option);
             });
+        });
     }
 
     const otdSelect = document.getElementById("otd-select");

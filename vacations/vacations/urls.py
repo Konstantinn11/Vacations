@@ -29,6 +29,7 @@ urlpatterns = [
     path('auth/', include('django.contrib.auth.urls')),
     path('', views.home_view, name='home_view'),
     path('users/', include('users.urls')),
+    path('calendar/', include('holiday_calendar.urls', namespace='holiday_calendar')),
 ]
 
 if settings.DEBUG:

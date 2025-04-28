@@ -45,25 +45,27 @@
         {% csrf_token %}
 
         {% if is_boss %}
-            <div style="display: flex; align-items: center; margin-bottom: 30px;">
-                <label for="department" style="font-size: 21px; flex: 0 0 250px; text-align: left; color: #5d6778;">
-                    Фильтр по отделу
-                </label>
-                <select name="department" id="department">
-                    <option value=""
-                        {% if selected_department|default:"" == "0" or selected_department|default:"" == "" %}
-                            selected
-                        {% endif %}>
-                        Все отделы
-                    </option>
-                    {% for dept in departments %}
-                        <option value="{{ dept.description }}"
-                            {% if selected_department|default:'' == dept.description|stringformat:"s" %}selected{% endif %}>
-                            {{ dept.title }}
+            {% if len_boss_departments > 1 %}
+                <div style="display: flex; align-items: center; margin-bottom: 30px;">
+                    <label for="department" style="font-size: 21px; flex: 0 0 250px; text-align: left; color: #5d6778;">
+                        Фильтр по отделу
+                    </label>
+                    <select name="department" id="department">
+                        <option value=""
+                            {% if selected_department|default:"" == "0" or selected_department|default:"" == "" %}
+                                selected
+                            {% endif %}>
+                            Все отделы
                         </option>
-                    {% endfor %}
-                </select>
-            </div>
+                        {% for dept in departments %}
+                            <option value="{{ dept.description }}"
+                                {% if selected_department|default:'' == dept.description|stringformat:"s" %}selected{% endif %}>
+                                {{ dept.title }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            {% endif %}
         
             <div style="display: flex; align-items: center; margin-bottom: 30px;">
                 <label for="employee" style="font-size: 21px; flex: 0 0 250px; text-align: left; color: #5d6778;">

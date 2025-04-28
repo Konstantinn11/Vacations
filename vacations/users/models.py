@@ -1,5 +1,7 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from .utils import calculate_working_days
+from holiday_calendar.models import Holiday
 
 class CustomUser(AbstractUser):
     patronymic = models.CharField(
@@ -18,6 +20,17 @@ class CustomUser(AbstractUser):
         related_name='customuser_set',
         blank=True
     )
+
+    def get_full_name(self):
+        """
+        Возвращает ФИО — фамилия, имя, отчество (если есть).
+        Убирает лишние пробелы, если отчество не заполнено.
+        """
+        parts = [self.last_name, self.first_name]
+        if self.patronymic:
+            parts.append(self.patronymic)
+        return " ".join(filter(None, parts))
+    
 
 class Unit(models.Model):
     title = models.CharField(
@@ -151,7 +164,7 @@ class Vacation(models.Model):
         null=True,
         verbose_name='Дата окончания'
     )
-    how_long = models.TextField(
+    how_long = models.PositiveIntegerField(
         blank=True,
         null=True,
         verbose_name='Всего дней'
@@ -161,17 +174,20 @@ class Vacation(models.Model):
         null=True,
         verbose_name='Период'
     )
-    can_redact = models.BooleanField(
-        blank=True,
-        null=True,
-        default=True,
-        verbose_name='Возможность редактировать'
-    )
 
     class Meta:
         ordering = ('user', 'day_start', )
         verbose_name = 'Отпуск'
 
     def save(self, *args, **kwargs):
-        self.year = str(self.day_start.year)
+        if self.day_start and self.day_end:
+            holidays = set(
+                Holiday.objects
+                       .filter(is_workday=False, date__year=self.day_start.year)
+                       .values_list('date', flat=True)
+            )
+            # Подсчитываем рабочие дни
+            self.how_long = calculate_working_days(self.day_start, self.day_end, holidays)
+            self.year = str(self.day_start.year)
+
         super().save(*args, **kwargs)

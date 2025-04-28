@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4" style="margin-left: 358px;">
+  <h1 style="color: black;">Удалить запись?</h1>
+  <p style="margin-top: 25px; font-size: 18px;">Вы уверены, что хотите удалить <strong>{{ holiday.date }}</strong> — 
+     {% if holiday.is_workday %}рабочий{% else %}праздник{% endif %}?</p>
+  <form method="post" style="margin-top: -10px;">{% csrf_token %}
+    <button type="submit" class="btn btn-danger" style="text-transform: none; width: 140px;">Удалить</button>
+    <a href="{% url 'holiday_calendar:holiday_list' %}" class="btn btn-secondary" style="background-color: #5d6778; margin-top: 19px; height: 40px; margin-left: 10px;">Отмена</a>
+  </form>
+</div>
+{% endblock %}

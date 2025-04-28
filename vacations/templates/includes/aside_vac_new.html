@@ -97,7 +97,16 @@
 						<div style="display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-start;">
 							<div style="display: flex; flex-direction: row; flex-wrap: wrap; justify-content: left; align-items: center;">
 								<div style="width: 15px; height: 15px; background: {{value.color}}; border: 1px solid black; margin-right: 6px;"></div>
-								<a style="color: black" href="#">{{value.user.get_full_name}}</a>
+								<a style="color: black; 
+										white-space: nowrap; 
+										overflow: hidden; 
+										text-overflow: ellipsis; 
+										max-width: 275px; 
+										display: inline-block;" 
+								href="#"
+								title="{{value.user.get_full_name}}">
+									{{value.user.get_full_name}}
+								</a>
 							</div>
 							<div style="display: flex; flex-direction: row; flex-wrap: wrap; margin-left: 20px;">
 								{% for date in value.dates %}
@@ -134,22 +143,39 @@
 				{% endfor %}
 			</div>
 			<div class="cross_vacs" style="display: none;">
-				{% for vac in cross_vacations %}
-					<div class="list-group-item list-group-item-action">
-						<div style="display: flex; flex-direction: row; flex-wrap: wrap; justify-content: left; align-items: center;">
-							<div style="width: 15px; height: 15px; background: {{vac.color}}; border: 1px solid black; margin-right: 6px;"></div>
-							<a style="color: black; margin-right: 10px;" href="#">{{vac.vac.user.get_full_name}}:</a>
-							{% if vac.vac.user.id == current_user_id or request.user.get_full_name in bosses %}
-								<a id="{{vac.vac.user.get_full_name}}_{{vac.vac.id}}_cross"
-								style="color: #15a362; font-size: 0.875em; text-decoration: underline;"
-								href="{% url 'vacation_edit' year=year vac_id=vac.vac.id %}?from=calendars">
-								{{vac.range}}
-								</a>
-							{% else %}
-								<span style="color: #0a0e0c; font-size: 0.875em;">{{vac.range}}</span>
-							{% endif %}
+				{% for group in cross_vacation_groups %}
+					{% for item in group %}
+						<div class="list-group-item list-group-item-action employee-container" style="display: flex; justify-content: space-between; align-items: center;">
+							<div style="display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-start;">
+								<div style="display: flex; flex-direction: row; flex-wrap: wrap; justify-content: left; align-items: center;">
+									<div style="width: 15px; height: 15px; background: {{ item.color }}; border: 1px solid black; margin-right: 6px;"></div>
+									<a style="color: black; 
+											white-space: nowrap; 
+											overflow: hidden; 
+											text-overflow: ellipsis; 
+											max-width: 275px; 
+											display: inline-block;" 
+									href="#"
+									title="{{ item.vac.user.get_full_name }}">
+										{{ item.vac.user.get_full_name }}
+									</a>
+								</div>
+								<div style="display: flex; flex-direction: row; flex-wrap: wrap; margin-left: 20px;">
+									{% if item.vac.user.id == current_user_id or request.user.get_full_name in bosses %}
+										<a id="{{ item.vac.user.id }}_{{ item.vac.id }}" 
+										   style="color: #15a362; font-size: 0.875em; text-decoration: underline;" 
+										   href="{% url 'vacation_edit' year=year vac_id=item.vac.id %}?from=calendars">
+											{{ item.range }}
+										</a>
+									{% else %}
+										<span style="color: #0a0e0c; font-size: 0.875em;">
+											{{ item.range }}
+										</span>
+									{% endif %}
+								</div>
+							</div>
 						</div>
-					</div>
+					{% endfor %}
 				{% endfor %}
 			</div>
 			<div style="display: flex; justify-content: center;">
@@ -168,13 +194,13 @@
 
 		function showCrossVacs(obj) {
 			all_vac_btn.style.color = "#808080";
-			cross_vac_btn.style.color = "red";
+			cross_vac_btn.style.color = "#15a362";
 			crossVacs.style.display = "block";
 			allVacs.style.display = "none";
 		}
 		function showAllVacs(obj) {
 			cross_vac_btn.style.color = "#808080";
-			all_vac_btn.style.color = "red";
+			all_vac_btn.style.color = "#15a362";
 			crossVacs.style.display = "none";
 			allVacs.style.display = "block";
 		}

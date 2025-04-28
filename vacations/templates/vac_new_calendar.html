@@ -191,14 +191,24 @@
 	}
 
 	.custom-popup {
-		width: 920px; 
+		min-width: 800px;
+		width: auto;
 		top: 60px; 
 		position: fixed; 
 		animation: slideInTop 0.5s ease-out;
 	}
 
 	.custom-popup.swal2-hide {
-	animation: slideOutTop 0.5s ease-in forwards;
+		animation: slideOutTop 0.5s ease-in forwards;
+	}
+
+	.ellipsis-cell {
+		overflow: hidden;
+		white-space: nowrap;
+		text-overflow: ellipsis;
+		max-width: 300px;
+		display: inline-block;
+		vertical-align: middle;
 	}
 </style>
 <div style="width: 110%; display: flex; flex-direction: row;">
@@ -231,7 +241,6 @@
 	<table style="width: 900px;">
 		<tr style="border-bottom: 1px solid black;">
 			<th style="text-align: left;">Сотрудник</th><th>Отдел</th><th>Дней</th>
-			<th style="display: none;">Дата отпуска</th><th style="display: none;">Календарных дней</th><th style="display: none;">Дата окончания</th>
 		</tr>
 
 		{% for key, value in vacations_by_user.items %}
@@ -262,54 +271,65 @@
 	if (window.history.replaceState) {
 		window.history.replaceState(null, null, window.location.href);
 	}
+
 	let data = JSON.parse("{{json_data|escapejs}}");
 	let vacs = JSON.parse("{{json_data_vacs|escapejs}}");
-	
 	const bosses = JSON.parse('{{ bosses_list|escapejs }}');
 	const currentUser = "{{ current_user_name|escapejs }}";
-
 	const user_names = JSON.parse('{{ user_names|escapejs }}');
 
+	// Универсальные массивы и объекты месяцев
+	const monthNames = [
+		"", "января", "февраля", "марта", "апреля", "мая", "июня",
+		"июля", "августа", "сентября", "октября", "ноября", "декабря"
+	];
+	const fullMonthNames = [
+		"Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
+		"Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"
+	];
+	const monthToNumber = {
+		"Январь": "01", "Февраль": "02", "Март": "03", "Апрель": "04",
+		"Май": "05", "Июнь": "06", "Июль": "07", "Август": "08",
+		"Сентябрь": "09", "Октябрь": "10", "Ноябрь": "11", "Декабрь": "12"
+	};
+
 	function isBoss(userName) {
-        return bosses.includes(userName);
-    }
-	
+		return bosses.includes(userName);
+	}
+
+	function getMonthName(monthNumber) {
+		return monthNames[parseInt(monthNumber)];
+	}
+
+	function getMonthLabel(month) {
+		return (month === "Март" || month === "Август")
+			? month + 'а'
+			: month.substring(0, month.length - 1) + 'я';
+	}
+
 	function showCrossData(obj) {
-		let month = obj.id.split('_')[0].toString().trim();
-		let week = obj.id.split('_')[1].toString().trim();
-		let day = Number(obj.id.split('_')[2].toString().trim());
+		let [month, week, day] = obj.id.split('_');
+		day = Number(day);
 		let info = document.getElementById('info');
 		let messageDiv = info.previousElementSibling;
 
-		let month_for_lbl;
-		if (month == "Март" || month == "Август") {
-			month_for_lbl = month.substring(0, month.length) + 'а';
-		} else {
-			month_for_lbl = month.substring(0, month.length - 1) + 'я';
-		}
-
-		var innerHtml = data[month][week][day]["name"] + ' ' + month_for_lbl + ' {{year}}';
+		let month_for_lbl = getMonthLabel(month);
+		let innerHtml = data[month][week][day]["name"] + ' ' + month_for_lbl + ' {{year}}';
 
 		if (Object.keys(data[month][week][day]['date']).length > 0) {
-			// Если есть данные о отпусках
 			for (const [user_id, v] of Object.entries(data[month][week][day]['date'])) {
-				let first_date = v['date'].split(' - ')[0];
-				let dayMonthYear_day = first_date.split('-')[2];
-				let dayMonthYear_month = first_date.split('-')[1];
-
-				let second_date = v['date'].split(' - ')[1];
-				let dayMonthYear_day2 = second_date.split('-')[2];
-				let dayMonthYear_month2 = second_date.split('-')[1];
-
-				let period = `${dayMonthYear_day} ${getMonthName(dayMonthYear_month)} - ${dayMonthYear_day2} ${getMonthName(dayMonthYear_month2)}`;
-
+				let [first_date, second_date] = v['date'].split(' - ');
+				let [day1, month1] = first_date.split('-').reverse();
+				let [day2, month2] = second_date.split('-').reverse();
+				let period = `${day1} ${getMonthName(month1)} - ${day2} ${getMonthName(month2)}`;
 				let user_name = user_names[user_id] || "Неизвестный пользователь";
 
-				innerHtml += (`<div style="display: flex; flex-direction: row; justify-content: center; align-items: center;">
-					<div style="width: 15px; height: 15px; background: ${v['color']}; border: 1px solid black; margin-right: 6px;"></div>
-					<div>${user_name}</div>
-				</div>`);
-				innerHtml += `<div>${period}</div>`;
+				innerHtml += `
+					<div style="display: flex; flex-direction: row; justify-content: center; align-items: center;">
+						<div style="width: 15px; height: 15px; background: ${v['color']}; border: 1px solid black; margin-right: 6px;"></div>
+						<div>${user_name}</div>
+					</div>
+					<div>${period}</div>`;
 			}
 			messageDiv.innerText = "В данный момент есть сотрудники в отпуске:";
 			info.style.display = "block";
@@ -321,17 +341,7 @@
 		info.innerHTML = innerHtml;
 	}
 
-	// Функция для получения названия месяца по номеру
-	function getMonthName(monthNumber) {
-		const monthNames = [
-			"", // Пустая строка для нуля
-			"января", "февраля", "марта", "апреля", "мая", "июня", 
-			"июля", "августа", "сентября", "октября", "ноября", "декабря"
-		];
-		return monthNames[parseInt(monthNumber)];
-	}
-
-	document.addEventListener("DOMContentLoaded", function() {
+	document.addEventListener("DOMContentLoaded", function () {
 		const currentDate = new Date();
 		const currentDay = currentDate.getDate();
 		const currentMonth = currentDate.getMonth();
@@ -342,9 +352,7 @@
 		const currentWeekday = currentDate.getDay() === 0 ? 6 : currentDate.getDay() - 1;
 		const weekOffset = Math.floor((currentDay + firstWeekday - 1) / 7) + 1;
 
-		const monthNames = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", 
-							"Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
-		const month = monthNames[currentMonth];
+		const month = fullMonthNames[currentMonth];
 		const currentId = `${month}_${weekOffset}_${currentWeekday}`;
 
 		const currentDayElement = document.getElementById(currentId);
@@ -353,13 +361,10 @@
 		}
 	});
 
-	// Функция для получения данных об отделе сотрудника по имени
 	function getEmployeeDepartment(employeeName) {
-		let tableRows = document.querySelectorAll(".vacation-cell");
-
-		for (let row of tableRows) {
-			let name = row.getAttribute("data-employee-name").trim();
-			if (name === employeeName.trim()) {
+		let rows = document.querySelectorAll(".vacation-cell");
+		for (let row of rows) {
+			if (row.getAttribute("data-employee-name").trim() === employeeName.trim()) {
 				return row.querySelector("th:nth-child(2)").innerText.trim();
 			}
 		}
@@ -367,203 +372,143 @@
 	}
 
 	function showCalendarPopup(obj) {
-		// Разбиваем идентификатор и находим нужные данные
-		let month = obj.id.split('_')[0].toString().trim();
-		let week = obj.id.split('_')[1].toString().trim();
-		let dayIndex = Number(obj.id.split('_')[2].toString().trim());
-
-		// Извлекаем день по индексу
+		let [month, week, dayIndex] = obj.id.split('_');
+		dayIndex = Number(dayIndex);
 		let day = data[month][week][dayIndex]?.name || dayIndex;
-
-		// Форматируем месяц для заголовка
-		let month_for_lbl = (month === "Март" || month === "Август") 
-			? month + 'а' 
-			: month.substring(0, month.length - 1) + 'я';
-
-		// Приводим первую букву месяца к нижнему регистру
-		month_for_lbl = month_for_lbl.charAt(0).toLowerCase() + month_for_lbl.slice(1);
-		
+		let month_for_lbl = getMonthLabel(month).toLowerCase();
 		const year = "{{year}}";
 		let title = `Отпуска на ${day} ${month_for_lbl} ${year}`;
-
-		// Преобразуем название месяца в числовой формат
-		const monthNumbers = {
-			"Январь": "01", "Февраль": "02", "Март": "03", "Апрель": "04", 
-			"Май": "05", "Июнь": "06", "Июль": "07", "Август": "08", 
-			"Сентябрь": "09", "Октябрь": "10", "Ноябрь": "11", "Декабрь": "12"
-		};
-		let monthNumber = monthNumbers[month] || "00";
-
-		// Добавляем ведущий ноль для дня, если он меньше 10
+		let monthNumber = monthToNumber[month] || "00";
 		let formattedDay = day < 10 ? `0${day}` : day;
-
 		let formattedDate = `${formattedDay}.${monthNumber}.${year}`;
-		
-		// Подготавливаем данные об отпусках
+
 		let vacationData = [];
 		if (Object.keys(data[month][week][dayIndex]['date']).length > 0) {
 			for (const [user_id, info] of Object.entries(data[month][week][dayIndex]['date'])) {
 				let user_name = user_names[user_id] || "Неизвестный пользователь";
 				let period = formatVacationPeriod(info['date']);
 				let department = getEmployeeDepartment(user_id);
-				vacationData.push({ name: user_name, period: period, department: department, color: info['color'],
-				vac_id: info['vac_id'] });
+				vacationData.push({ name: user_name, period, department, color: info['color'], vac_id: info['vac_id'] });
 			}
 		}
 
-		// Подсчитываем количество сотрудников
-		const employeeCount = vacationData.length;
-
-		// Генерируем содержимое поп-апа
 		let content = '';
-
 		if (vacationData.length > 0) {
 			content += `<table class="table" style="width: 100%;">
 				<thead>
 					<tr>
-						<th style="width: 270px; text-align: left;">Сотрудник</th>
-						<th style="width: 350px; text-align: left;">Отдел</th>
-						<th style="width: 300px; text-align: left;">Период</th>
+						<th>Сотрудник</th>
+						<th>Отдел</th>
+						<th>Период</th>
 					</tr>
 				</thead>
 				<tbody>`;
 			for (let entry of vacationData) {
+				const editUrl = `/users/vacations/vacation_edit/${year}/${entry.vac_id}/?from=calendars`;
 				content += `<tr>
-					<td style="text-align: left;">
+					<td>
 						<div style="display: flex; align-items: center;">
 							<div style="width: 15px; height: 15px; background: ${entry.color}; border: 1px solid black; margin-right: 6px;"></div>
-							<a href="#" style="color: #15a362; text-decoration: underline;">${entry.name}</a>
+							<a href="#" class="ellipsis-cell" style="color: #15a362;" title="${entry.name}">${entry.name}</a>
 						</div>
 					</td>
-					<td style="text-align: left;">${entry.department}</td>`;
-				
-					// Если пользователь босс, отображаем период как ссылку, иначе как текст
-					if (isBoss(currentUser) || currentUser === entry.name) {
-						const editUrl = `/users/vacations/vacation_edit/${year}/${entry.vac_id}/?from=calendars`;
-						content += `<td style="text-align: left; font-style: italic; text-decoration: underline; color: #15a362;">
-							<a href="${editUrl}" style="color: inherit; text-decoration: inherit;">${entry.period}</a>
-						</td>`;
-					} else {
-						content += `<td style="text-align: left; font-style: italic; color: black;">
-							${entry.period}
-						</td>`;
-					}
-
-					content += `</tr>`;
-				}
+					<td><span class="ellipsis-cell" title="${entry.department}">${entry.department}</span></td>
+					<td>
+						<span class="ellipsis-cell" title="${entry.period}" style="font-style: italic; ${isBoss(currentUser) || currentUser === entry.name ? 'text-decoration: underline; color: #15a362;' : 'color: black;'}">
+							${isBoss(currentUser) || currentUser === entry.name ? `<a href="${editUrl}" style="color: inherit; text-decoration: inherit;">${entry.period}</a>` : entry.period}
+						</span>
+					</td>
+				</tr>`;
+			}
 			content += `</tbody></table>`;
 		} else {
-			content = `<div style="font-size: 22px; text-align: left;">Не найдено отпусков за <strong>${formattedDate}</strong></div>`;
+			content = `<div style="font-size: 22px;">Не найдено отпусков за <strong>${formattedDate}</strong></div>`;
 		}
 
-		// Генерируем заголовок с количеством сотрудников
-		const employeeCountBadge = `<span style="background-color: #5b99ea; color: white; padding: 4px 8px; border-radius: 4px; margin-left: 10px;">${employeeCount} чел.</span>`;
-		title += employeeCountBadge; // Добавляем количество сотрудников к заголовку
-
-		// Отображаем SweetAlert2 с поп-апом
+		title += `<span style="background-color: #5b99ea; color: white; padding: 4px 8px; border-radius: 4px; margin-left: 10px;">${vacationData.length} чел.</span>`;
+		
+		const wrapped = `<div style="text-align: left;">${content}</div>`;
+		
 		Swal.fire({
 			title: `<div style="text-align: left;">${title}</div>`,
-			html: content,
+			html: wrapped,
 			showCloseButton: true,
 			showConfirmButton: false,
 			customClass: {
 				popup: 'custom-popup'
-			},
-			didClose: () => {
-				document.querySelector('.swal2-popup').classList.add('swal2-hide');
 			}
 		});
-		
+
 		const closeButton = document.querySelector('.swal2-close');
 		if (closeButton) {
 			closeButton.style.outline = 'none';
 		}
 	}
 
-	// Функция для форматирования периода отпуска
 	function formatVacationPeriod(dateRange) {
 		let [start, end] = dateRange.split(' - ');
-		let [startDay, startMonth] = start.split('-').reverse();
-		let [endDay, endMonth] = end.split('-').reverse();
-
-		return `${startDay} ${getMonthName(startMonth)} - ${endDay} ${getMonthName(endMonth)}`;
+		let [day1, month1] = start.split('-').reverse();
+		let [day2, month2] = end.split('-').reverse();
+		return `${day1} ${getMonthName(month1)} - ${day2} ${getMonthName(month2)}`;
 	}
 
-	let tooltipTimeout; // Переменная для хранения таймаута
+	let tooltipTimeout;
 
 	function startTooltipTimeout(event, month, week, day) {
-		clearTimeout(tooltipTimeout); // Удаляем предыдущий таймаут
+		clearTimeout(tooltipTimeout);
 		tooltipTimeout = setTimeout(() => {
-			// Проверяем наличие данных перед показом тултипа
-			if (data[month] && data[month][week] && data[month][week][day] && Object.keys(data[month][week][day]['date']).length > 0) {
-				showTooltip(event, month, week, day); // Показываем тултип
+			if (data[month]?.[week]?.[day]?.['date'] && Object.keys(data[month][week][day]['date']).length > 0) {
+				showTooltip(event, month, week, day);
 			}
-		}, 400); // Задержка в 400 мс
+		}, 400);
 	}
 
 	function clearTooltipTimeout() {
-		clearTimeout(tooltipTimeout); // Очищаем таймаут
-		hideTooltip(); // Скрываем тултип
+		clearTimeout(tooltipTimeout);
+		hideTooltip();
 	}
 
 	function showTooltip(event, month, week, day) {
 		let tooltip = document.getElementById('tooltip');
-		const monthNames = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
-
-		if (data[month] && data[month][week] && data[month][week][day] && Object.keys(data[month][week][day]['date']).length > 0) {
+		if (data[month][week][day] && Object.keys(data[month][week][day]['date']).length > 0) {
 			let tooltipContent = '';
-
 			for (const [user_id, v] of Object.entries(data[month][week][day]['date'])) {
-				let first_date = v['date'].split(' - ')[0];
-				let second_date = v['date'].split(' - ')[1];
-
-				let firstDay = first_date.split('-')[2]; 
-				let firstMonth = monthNames[parseInt(first_date.split('-')[1], 10) - 1];
-
-				let secondDay = second_date.split('-')[2]; 
-				let secondMonth = monthNames[parseInt(second_date.split('-')[1], 10) - 1];
-
+				let [start, end] = v['date'].split(' - ');
+				let [day1, month1] = start.split('-').reverse();
+				let [day2, month2] = end.split('-').reverse();
 				let user_name = user_names[user_id] || "Неизвестный пользователь";
 
-				tooltipContent += `<div style="color: ${v['color']};">${user_name}</div>`;
-				tooltipContent += `<div>${firstDay} ${firstMonth} - ${secondDay} ${secondMonth}</div>`;
+				tooltipContent += `<div style="color: ${v['color']};">${user_name}</div>
+					<div>${day1} ${getMonthName(month1)} - ${day2} ${getMonthName(month2)}</div>`;
 			}
-
 			tooltip.innerHTML = tooltipContent;
-			tooltip.style.display = 'block'; 
+			tooltip.style.display = 'block';
 			tooltip.style.left = event.pageX + 'px';
-			tooltip.style.top = (event.pageY - tooltip.offsetHeight - 12) + 'px'; 
+			tooltip.style.top = (event.pageY - tooltip.offsetHeight - 12) + 'px';
 		} else {
-			tooltip.style.display = 'none'; 
-			tooltip.innerHTML = ''; 
+			hideTooltip();
 		}
 	}
 
 	function hideTooltip() {
 		let tooltip = document.getElementById('tooltip');
-		tooltip.style.display = 'none'; // Скрываем тултип
-		tooltip.innerHTML = ''; // Очищаем содержимое
+		tooltip.style.display = 'none';
+		tooltip.innerHTML = '';
 	}
-	
+
 	function filtrByUser(obj) {
 		let row = obj.closest('tr');
 		let employeeId = row.getAttribute('data-employee-name');
-
 		let days = document.getElementsByName('day');
-		for (let i = 0; i < days.length; i++) {
-			let parts = days[i].id.split('_');
-			let month = parts[0];
-			let week = parts[1];
-			let day = parts[2];
 
-			if (Object.entries(data[month][week][day]['data']).length > 1) {
+		for (let i = 0; i < days.length; i++) {
+			let [month, week, day] = days[i].id.split('_');
+			if (data[month][week][day]) {
 				for (const [k, v] of Object.entries(data[month][week][day]['data'])) {
-					if (k != employeeId) {
-						if (day == 5 || day == 6) {
-							days[i].childNodes[1].style.background = 'rgb(219, 219, 219)';
-						} else {
-							days[i].childNodes[1].style.background = 'transparent';
-						}
+					if (k !== employeeId) {
+						days[i].childNodes[1].style.background = (day == 5 || day == 6)
+							? 'rgb(219, 219, 219)'
+							: 'transparent';
 						days[i].childNodes[1].style.color = '#808080';
 					} else {
 						days[i].childNodes[1].style.background = 'linear-gradient(135deg, #df691a 50%, #4e5d6c 50%, #4e5d6c 100%)';
@@ -572,21 +517,6 @@
 						days[i].childNodes[1].style.backgroundSize = '28px 28px';
 						days[i].childNodes[1].style.backgroundPosition = 'center';
 						days[i].childNodes[1].style.backgroundRepeat = 'no-repeat';
-						break;
-					}
-				}
-			} else {
-				for (const [k, v] of Object.entries(data[month][week][day]['data'])) {
-					if (k != employeeId) {
-						if (day == 5 || day == 6) {
-							days[i].childNodes[1].style.background = 'rgb(219, 219, 219)';
-						} else {
-							days[i].childNodes[1].style.background = 'transparent';
-						}
-						days[i].childNodes[1].style.color = '#808080';
-					} else {
-						days[i].childNodes[1].style.background = obj.parentElement.childNodes[1].style.background;
-						days[i].childNodes[1].style.color = 'white';
 						break;
 					}
 				}

@@ -196,7 +196,7 @@
 {% endblock %}
 
 {% block content %}
-<div id="year-slider-container" style="display: flex; align-items: center; justify-content: center; margin-top: 30px; margin-left: 358px; width: 105%;">
+<div id="year-slider-container" style="display: flex; align-items: center; justify-content: center; margin-top: 30px; margin-left: 403px; width: 105%;">
     <button id="prev-year" style="outline: none; background: white; border: none; border-radius: 50%; width: 60px; height: 60px; box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.2); display: flex; align-items: center; justify-content: center; cursor: pointer; margin-right: 35px;">
         <img src="{% static 'arrow-left.svg' %}" alt="Previous" style="width: 25px; height: 25px;">
     </button>
@@ -211,8 +211,15 @@
                 <span style="color: #dc3545; font-size: 18px;">еще нет отпусков</span>
             {% endif %}
             <span style="color: #828d9f; font-size: 18px; display: flex; align-items: center; justify-content: center;">
-                <img src="{% static 'check-square.svg' %}" style="width: 20px; height: 20px; margin-right: 5px;">
-                Произв. календарь загружен
+                {% with holidays_loaded|get_item:year as is_loaded %}
+                    {% if is_loaded %}
+                        <img src="{% static 'check-square.svg' %}" style="width: 20px; height: 20px; margin-right: 5px;">
+                        Произв. календарь загружен
+                    {% else %}
+                        <img src="{% static 'exclamation-square.svg' %}" style="width: 20px; height: 20px; margin-right: 2px;">
+                        Произв. календарь не загружен
+                    {% endif %}
+                {% endwith %}
             </span>
         </a>
         {% endfor %}

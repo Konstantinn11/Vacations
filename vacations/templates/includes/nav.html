@@ -43,7 +43,7 @@
 	.dropdown-menu {
 		background-color: #ffffff;
 		border-radius: 5px;
-		min-width: 250px;
+		width: 250px;
 		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 		font-family: Calibri, sans-serif;
 		font-size: 16px;
@@ -72,7 +72,7 @@
 {% load user_filters %}
 {% with request.resolver_match.view_name as view_name %}
 <nav class="navbar navbar-expand-md {% if navbar_style %}{{ navbar_style }}{% endif %}" style="font-weight: bold;">
-	<div class="navbar-collapse collapse w-100 order-1 order-md-0 dual-collapse2">
+	<div class="navbar-collapse collapse w-100 order-1 order-md-0 dual-collapse2" style="min-width: 1000px;">
 		{% if show_add_leave_button %}
 				<a id="toggle-info-block">
 					<img class="menu-icon" style="height: 40px; width: 40px; display: flex; align-items: center; justify-content: center; margin-left: 4px; cursor: pointer;" src="{% static 'menu.svg' %}">
@@ -198,8 +198,8 @@
 				{% endif %}
 				{% if request.user.is_superuser %}
 				<li class="d-flex align-items-center mr-3">
-					<a href="#" style="display: flex; align-items: center;">
-						<img src="{% static 'gear_profile.svg' %}" style="height: 24px; width: 24px; object-fit: contain; cursor: pointer;">
+					<a href="{% url 'holiday_calendar:holiday_list' %}" style="display: flex; align-items: center;">
+						<img src="{% static 'gear_profile.svg' %}" title="Производственный календарь" style="height: 24px; width: 24px; object-fit: contain; cursor: pointer;">
 					</a>
 				</li>
 				{% endif %}

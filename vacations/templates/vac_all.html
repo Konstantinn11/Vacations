@@ -2,6 +2,7 @@
 {% load cache %}
 {% block title %}Отпуска{% endblock %}
 {% load user_filters %}
+{% load url_replace %}
 {% load static %}
 {% block header %}
 <title>Ближайшие отпуска</title>
@@ -30,6 +31,10 @@
     .darker:hover { color: green; }
     .vacation-cell:not(.vacation-row):hover { background-color: rgba(0, 0, 0, 0.01); transition: background-color 0.3s ease; }
     .custom-table tr:last-child td { border-bottom: none; }
+    .sort-arrow { color: #5d6778; font-size: 14px; text-decoration: none; margin-left: 5px; }
+    .sort-arrow:hover,
+    .sort-arrow:focus,
+    .sort-arrow:active { color: #5d6778; text-decoration: none; }
 </style>
 {% endblock %}
 
@@ -43,8 +48,29 @@
         {% if vacations_by_user %}
         <tr>
             <th>Сотрудник</th>
-            <th>Отдел</th>
-            <th>Период</th>
+            <th>
+                Отдел
+                {% if sort_otd == 'asc' %}
+                    {% url_replace request 'sort_otd' 'desc' as qs %}
+                    <a href="?{{ qs }}" class="sort-arrow selected">↑</a>
+                {% elif sort_otd == 'desc' %}
+                    {% url_replace request 'sort_otd' 'asc' as qs %}
+                    <a href="?{{ qs }}" class="sort-arrow selected">↓</a>
+                {% else %}
+                    {% url_replace request 'sort_otd' 'asc' as qs %}
+                    <a href="?{{ qs }}" class="sort-arrow">⇅</a>
+                {% endif %}
+            </th>
+            <th>
+                Период
+                {% if sort_period == 'asc' %}
+                    {% url_replace request 'sort_period' 'desc' as qs %}
+                    <a href="?{{ qs }}" class="sort-arrow selected">↑</a>
+                {% else %}
+                    {% url_replace request 'sort_period' 'asc' as qs %}
+                    <a href="?{{ qs }}" class="sort-arrow selected">↓</a>
+                {% endif %}
+            </th>
             <th>Дней</th>
         </tr>
         {% for key, value in vacations_by_user.items %}

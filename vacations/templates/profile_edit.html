@@ -34,8 +34,14 @@
     <form method="post">
         {% csrf_token %}
         
-        <label for="full_name" class="form-label">ФИО<span style="color: red;">&nbsp;*</span></label>
-        <input type="text" id="full_name" name="full_name" value="{{ user_info.user.first_name }} {{ user_info.user.last_name }}" required>
+        <label for="last_name" class="form-label">Фамилия<span style="color: red;">&nbsp;*</span></label>
+        <input type="text" id="last_name" name="last_name" value="{{ user_info.user.last_name }}" required>
+
+        <label for="first_name" class="form-label">Имя<span style="color: red;">&nbsp;*</span></label>
+        <input type="text" id="first_name" name="first_name" value="{{ user_info.user.first_name }}" required>
+
+        <label for="patronymic" class="form-label">Отчество</label>
+        <input type="text" id="patronymic" name="patronymic" value="{{ user_info.user.patronymic }}">
 
         <label for="email" class="form-label">Email</label>
         <input type="email" id="email" name="email" value="{{ user_info.user.email }}" required>
