@@ -39,5 +39,25 @@ class VacationForm(forms.ModelForm):
         self.fields['how_long'].widget.attrs.update(date_field_style)
         self.fields['day_end'].widget.attrs.update(date_field_style)
 
+        self.fields['day_end'].required = True
+        self.fields['day_end'].widget.attrs.update({'required': 'required'})
+
         # Перестановка полей
         self.order_fields(['day_start', 'how_long', 'day_end'])
+
+    def clean(self):
+        cleaned = super().clean()
+        day_start = cleaned.get('day_start')
+        day_end   = cleaned.get('day_end')
+
+        if not day_end:
+            self.add_error('day_end', 'Укажите дату окончания отпуска.')
+            return cleaned
+
+        if day_start and day_end and day_end.year != day_start.year:
+            self.add_error(
+                'day_end',
+                'Отпуск не может переходить на следующий календарный год.'
+            )
+
+        return cleaned

@@ -59,8 +59,22 @@
                         </span>
                     {% endif %}
                 </label>
-                <div style="flex: 1;">
+                <div style="flex: 1; position: relative;">
                     {{ field }}
+                    {% if field.errors %}
+                    <div class="error"
+                         style="
+                            position: absolute;
+                            top: 100%;
+                            left: 2px;
+                            margin-top: 7px;
+                            font-size: 16px;
+                            color: red;
+                            white-space: nowrap;
+                         ">
+                        {{ field.errors|striptags }}
+                    </div>
+                    {% endif %}
                 </div>
             </div>
             
