@@ -39,6 +39,8 @@ class VacationForm(forms.ModelForm):
         self.fields['how_long'].widget.attrs.update(date_field_style)
         self.fields['day_end'].widget.attrs.update(date_field_style)
 
+        self.fields['day_start'].required = True
+        self.fields['day_start'].widget.attrs.update({'required': 'required'})
         self.fields['day_end'].required = True
         self.fields['day_end'].widget.attrs.update({'required': 'required'})
 
@@ -49,6 +51,9 @@ class VacationForm(forms.ModelForm):
         cleaned = super().clean()
         day_start = cleaned.get('day_start')
         day_end   = cleaned.get('day_end')
+
+        if not day_start:
+            self.add_error('day_start', 'Укажите дату начала отпуска.')
 
         if not day_end:
             self.add_error('day_end', 'Укажите дату окончания отпуска.')

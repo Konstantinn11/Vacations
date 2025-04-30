@@ -222,12 +222,6 @@
             var startDate = $('#id_day_start').val();
             var endDate = $('#id_day_end').val();
 
-            if (!startDate || !endDate) {
-                alert('Заполните обязательные поля.');
-                event.preventDefault();
-                return false;
-            }
-
             var startParts = startDate.split('-');
             var endParts = endDate.split('-');
 
