@@ -26,6 +26,7 @@ import pymorphy2
 from openpyxl.styles import Alignment, Border, Side, Font
 from holiday_calendar.utils import get_calendar_data
 from .utils import calculate_end_date, calculate_working_days
+from django.core.exceptions import ValidationError
 
 class CustomPasswordResetView(PasswordResetView):
     form_class = PasswordResetForm
@@ -423,6 +424,7 @@ def vac_2(request, year, otd):
     month_all = full_year(year)
 
     holidays, special_work_days = get_calendar_data(year)
+    holidays_for_year = holidays.get(year, {})
 
     bosses_list = list(bosses.keys())
     current_user_name = request.user.get_full_name()
@@ -444,6 +446,7 @@ def vac_2(request, year, otd):
         otd_users = User_info.objects.filter(otd_number_id=otd_id) 
         otd_users_id = [user.user_id for user in otd_users] 
         vacations = Vacation.objects.filter(user_id__in=otd_users_id, year=str(year))
+        filtered_users_id = [request.user.id]
         otds_for_choise = [otd]
     else:
         if otd == 0:
@@ -452,11 +455,13 @@ def vac_2(request, year, otd):
             otd_users = User_info.objects.filter(otd_number_id__in=otd_ids)
             otd_users_id = [user.user_id for user in otd_users]
             vacations = Vacation.objects.filter(user_id__in=otd_users_id, year=str(year))
+            filtered_users_id = otd_users_id.copy()
         else:
             otd_id = Unit.objects.filter(description=otd)[0].id  
             otd_users = User_info.objects.filter(otd_number_id=otd_id)  
             otd_users_id = [user.user_id for user in otd_users]  
             vacations = Vacation.objects.filter(user_id__in=otd_users_id, year=str(year))
+            filtered_users_id = otd_users_id.copy()
         otds_for_choise = bosses[request.user.get_full_name()]
 
 
@@ -532,6 +537,10 @@ def vac_2(request, year, otd):
                     date = today.replace(year=int(year), month=m, day=int(days_in_week[i]))
                 month_all[month][week][i] = {'name': days_in_week[i], 'data': data, 'date': date}
 
+    employees = User_info.objects.filter(
+        user_id__in=filtered_users_id
+    ).select_related('user', 'position')
+    
     month_all_for_js = copy_dict_for_js(month_all)
 
     all_vac_for_js = {}
@@ -556,6 +565,7 @@ def vac_2(request, year, otd):
             'len_cross_vacations': len(cross_vacation_groups),
             'len_vacations': vacations.count(),
             'special_work_days': special_work_days,
+            'holidays_json': json.dumps(holidays_for_year),
             'vacations_by_user': vacations_by_user,
             'otds_for_choise': otds_for_choise,
             'bosses': [key for key in bosses.keys()],
@@ -567,6 +577,7 @@ def vac_2(request, year, otd):
             'current_user_name': current_user_name,
             'navbar_style': 'custom-navbar',
             'show_vacation_link': True,
+            'employees': employees,
         }
     )
 
@@ -686,6 +697,8 @@ def vacation_edit(request, year, vac_id):
                 return redirect('vac_2', year=year, otd=0)
             elif from_page == 'all_vacations':
                 return redirect(f"{reverse('vac_all_vacations')}?user={employee_name}")
+            elif from_page == 'vac_all':
+                return redirect('vac_all', otd=0)
             else:
                 return redirect('vac_my_vacations')
 
@@ -717,7 +730,9 @@ def vacation_delete(request, vac_id):
     if redirect_from == 'calendars':
         return redirect('vac_2', year=year, otd=0)
     elif redirect_from == 'all_vacations':
-        return redirect('vac_all_vacations') 
+        return redirect('vac_all_vacations')
+    elif redirect_from == 'vac_all':
+        return redirect('vac_all', otd=0)
     else:
         return redirect('vac_my_vacations')
 
@@ -1370,3 +1385,26 @@ def export_vacations(request, year, otd):
 
     wb.save(response)
     return response
+
+
+def save_vacations(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            for vacation_data in data:
+                # Создаем объект с валидацией
+                vacation = Vacation(
+                    user_id=vacation_data.get('employee'),
+                    day_start=vacation_data.get('day_start'),
+                    day_end=vacation_data.get('day_end')
+                )               
+                # Вызываем полную валидацию
+                vacation.full_clean()
+                vacation.save()
+                
+            return JsonResponse({'status': 'success'})
+        except ValidationError as e:
+            return JsonResponse({'status': 'error', 'message': dict(e)})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)})
+    return JsonResponse({'status': 'invalid method'})

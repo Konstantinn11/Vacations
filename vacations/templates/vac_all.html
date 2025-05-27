@@ -89,7 +89,7 @@
                 <div style="display: inline-block; color: black; font-style: italic; font-size: 18px;">
                     {% for period in value.vacation_periods %}
                         {% if value.name == request.user.get_full_name or request.user.get_full_name in bosses %}
-                        <a href="{% url 'vacation_detail' vac_id=value.dates.0.vac_id %}" class="darker" style="font-style: italic; font-size: 18px;">{{ period }}</a><br>
+                        <a href="{% url 'vacation_detail' vac_id=value.dates.0.vac_id %}?from=vac_all" class="darker" style="font-style: italic; font-size: 18px;">{{ period }}</a><br>
                         {% else %}
                             <span style="display: inline-block; color: black; font-style: italic;">{{ period }}</span><br>
                         {% endif %}

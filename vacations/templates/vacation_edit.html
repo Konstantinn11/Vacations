@@ -10,7 +10,7 @@
 </div>
 
 <style>
-    .table-container { width: 1000px; margin: 0 auto; margin-top: 20px; margin-left: 358px; padding: 30px; background-color: #f7f7f7; box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.2); border-radius: 5px; }
+    .table-container { width: 800px; margin: 0 auto; margin-top: 20px; margin-left: 358px; padding: 30px; background-color: #f7f7f7; box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.2); border-radius: 5px; }
 	.btn-edit { background-color: #15a362; font-family: 'Calibri'; font-style: normal; width: 200px; height: 44px; font-weight: 700; font-size: 20px; padding: 0 10px; border-radius: 5px; color: white; text-align: center; display: flex; align-items: center; justify-content: center; text-decoration: none; text-transform: none; margin: 0;}
 	.btn-my-vacations { background-color: #f7f7f7; color: #5d6778 !important; border: 1px solid #ccc; font-family: 'Calibri'; font-style: normal; font-weight: 700; width: 130px; height: 44px; font-size: 20px; padding: 0 10px; border-radius: 5px; color: white; text-align: center; display: flex; align-items: center; justify-content: center; text-decoration: none; margin-left: 30px; }
 	.btn-edit:hover { background-color: rgba(21, 163, 98, 0.8); text-decoration: none; color: white; }
@@ -23,7 +23,7 @@
     .tooltip-text::after { content: ""; position: absolute; bottom: -9px; left: 50%; transform: translateX(-50%); width: 0; height: 0; z-index: 1; border-left: 7px solid transparent; border-right: 7px solid transparent; border-top: 9px solid rgba(0, 0, 0, 0.9); }
     .form-control { width: 340px !important; height: 45px !important; font-size: 19px; background-color: white !important; border: 1px solid #ddd; border-radius: 5px; padding-left: 10px; transition: border-color 0.3s ease; }
     .form-control:focus { border-color: #0d6efd; outline: none; box-shadow: none; }
-    .btn-delete { background-color: #d26d69; font-family: 'Calibri'; font-style: normal; font-weight: 700; width: 140px; height: 44px; font-size: 20px; padding: 0 10px; border-radius: 5px; color: white; text-align: center; display: flex; align-items: center; justify-content: center; text-decoration: none; margin-left: 445px; }
+    .btn-delete { background-color: #d26d69; font-family: 'Calibri'; font-style: normal; font-weight: 700; width: 140px; height: 44px; font-size: 20px; padding: 0 10px; border-radius: 5px; color: white; text-align: center; display: flex; align-items: center; justify-content: center; text-decoration: none; margin-left: 245px; }
     .btn-delete:hover { background-color: rgba(210, 109, 105, 0.9); text-decoration: none; color: white; }
 </style>
 {% endblock %}
@@ -41,7 +41,8 @@
             <label for="employee" style="font-size: 21px; flex: 0 0 250px; text-align: left; color: #5d6778;">
                 Сотрудник<span style="color: red;">&nbsp;*</span>
             </label>
-            <div style="font-size: 21px; color: #5d6778; flex: 1; text-align: left; margin-top: -6px;">
+            <div style="font-size: 21px; color: #5d6778; flex: 1; text-align: left; margin-top: -6px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 500px;"
+            title="{{ employee_name }}{% if employee_position %} ({{ employee_position }}){% endif %}">
                 {{ employee_name }}{% if employee_position %} ({{ employee_position }}){% endif %}
             </div>
         </div>
@@ -95,6 +96,9 @@
             {% elif request.GET.from == 'calendars' %}
                 <a class="btn-my-vacations" href="{% url 'vac_2' year=year otd=0 %}">Отмена</a>
                 <a class="btn-delete" href="{% url 'vacation_delete' vac_id=vac_id %}?from=calendars" onclick="confirmDeletion(event, this)">Удалить</a>
+            {% elif request.GET.from == 'vac_all' %}
+                <a class="btn-my-vacations" href="{% url 'vac_all' otd=0 %}">Отмена</a>
+                <a class="btn-delete" href="{% url 'vacation_delete' vac_id=vac_id %}?from=vac_all" onclick="confirmDeletion(event, this)">Удалить</a>
             {% else %}
                 <a class="btn-my-vacations" href="{% url 'vac_my_vacations' %}">Отмена</a>
                 <a class="btn-delete" href="{% url 'vacation_delete' vac_id=vac_id %}" onclick="confirmDeletion(event, this)">Удалить</a>

@@ -131,13 +131,10 @@
 						</div>
 						
 						{% if key == current_user_id or request.user.get_full_name in bosses %}
-							<a id="creat_cur_{{value.user_id}}" 
-							style="color: black; font-size: 0.875em; text-decoration: underline; margin-left: 10px;" 
-							href="{% url 'vacation_new' year=year %}?employee_name={{ value.user.get_full_name }}">
-								<div style="cursor: pointer; justify-content: center; align-items: center;" class="hover-icon">
-									<img style="height: 20px;" src="{% static 'trello_plus.svg' %}">
-								</div>
-							</a>
+							<div style="cursor: pointer; margin-left: 10px;" class="hover-icon" 
+								onclick="openAddVacationModal('{{ value.user.id }}', '{{ value.user.get_full_name|escapejs }}')">
+								<img style="height: 20px;" src="{% static 'trello_plus.svg' %}">
+							</div>
 						{% endif %}
 					</div>
 				{% endfor %}

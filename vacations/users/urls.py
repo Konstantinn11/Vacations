@@ -21,4 +21,5 @@ urlpatterns = [
     path('employees/', views.employees, name='employees'),
     path('ajax/get_department_employees/', get_department_employees, name='get_department_employees'),
     path('vacations/export/<int:year>/<int:otd>/', views.export_vacations, name='export_vacations'),
+    path('save-vacations/', views.save_vacations, name='save_vacations'),
 ]

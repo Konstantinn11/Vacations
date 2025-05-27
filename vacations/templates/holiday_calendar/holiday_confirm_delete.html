@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% block content %}
 <div class="container mt-4" style="margin-left: 358px;">
+  <title>Удаление записи</title>
   <h1 style="color: black;">Удалить запись?</h1>
   <p style="margin-top: 25px; font-size: 18px;">Вы уверены, что хотите удалить <strong>{{ holiday.date }}</strong> — 
      {% if holiday.is_workday %}рабочий{% else %}праздник{% endif %}?</p>

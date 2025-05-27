@@ -48,7 +48,7 @@
             {% if len_boss_departments > 1 %}
                 <div style="display: flex; align-items: center; margin-bottom: 30px;">
                     <label for="department" style="font-size: 21px; flex: 0 0 250px; text-align: left; color: #5d6778;">
-                        Фильтр по отделу
+                        Отдел
                     </label>
                     <select name="department" id="department">
                         <option value=""
@@ -71,31 +71,17 @@
                 <label for="employee" style="font-size: 21px; flex: 0 0 250px; text-align: left; color: #5d6778;">
                     Сотрудник<span style="color: red;">&nbsp;*</span>
                 </label>
-                {% if employee_name %}
-                    <select name="employee" id="employee">
-                        {% for employee in employees %}
-                            <option value="{{ employee.user.id }}" style="font-weight: normal;"
-                                {% if employee.user.get_full_name == employee_name %}selected{% endif %}>
-                                {{ employee.user.get_full_name }}
-                                {% if employee.position %}
-                                    ({{ employee.position.position }})
-                                {% endif %}
-                            </option>
-                        {% endfor %}
-                    </select>
-                {% else %}
-                    <select name="employee" id="employee">
-                        {% for employee in employees %}
-                            <option value="{{ employee.user.id }}" style="font-weight: normal;"
-                                    {% if employee.user.id == user.id %}selected{% endif %}>
-                                {{ employee.user.get_full_name }} 
-                                {% if employee.position %}
-                                    ({{ employee.position.position }})
-                                {% endif %}
-                            </option>
-                        {% endfor %}
-                    </select>
-                {% endif %}
+                <select name="employee" id="employee">
+                    {% for employee in employees %}
+                        <option value="{{ employee.user.id }}" style="font-weight: normal;"
+                                {% if employee.user.id == user.id %}selected{% endif %}>
+                            {{ employee.user.get_full_name }} 
+                            {% if employee.position %}
+                                ({{ employee.position.position }})
+                            {% endif %}
+                        </option>
+                    {% endfor %}
+                </select>
             </div>
         {% endif %}
 
@@ -145,7 +131,11 @@
             {% if employee_name %}
                 <a class="btn-my-vacations" href="{% url 'vac_2' year=year otd=0 %}">Отмена</a>
             {% else %}
-                <a class="btn-my-vacations" href="{% url 'vac_my_vacations' %}">Отмена</a>
+                {% if is_boss %}
+                    <a class="btn-my-vacations" href="{% url 'vac_calendars' 0 %}">Отмена</a>
+                {% else %}
+                    <a class="btn-my-vacations" href="{% url 'vac_my_vacations' %}">Отмена</a>
+                {% endif %}
             {% endif %}
         </div>
     </form>

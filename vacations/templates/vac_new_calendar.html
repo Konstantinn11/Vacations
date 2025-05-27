@@ -7,6 +7,9 @@
 <title>Календарь отпусков</title>
 <link rel="stylesheet" href="{% static 'css/sweetalert2.min.css' %}">
 <script src="{% static 'libs/sweetalert2.min.js' %}"></script>
+<link rel="stylesheet" href="{% static 'css/flatpickr.min.css' %}">
+<script src="{% static 'libs/flatpickr.min.js' %}"></script>
+<script src="{% static 'libs/ru.js' %}"></script>
 <div style="display: flex; flex-direction: row; justify-content: left; align-items: center; flex-wrap: nowrap; width: 100%;">
     <a style="color: black; font-weight: bold; font-size: 38px; text-align: left; line-height: 50px; white-space: nowrap;">Календарь отпусков на {{year}}</a>
     <div style="display: flex; flex-direction: row; align-items: center; margin-left: 20px; gap: 20px; flex-grow: 1; justify-content: flex-end;">
@@ -160,8 +163,9 @@
 	}
 
 	.swal2-title {
-		font-size: 26px; 
+		font-size: 24px; 
 		color: #000000;
+		text-align: left;
 	}
 
 	.table {
@@ -198,7 +202,8 @@
 		animation: slideInTop 0.5s ease-out;
 	}
 
-	.custom-popup.swal2-hide {
+	.custom-popup.swal2-hide,
+	.my-add-vacation-modal.swal2-hide {
 		animation: slideOutTop 0.5s ease-in forwards;
 	}
 
@@ -209,6 +214,225 @@
 		max-width: 300px;
 		display: inline-block;
 		vertical-align: middle;
+	}
+
+	.my-add-vacation-modal {
+		top: 60px; 
+		position: fixed; 
+		animation: slideInTop 0.5s ease-out;
+	}
+
+	.my-add-vacation-modal .swal2-title {
+		margin-bottom: 10px;
+	}
+
+	.my-add-vacation-modal .swal2-input {
+		width: 100% !important;
+		margin: 5px 0 !important;
+	}
+
+	:root {
+		--text-color: #5d6778;
+		--field-height: 40px;
+		--gap: 10px;
+		--row-gap: 8px;
+	}
+
+	/* Общий цвет текста и полей */
+	.my-add-vacation-modal .swal2-html-container,
+	.my-add-vacation-modal .swal2-html-container label,
+	.my-add-vacation-modal .swal2-html-container input,
+	.vacation-form .dates-grid input[type="date"] {
+		color: var(--text-color);
+	}
+
+	/* Сетка для строки «Сотрудник» */
+	.vacation-form .employee-grid {
+		display: grid;
+		grid-template-columns: 120px 1fr;
+		column-gap: var(--gap);
+		align-items: center;
+		margin-bottom: 12px;
+	}
+	.vacation-form .label-cell {
+		display: flex;
+		align-items: center;
+		font-weight: 500;
+	}
+	.vacation-form select {
+		width: 100%;
+		box-sizing: border-box;
+		padding: 4px 8px;
+		height: var(--field-height);
+		text-align: left;
+		font-weight: normal;
+	}
+
+	/* Заголовки дат */
+	.vacation-form .dates-header {
+		display: grid;
+		grid-template-columns: 120px 1fr 0.6fr 1fr auto;
+		column-gap: var(--gap);
+		margin-bottom: 10px;
+		align-items: center;
+	}
+	.vacation-form .dates-header .date-header {
+		font-size: 0.9em;
+		font-weight: 400;
+		justify-self: center;
+	}
+
+	.vacation-form .dates-header > div:nth-child(2) {
+		margin-right: 10px;
+	}
+	.vacation-form .dates-header > div:nth-child(3) {
+		margin-right: 23px;
+	}
+	.vacation-form .dates-header > div:nth-child(4) {
+		margin-right: 30px;
+	}
+	
+	/* Сетка для полей дат */
+	.vacation-form .dates-grid {
+		display: grid;
+		grid-template-columns: 120px 1fr 0.6fr 1fr auto;
+		column-gap: var(--gap);
+		row-gap: var(--row-gap);
+		margin-bottom: 12px;
+		align-items: center;
+	}
+	.vacation-form .dates-grid input[type="text"],
+	.vacation-form .dates-grid input[type="number"] {
+		width: 100%;
+		max-width: 200px;
+		height: var(--field-height);
+		padding: 4px 8px;
+		box-sizing: border-box;
+		font-size: 0.9em;
+	}
+	.vacation-form .delete-row {
+		cursor: pointer;
+		height: 20px;
+	}
+
+	#add-vacation-button {
+		display: flex;
+  		align-items: center;
+		width: 160px;
+		background-color: white;
+		color: #5d6778;
+		border: 1px solid #5d6778;
+		border-radius: 5px;
+		font-size: 16px;
+		text-transform: none;
+		cursor: pointer;
+	}
+
+	#add-vacation-button:focus {
+		outline: none;
+		box-shadow: none;
+	}
+
+	#add-vacation-button .button-icon {
+		width: 16px;
+		height: 16px;
+		margin-left: 5px;
+		margin-right: 7px;
+		margin-bottom: 0;
+	}
+
+	.my-add-vacation-modal .swal2-actions {
+		display: flex;
+		justify-content: flex-start;
+		gap: 20px;
+		margin-top: 0;
+		margin-left: 29px;
+	}
+
+	.swal-confirm-btn {
+		width: 260px;
+		background-color: #15a362;
+		color: white;
+		text-transform: none;
+		border: none;
+		border-radius: 5px;
+		font-size: 16px;
+		cursor: pointer;
+	}
+
+	.swal-cancel-btn {
+		width: 120px;
+		background-color: white;
+		border-radius: 5px;
+		color: #5d6778;
+		border: 1px solid #5d6778;
+		text-transform: none;
+		font-size: 16px;
+		cursor: pointer;
+	}
+
+	.swal-cancel-btn:hover {
+		background-color: white;
+		color: #5d6778;
+		border: 1px solid #5d6778;
+		box-shadow: none;
+		outline: none;
+	}
+
+	.tooltip-wrapper {
+		position: relative;
+		display: inline-block;
+		cursor: pointer;
+	}
+
+	.tooltip-wrapper .tooltip-icon {
+		width: 18px;
+		height: 18px;
+		object-fit: contain;
+	}
+
+	.tooltip-wrapper::before {
+		content: attr(data-tooltip);
+		position: absolute;
+		bottom: calc(100% + 6px);
+		left: 50%;
+		transform: translateX(-50%);
+		width: 200px;          
+		background: rgba(0, 0, 0, 0.9);
+		color: #fff;
+		padding: 6px 8px;
+		border-radius: 4px;
+		font-size: 0.8em;
+		line-height: 1.2;
+		opacity: 0;
+		pointer-events: none;
+		transition: opacity 0.15s ease-in-out;
+		z-index: 1000;
+	}
+
+	.tooltip-wrapper::after {
+		content: "";
+		position: absolute;
+		bottom: calc(100% - 4px);
+		left: 50%;
+		transform: translateX(-50%);
+		border-width: 5px;
+		border-style: solid;
+		border-color: rgba(0, 0, 0, 0.9) transparent transparent transparent;
+		opacity: 0;
+		transition: opacity 0.15s ease-in-out;
+		z-index: 1000;
+	}
+
+	.tooltip-wrapper:hover::before,
+	.tooltip-wrapper:hover::after {
+		opacity: 1;
+	}
+
+	.swal2-input:focus { 
+		border-color: #0d6efd; 
+		outline: none;
+		box-shadow: none;
 	}
 </style>
 <div style="width: 110%; display: flex; flex-direction: row;">
@@ -430,7 +654,7 @@
 		const wrapped = `<div style="text-align: left;">${content}</div>`;
 		
 		Swal.fire({
-			title: `<div style="text-align: left;">${title}</div>`,
+			title: `<div>${title}</div>`,
 			html: wrapped,
 			showCloseButton: true,
 			showConfirmButton: false,
@@ -521,6 +745,319 @@
 					}
 				}
 			}
+		}
+	}
+
+	const modalHolidays = JSON.parse('{{ holidays_json|escapejs }}');
+	let vacationCounter = 1;
+
+	function calculateEndDate(startISO, daysCount) {
+		let date = new Date(startISO);
+		let remaining = parseInt(daysCount, 10);
+		if (isNaN(remaining) || remaining < 1) return startISO;
+
+		while (remaining > 0) {
+			date.setDate(date.getDate() + 1);
+
+			const weekday = date.getDay();          
+			const monthName = fullMonthNames[date.getMonth()];
+			const dayNum = date.getDate();
+
+			const isWeekend = (weekday === 0 || weekday === 6);
+			const isHoliday = Array.isArray(modalHolidays[monthName]) &&
+							modalHolidays[monthName].includes(dayNum);
+
+			if (!isWeekend && !isHoliday) {
+			remaining--;
+			}
+		}
+
+		const y = date.getFullYear();
+		const m = monthToNumber[monthName] || String(date.getMonth()+1).padStart(2,'0');
+		const d = String(dayNum).padStart(2, '0');
+		return `${y}-${m}-${d}`;
+	}
+
+	function openAddVacationModal(userId, userName) {
+		const initialContent = `
+			<div class="vacation-form">
+			<div class="employee-grid">
+				<div class="label-cell required">
+				<label for="vacation-employee">Сотрудник<span style="color: red;">&nbsp;*</span></label>
+				</div>
+				<select id="vacation-employee" class="swal2-input">
+					{% for emp in employees %}
+						<option value="{{ emp.user.id }}">
+						{{ emp.user.get_full_name }}
+						{% if emp.position %}
+							({{ emp.position.position }})
+						{% endif %}
+						</option>
+					{% endfor %}
+				</select>
+			</div>
+
+			<div class="dates-header">
+				<div style="width: 120px;"></div>
+				<div class="date-header">Дата начала</div>
+				<div class="date-header">
+					Дней
+					<span class="tooltip-wrapper" data-tooltip="Укажите количество календарных дней и дата окончания рассчитается автоматически.">
+						<img
+						src="{% static 'question.svg' %}"
+						alt="info"
+						class="tooltip-icon"
+						aria-hidden="true"
+						>
+					</span>
+				</div>
+				<div class="date-header">Дата окончания</div>
+				<div style="width: auto;"></div>
+			</div>
+			
+			<div class="dates-grid">
+				<div class="label-cell vacation-row-1">Отпуск:</div>
+				<input type="text" class="swal2-input start-date vacation-row-1" required placeholder="дд.мм.гггг">
+				<input type="number" min="1" class="swal2-input days-count vacation-row-1" placeholder="0"
+				>
+				<input type="text" class="swal2-input end-date vacation-row-1" required placeholder="дд.мм.гггг">
+				<img src="{% static 'delete.svg' %}" class="delete-row vacation-row-1" onclick="removeVacationRow(1)">
+			</div>
+
+			<button type="button" id="add-vacation-button" onclick="addVacationRow()" style="margin-top: 10px;">
+				<img src="{% static 'plus-circle.svg' %}" class="button-icon">
+				Еще отпуск
+			</button>
+			</div>
+		`;
+
+		Swal.fire({
+			title: 'Добавление отпуска',
+			html: initialContent,
+			width: '650px',
+			customClass: { 
+				popup: 'my-add-vacation-modal',
+				confirmButton: 'swal-confirm-btn',
+				cancelButton: 'swal-cancel-btn'
+			},
+			showCancelButton: true,
+			showCloseButton: true,
+			reverseButtons: true,
+			buttonsStyling: false,
+			didOpen: () => {
+				const popup = Swal.getPopup();
+				const select = popup.querySelector('#vacation-employee');
+				
+				for (let opt of select.options) {
+					if (opt.value === userId) {
+						opt.selected = true;
+						break;
+					}
+				}
+
+				// Настройка flatpickr
+				const initFlatpickr = (element) => {
+					flatpickr(element, {
+						dateFormat: "Y-m-d",
+						altInput: true,
+        				altFormat: "d.m.Y",
+						minDate: new Date(currentYear, 0, 1),
+						maxDate: new Date(currentYear, 11, 31),
+						locale: 'ru',
+						allowInput: true,
+						disableMobile: true,
+						static: false,
+						position: "auto",
+						appendTo: document.body,
+						onOpen: () => {
+							// Дополнительные корректировки при открытии
+							const calendar = document.querySelector('.flatpickr-calendar');
+							if (calendar) {
+								calendar.style.zIndex = 99999;
+								calendar.style.position = 'fixed';
+							}
+						}
+					});
+				};
+
+				const startInputs = popup.querySelectorAll('.start-date');
+				const endInputs = popup.querySelectorAll('.end-date');
+				
+				startInputs.forEach(input => initFlatpickr(input));
+				endInputs.forEach(input => initFlatpickr(input));
+
+				const closeBtn = Swal.getCloseButton();
+				if (closeBtn) {
+					closeBtn.setAttribute('tabindex', '-1');
+					closeBtn.blur();
+				}
+
+				if (document.activeElement) {
+				document.activeElement.blur();
+				}
+
+				function calculateEndDate(startISO, daysCount) {
+					const parseDate = (dateStr) => {
+						// Если дата в формате dd.mm.yyyy
+						if (dateStr.match(/^\d{2}\.\d{2}\.\d{4}$/)) {
+							const [d, m, y] = dateStr.split('.');
+							return new Date(y, m-1, d);
+						}
+						return new Date(dateStr);
+					};
+					
+					let date = new Date(startISO);
+					let remaining = parseInt(daysCount, 10);
+
+					if (isNaN(remaining) || remaining < 1) {
+						return startISO;
+					}
+					remaining--;
+
+					while (remaining > 0) {
+						date.setDate(date.getDate() + 1);
+
+						const mName = fullMonthNames[date.getMonth()];
+						const dNum  = date.getDate();
+
+						const isHoliday =
+						Array.isArray(modalHolidays[mName]) &&
+						modalHolidays[mName].includes(dNum);
+
+						if (!isHoliday) {
+							remaining--;
+						}
+					}
+
+					// Форматируем обратно в YYYY-MM-DD
+					const yyyy = date.getFullYear();
+					const mm   = monthToNumber[fullMonthNames[date.getMonth()]];
+					const dd   = String(date.getDate()).padStart(2, '0');
+					return `${yyyy}-${mm}-${dd}`;
+				}
+
+				// Навешиваем слушатели на строку rowIndex
+				function setupRowListeners(rowIndex) {
+					const startInput = popup.querySelector(`.start-date.vacation-row-${rowIndex}`);
+					const daysInput  = popup.querySelector(`.days-count.vacation-row-${rowIndex}`);
+					const endInput   = popup.querySelector(`.end-date.vacation-row-${rowIndex}`);
+					if (!startInput || !daysInput || !endInput) return;
+
+					function updateEnd() {
+						if (startInput.value && daysInput.value) {
+							endInput.value = calculateEndDate(startInput.value, daysInput.value);
+							// Обновляем календарь конечной даты
+							endInput._flatpickr.setDate(endInput.value);
+						}
+					}
+					startInput.addEventListener('change', updateEnd);
+					daysInput.addEventListener('input', updateEnd);
+				}
+
+				setupRowListeners(1);
+
+				const addBtn = popup.querySelector('#add-vacation-button');
+				addBtn.addEventListener('click', () => {
+					setTimeout(() => {
+						// Инициализация flatpickr для новых полей
+						const newStart = popup.querySelector(`.start-date.vacation-row-${vacationCounter}`);
+						const newEnd = popup.querySelector(`.end-date.vacation-row-${vacationCounter}`);
+						if (newStart) initFlatpickr(newStart);
+						if (newEnd) initFlatpickr(newEnd);
+						
+						setupRowListeners(vacationCounter);
+					}, 0);
+				});
+			},
+			confirmButtonText: 'Добавить отпуск сотрудника',
+			cancelButtonText: 'Отмена',
+			preConfirm: () => processVacationForm()
+		});
+	}
+
+	function addVacationRow() {
+		vacationCounter++;
+		const grid = document.querySelector('.dates-grid');
+		grid.insertAdjacentHTML('beforeend', `
+			<div class="label-cell vacation-row-${vacationCounter}">Отпуск:</div>
+			<input type="text" class="swal2-input start-date vacation-row-${vacationCounter}" required placeholder="дд.мм.гггг">
+			<input type="number" min="1" class="swal2-input days-count vacation-row-${vacationCounter}" placeholder="0">
+			<input type="text" class="swal2-input end-date vacation-row-${vacationCounter}" required placeholder="дд.мм.гггг">
+			<img src="{% static 'delete.svg' %}" class="delete-row vacation-row-${vacationCounter}"
+				onclick="removeVacationRow(${vacationCounter})">
+		`);
+	}
+
+	function removeVacationRow(rowId) {
+		const elements = document.querySelectorAll(`.vacation-row-${rowId}`);
+		elements.forEach(el => el.remove());
+	}
+
+	function getCookie(name) {
+		let cookieValue = null;
+		if (document.cookie && document.cookie !== '') {
+			const cookies = document.cookie.split(';');
+			for (let i = 0; i < cookies.length; i++) {
+				const cookie = cookies[i].trim();
+				if (cookie.substring(0, name.length + 1) === (name + '=')) {
+					cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+					break;
+				}
+			}
+		}
+		return cookieValue;
+	}
+	
+	async function processVacationForm() {
+		const employeeId = document.getElementById('vacation-employee').value;
+		const starts = document.querySelectorAll('.start-date');
+		const ends   = document.querySelectorAll('.end-date');
+		const vacations = [];
+
+		if (starts.length !== ends.length) {
+			Swal.showValidationMessage('Неправильное количество полей даты начала/окончания');
+			return false;
+		}
+
+		for (let i = 0; i < starts.length; i++) {
+			const startDate = starts[i].value;
+			const endDate   = ends[i].value;
+
+			if (!startDate || !endDate) {
+				Swal.showValidationMessage('Заполните все обязательные поля');
+				return false;
+			}
+
+			if (new Date(startDate) > new Date(endDate)) {
+				Swal.showValidationMessage('Дата начала не может быть позже даты окончания');
+				return false;
+			}
+			vacations.push({
+			employee: employeeId,
+			day_start: startDate,
+			day_end: endDate
+			});
+		}
+
+		try {
+			const csrftoken = getCookie('csrftoken');
+			const response = await fetch('/users/save-vacations/', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'X-CSRFToken': csrftoken
+			},
+			body: JSON.stringify(vacations)
+			});
+
+			if (response.ok) {
+			Swal.fire('Успешно!', 'Отпуска добавлены', 'success')
+				.then(() => window.location.reload());
+			} else {
+			Swal.fire('Ошибка!', 'Произошла ошибка при сохранении', 'error');
+			}
+		} catch (error) {
+			Swal.fire('Ошибка!', 'Нет соединения с сервером', 'error');
 		}
 	}
 </script>

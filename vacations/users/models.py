@@ -6,8 +6,8 @@ from holiday_calendar.models import Holiday
 class CustomUser(AbstractUser):
     patronymic = models.CharField(
         max_length=255, 
-        blank=True, 
-        null=True, 
+        blank=True,
+        default='',
         verbose_name="Отчество"
         )
     groups = models.ManyToManyField(

@@ -131,6 +131,10 @@
                 <a class="btn-edit" href="{% url 'vacation_edit' year=year vac_id=vacation.id %}?from=all_vacations">Редактировать</a>
                 <a class="btn-my-vacations" href="{% url 'vac_all_vacations' %}">Ко всем отпускам</a>
                 <a class="btn-delete" href="{% url 'vacation_delete' vacation.id %}?from=all_vacations" onclick="confirmDeletion(event, this)">Удалить</a>
+            {% elif from_page == 'vac_all' %}
+                <a class="btn-edit" href="{% url 'vacation_edit' year=year vac_id=vacation.id %}?from=vac_all">Редактировать</a>
+                <a class="btn-my-vacations" href="{% url 'vac_all' 0 %}">Ко всем отпускам</a>
+                <a class="btn-delete" href="{% url 'vacation_delete' vacation.id %}?from=vac_all" onclick="confirmDeletion(event, this)">Удалить</a>
             {% else %}
                 <a class="btn-edit" href="{% url 'vacation_edit' year=year vac_id=vacation.id %}">Редактировать</a>
                 <a class="btn-my-vacations" href="{% url 'vac_my_vacations' %}">К моим отпускам</a>
