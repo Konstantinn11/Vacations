@@ -222,9 +222,9 @@
     {% if vacations %}
         <div class="table-container" id="vacation_table" style="display: block;">
             <div style="width: 100%; padding: 10px; padding-bottom: 0;">
-                <form method="get" id="search-form" style="width: 100%;">
+                <div id="search-form" style="width: 100%;">
                     <input type="text" id="search-input" placeholder="Поиск по имени..." oninput="filterTable()">
-                </form>
+                </div>
             </div>
 
             <table class="custom-table" id="vacation-table" style="width: 100%; margin-top: -5px;">
@@ -242,7 +242,7 @@
                             <td>
                                 <div style="display: flex; align-items: center;">
                                     <div class="employee-color" style="background-color: {{ vac.color }}"></div>
-                                    <a href="#" class="darker" style="font-weight: normal;">
+                                    <a href="{% url 'profile' vac.user_id %}" class="darker" style="font-weight: normal;">
                                         {{ vac.user }}
                                     </a>
                                 </div>

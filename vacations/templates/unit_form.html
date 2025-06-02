@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}
+  {% if is_edit %}
+    Редактирование отдела
+  {% else %}
+    Добавление отдела
+  {% endif %}
+{% endblock %}
+{% block header %}
+{% if is_edit %}<title>Редактирование отдела</title>{% else %}<title>Добавление отдела</title>{% endif %}
+<div style="display: flex; flex-direction: row; justify-content: left; align-items: center; flex-wrap: nowrap; width: 120%;">
+    <a style="color: black; font-weight: bold; font-size: 34px; text-align: left; line-height: 50px; white-space: nowrap; margin-left: 358px;">
+      {% if is_edit %}Редактирование отдела{% else %}Добавление отдела{% endif %}
+    </a>
+</div>
+<link rel="stylesheet" href="{% static 'css/select2.min.css' %}">
+<script src="{% static 'libs/select2.min.js' %}"></script>
+
+<style>
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        display: none;
+    }
+
+    .select2-container--default .select2-selection--single {
+        height: calc(1.5em + .75rem + 2px);
+        padding: .375rem .75rem;
+        box-sizing: border-box;
+        border-color: rgb(206, 212, 218);
+    }
+
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 24px;
+        padding-left: 0;
+        text-align: left;
+        color: #5d6778;
+    }
+
+    .select2-container--default .select2-results__option {
+        color: #5d6778;
+    }
+
+    .select2-container--default .select2-search--dropdown .select2-search__field {
+        border-color: rgb(206, 212, 218);
+        outline: none;
+        box-shadow: none;
+        border-radius: 3px;
+        color: #5d6778;
+    }
+
+    .select2-container--default .select2-dropdown {
+        border-color: rgb(206, 212, 218);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="margin-left: 358px; margin-top: 20px; margin-right: 40px; max-width: 500px;">
+    <form method="post" action="">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="{{ form.title.id_for_label }}">Название</label>
+            {{ form.title }}
+            {% for err in form.title.errors %}
+            <div class="text-danger">{{ err }}</div>
+            {% endfor %}
+            <small class="form-text text-muted">
+                Укажите название отдела с номером в скобках.
+            </small>
+        </div>
+
+        <div class="form-group" style="margin-top: 20px;">
+            <label for="{{ form.boss.id_for_label }}">Руководитель отдела</label>
+            {{ form.boss }}
+            {% for err in form.boss.errors %}
+            <div class="text-danger">{{ err }}</div>
+            {% endfor %}
+            <small class="form-text text-muted">
+                Управляет сотрудниками отдела и их заявками на отпуск.
+            </small>
+        </div>
+
+        <button type="submit" class="btn btn-primary">
+            {% if is_edit %}Сохранить{% else %}Добавить{% endif %}
+        </button>
+
+        <a href="{% url 'employees' %}?tab=departments" class="btn btn-secondary" style="margin-left:8px;">
+            Отмена
+        </a>
+    </form>
+</div>
+
+<script>
+  $(document).ready(function() {
+      $('.select2').select2({
+          width: '100%',
+          placeholder: '',
+          language: {
+              noResults: function () {
+                  return "Совпадений не найдено";
+              }
+          }
+      });
+  });
+</script>
+{% endblock %}

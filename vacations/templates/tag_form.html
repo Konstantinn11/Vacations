@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}
+  {% if is_edit %}
+    Редактирование тега
+  {% else %}
+    Добавление тега
+  {% endif %}
+{% endblock %}
+{% block header %}
+{% if is_edit %}<title>Редактирование тега</title>{% else %}<title>Добавление тега</title>{% endif %}
+<div style="display: flex; flex-direction: row; justify-content: left; align-items: center; flex-wrap: nowrap; width: 120%;">
+    <a style="color: black; font-weight: bold; font-size: 34px; text-align: left; line-height: 50px; white-space: nowrap; margin-left: 358px;">
+      {% if is_edit %}Редактирование тега{% else %}Добавление тега{% endif %}
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div style="margin-left: 358px; margin-top: 20px; margin-right: 40px; max-width: 500px;">
+  <form method="post" action="">
+    {% csrf_token %}
+    <div class="form-group">
+      <label for="{{ form.name.id_for_label }}">Название</label>
+      {{ form.name }}
+      {% for err in form.name.errors %}
+        <div class="text-danger">{{ err }}</div>
+      {% endfor %}
+    </div>
+    
+    <button type="submit" class="btn btn-primary">
+      {% if is_edit %}Сохранить{% else %}Добавить{% endif %}
+    </button>
+    
+    <a href="{% url 'employees' %}?tab=tags" class="btn btn-secondary" style="margin-left:8px;">
+      Отмена
+    </a>
+  </form>
+</div>
+{% endblock %}

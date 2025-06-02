@@ -2,6 +2,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from .utils import calculate_working_days
 from holiday_calendar.models import Holiday
+import re
 
 class CustomUser(AbstractUser):
     patronymic = models.CharField(
@@ -59,6 +60,13 @@ class Unit(models.Model):
 
     def __str__(self) -> str:
         return self.title
+    
+    def save(self, *args, **kwargs):
+        # Автоматически извлекаем номер отдела из названия
+        match = re.search(r'\((\d+)\)', self.title)
+        if match:
+            self.description = match.group(1)
+        super().save(*args, **kwargs)
     
 
 class Tag(models.Model):

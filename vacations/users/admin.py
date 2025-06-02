@@ -28,7 +28,7 @@ class User_infoAdmin(admin.ModelAdmin):
     list_display = (
         'user', 'otd_number', 'vacs_archiv',
     )
-    search_fields = ('username', )
+    search_fields = ('user__username', )
 
 
 admin.site.register(User_info, User_infoAdmin)

@@ -1,4 +1,6 @@
 from datetime import timedelta, date
+from collections import defaultdict
+from django.contrib.auth import get_user_model
 
 def calculate_end_date(start_date: date, working_days: int, holidays: set) -> date:
     """
@@ -27,3 +29,50 @@ def calculate_working_days(start_date: date, end_date: date, holidays: set) -> i
             days += 1
         current += timedelta(days=1)
     return days
+
+
+def get_bosses_dict():
+    """
+    Возвращает словарь вида:
+      {
+        "ФИО руководителя 1": [название_отдела_A, название_отдела_B, ...],
+        "ФИО руководителя 2": [...],
+        ...
+      }
+    """
+    from .models import Unit, User_info
+
+    User = get_user_model()
+    temp = defaultdict(set)
+    
+    for boss_id, dept_desc in Unit.objects.filter(boss__isnull=False) \
+                                          .values_list('boss_id', 'description'):
+        if dept_desc:
+            temp[boss_id].add(dept_desc)
+    
+    qs = User_info.objects.filter(supervisor__isnull=False, otd_number__isnull=False) \
+                          .select_related('otd_number')
+    for ui in qs:
+        sup_id = ui.supervisor_id
+        dept_desc = ui.otd_number.description
+        if dept_desc:
+            temp[sup_id].add(dept_desc)
+    
+    all_depts_list = [desc for desc in Unit.objects.values_list('description', flat=True) if desc]
+    for su in User.objects.filter(is_superuser=True):
+        sup_id = su.id
+        existing = temp.get(sup_id, set())
+        for desc in all_depts_list:
+            if desc not in existing:
+                temp[sup_id].add(desc)
+    
+    bosses_dict = {}
+    for user_id, dept_set in temp.items():
+        try:
+            user = User.objects.get(pk=user_id)
+        except User.DoesNotExist:
+            continue
+        fio = user.get_full_name()
+        bosses_dict[fio] = sorted(dept_set)
+
+    return bosses_dict

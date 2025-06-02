@@ -1,17 +1,23 @@
 {% extends "base.html" %}
 {% load cache %}
-{% block title %}Мой профиль{% endblock %}
+{% block title %}
+  {% if is_own_profile %}
+    Мой профиль
+  {% else %}
+    {{ user_info.user.get_full_name }}
+  {% endif %}
+{% endblock %}
 {% load user_filters %}
 {% load static %}
 {% block header %}
-<title>Мой профиль</title>
-{% endblock %}
+<title>
+    {% if is_own_profile %}
+      Мой профиль
+    {% else %}
+      {{ user_info.user.get_full_name }}
+    {% endif %}
+</title>
 
-{% block aside %}
-    {% include 'includes/aside_vac_all.html' %}
-{% endblock %}
-
-{% block content %}
 <style>
     .table-container {
         display: flex;
@@ -161,7 +167,13 @@
         filter: brightness(0) saturate(100%) invert(42%) sepia(76%) saturate(231%) hue-rotate(129deg) brightness(93%) contrast(101%);
     }
 </style>
+{% endblock %}
 
+{% block aside %}
+    {% include 'includes/aside_vac_all.html' %}
+{% endblock %}
+
+{% block content %}
 {% if messages %}
     <div style="margin-top: 10px; margin-left: 384px; font-size: 18px; text-align: center; width: 110%;">
         {% for message in messages %}
@@ -221,17 +233,45 @@
         <tr style="border-bottom: 1px solid #ddd;">
             <td style="padding-bottom: 20px;">{{ user_info.otd_number.title }}</td>
         </tr>
-
+        {% if user_info.tags.all %}
         <tr>
+            <td style="padding-top: 20px;"><strong>Теги</strong></td>
+        </tr>
+        <tr>
+            <td style="padding-bottom: 20px;">
+                {% for tag in user_info.tags.all %}
+                    <a href="{% url 'employees' %}?tab=employees&tag={{ tag.name }}" style="
+                        display: inline-block;
+                        background-color: #5b99ea;
+                        color: white;
+                        border-radius: 5px;
+                        padding: 2px 6px;
+                        font-size: 0.75em;
+                        white-space: nowrap;
+                        font-weight: 600;
+                        text-decoration: none;
+                    ">
+                        {{ tag.name }}
+                    </a>
+                {% endfor %}
+            </td>
+        </tr>
+        {% endif %}
+
+        {% if request.user.get_full_name in bosses or is_own_profile %}
+        <tr style="border-top: 1px solid #ddd;">
             <td colspan="3" style="padding: 20px;">
                 <div class="buttons-container">
-                    <a class="btn-edit" href="{% url 'profile_edit' %}">
+                    <a class="btn-edit" href="{% url 'profile_edit' user_info.user.id %}?from=profile">
                         <img src="{% static 'gear_profile.svg' %}" alt="Edit" style="height: 20px; margin-right: 8px;">Редактировать
                     </a>
+                    {% if request.user.is_superuser or is_own_profile %}
                     <a class="btn-edit" href="{% url 'password_change' %}">Изменить пароль</a>
+                    {% endif %}
                 </div>
             </td>
         </tr>
+        {% endif %}
     </table>
     
     <table class="styled-table">
@@ -264,15 +304,17 @@
         <tr class="no-border-row">
             <td colspan="3" style="text-align: left; font-size: 20px; color: #5d6778;">Не найдено ближайших отпусков.</td>
         </tr>
-        {% endif %}
+        {% endif %}       
         <tr style="border-bottom: 1px solid #ddd; padding-bottom: 15px;">
-            <td colspan="3">
-                <a id="add-leave-button-my" class="btn sib" style="background-color:#15a362; font-family: 'Calibri'; font-style: normal; font-weight: 400; width: 200px; height: 42px; font-size: 20px; border-radius: 5px;
-                color: white; text-align: center; display: flex; align-items: center; justify-content: center; margin-right: 20px; cursor: pointer;">
-                    Добавить отпуск
-                    <img style="height: 22px; margin-left: 3px;" src="{% static 'arrow_down.png' %}">
-                </a>
-            </td>
+            {% if request.user.get_full_name in bosses or is_own_profile %}
+                <td colspan="3">
+                    <a id="add-leave-button-my" class="btn sib" style="background-color:#15a362; font-family: 'Calibri'; font-style: normal; font-weight: 400; width: 200px; height: 42px; font-size: 20px; border-radius: 5px;
+                    color: white; text-align: center; display: flex; align-items: center; justify-content: center; margin-right: 20px; cursor: pointer;">
+                        Добавить отпуск
+                        <img style="height: 22px; margin-left: 3px;" src="{% static 'arrow_down.png' %}">
+                    </a>
+                </td>
+            {% endif %}
         </tr>
     </table>
 </div>
@@ -282,7 +324,7 @@
         {% for i in "012" %}
             {% with year=current_year|add:i %}
                 <li class="vacation-item">
-                    <a href="{% url 'vacation_new' year %}" class="vacation-link">
+                    <a href="{% url 'vacation_new' year %}?employee={{ user_info.user.id }}" class="vacation-link">
                         <span class="text">Отпуск на</span> <span class="year">{{ year }}</span> <span class="text">год</span>
                     </a>
                 </li>

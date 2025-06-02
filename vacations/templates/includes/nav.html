@@ -122,9 +122,18 @@
 				&nbsp;/ Все отпуска
 			</span>
 			{% elif my_profile %}
-			<span style="margin-left: 375px; font-size: 20px; color: #5d6778; font-weight: bold; display: inline;">
-				Мой профиль
-			</span>
+				{% if is_own_profile %}
+					<span style="margin-left: 375px; font-size: 20px; color: #5d6778; font-weight: bold; display: inline;">
+						Мой профиль
+					</span>
+				{% else %}
+					<a style="margin-left: 375px;" class="darker-nav" href="{% url 'employees' %}">
+						Сотрудники
+					</a>
+					<span style="font-size: 19px; color: #5d6778; font-weight: normal; display: inline;">
+						&nbsp;/ {{ user_info.user.get_full_name }}
+					</span>
+				{% endif %}
 			{% elif employees %}
 			<span style="margin-left: 375px; font-size: 20px; color: #5d6778; font-weight: bold; display: inline;">
 				Центр комплексирования
@@ -141,7 +150,56 @@
 				Сотрудники
 			</a>
 			<span style="font-size: 20px; color: #5d6778; font-weight: normal; display: inline;">
-				&nbsp;/ {{request.user.get_full_name}}
+				&nbsp;/ {{ user_info.user.get_full_name }}
+			</span>
+			{% elif employees_add_tag %}
+			<a style="margin-left: 375px;" class="darker-nav" href="{% url 'employees' %}?tab=tags">
+				Теги
+			</a>
+			<span style="font-size: 20px; color: #5d6778; font-weight: normal; display: inline;">
+				&nbsp;/ Добавление
+			</span>
+			{% elif employees_edit_tag %}
+			<a style="margin-left: 375px;" class="darker-nav" href="{% url 'employees' %}?tab=tags">
+				Теги
+			</a>
+			<span style="font-size: 20px; color: #5d6778; font-weight: normal; display: inline;">
+				&nbsp;/ {{tag}}
+			</span>
+			{% elif employees_add_unit %}
+			<a style="margin-left: 375px;" class="darker-nav" href="{% url 'employees' %}?tab=departments">
+				Отделы
+			</a>
+			<span style="font-size: 20px; color: #5d6778; font-weight: normal; display: inline;">
+				&nbsp;/ Добавление
+			</span>
+			{% elif employees_edit_unit %}
+			<a style="margin-left: 375px;" class="darker-nav" href="{% url 'employees' %}?tab=departments">
+				Отделы
+			</a>
+			<span style="font-size: 20px; color: #5d6778; font-weight: normal; display: inline;">
+				&nbsp;/ {{department}}
+			</span>
+			{% elif employees_add %}
+			<a style="margin-left: 375px;" class="darker-nav" href="{% url 'employees' %}">
+				Сотрудники
+			</a>
+			<span style="font-size: 20px; color: #5d6778; font-weight: normal; display: inline;">
+				&nbsp;/ Добавление
+			</span>
+			{% elif manager_add %}
+			<a style="margin-left: 375px;" class="darker-nav" href="{% url 'employees' %}?tab=managers">
+				Руководители
+			</a>
+			<span style="font-size: 20px; color: #5d6778; font-weight: normal; display: inline;">
+				&nbsp;/ Назначение
+			</span>
+			{% elif manager_edit %}
+			<a style="margin-left: 375px;" class="darker-nav" href="{% url 'employees' %}?tab=managers">
+				Руководители
+			</a>
+			<span style="font-size: 20px; color: #5d6778; font-weight: normal; display: inline;">
+				&nbsp;/ Редактирование
 			</span>
 			{% elif show_vacation_detail %}
 				{% if request.GET.from == 'all_vacations' %}
@@ -215,7 +273,7 @@
 							 style="height: 32px; width: 32px; border-radius: 50%; object-fit: cover; cursor: pointer;">
 					</a>
 					<div class="dropdown-menu dropdown-menu-right" id="profileDropdownMenu" style="display: none; margin-top: 20px;">
-						<a class="dropdown-item" style="color: #15a362; text-decoration: underline;" href="{% url 'vac_my_profile' %}">{{ request.user.get_full_name }}</a>
+						<a class="dropdown-item" style="color: #15a362; text-decoration: underline;" href="{% url 'profile' request.user.id %}">{{ request.user.get_full_name }}</a>
 						<div class="dropdown-divider"></div>
 						<a class="dropdown-item" href="{% url 'logout' %}">Выход</a>
 					</div>

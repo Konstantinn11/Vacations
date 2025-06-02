@@ -341,9 +341,11 @@
                 <div class="vertical-tab" onclick="showLoader(this); window.location.href='{% url 'employees' %}'">
                     <img class="tab-icon" src="{% static 'group.svg' %}" alt="Сотрудники"> Сотрудники
                 </div>
-                <div class="vertical-tab" onclick="showLoader(this); window.location.href='{% url 'vac_my_profile' %}'">
+                {% if request.user.is_authenticated %}
+                <div class="vertical-tab" onclick="showLoader(this); window.location.href='{% url 'profile' request.user.id %}'">
                     <img class="tab-icon" src="{% static 'account.svg' %}" alt="Мой профиль"> Мой профиль
                 </div>
+                {% endif %}
             </div>
             <span id="close-info" class="close-btn">×</span>
         </div>

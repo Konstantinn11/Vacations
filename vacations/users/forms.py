@@ -1,5 +1,5 @@
 from django import forms
-from .models import Vacation
+from .models import Vacation, Tag, Unit, CustomUser
 
 class VacationForm(forms.ModelForm):
     class Meta:
@@ -66,3 +66,53 @@ class VacationForm(forms.ModelForm):
             )
 
         return cleaned
+    
+
+class TagForm(forms.ModelForm):
+    class Meta:
+        model = Tag
+        fields = ['name']
+        widgets = {
+            'name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Например, "Ключевой сотрудник"',
+            }),
+        }
+        labels = {
+            'name': 'Название',
+        }
+
+
+class UserModelChoiceField(forms.ModelChoiceField):
+    def label_from_instance(self, user):
+        full_name = user.get_full_name()
+        user_info = getattr(user, 'user_info', None)
+        position = ''
+        if user_info is not None:
+            ui = user_info.first() if hasattr(user_info, 'first') else user_info
+            if ui and ui.position:
+                position = ui.position.position
+        return f"{full_name}" + (f", {position}" if position else "")
+
+
+class UnitForm(forms.ModelForm):
+    boss = UserModelChoiceField(
+        queryset=CustomUser.objects.all(),
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+        label='Руководитель отдела',
+        required=False,
+        empty_label=''
+    )
+    
+    class Meta:
+        model = Unit
+        fields = ['title', 'boss']
+        widgets = {
+            'title': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Например, "Производственный отдел (307)"',
+            }),
+        }
+        labels = {
+            'title': 'Название',
+        }

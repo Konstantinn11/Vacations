@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import Holiday
 from .forms import HolidayForm
-from users.vacation_data import bosses
+from users.utils import get_bosses_dict
 from users.models import Vacation
 import datetime as dt
 
@@ -15,6 +15,7 @@ def superuser_required(view_func):
 
 @superuser_required
 def holiday_list(request):
+    bosses = get_bosses_dict()
     current_year = dt.datetime.now().year
     future_years = [current_year + 1, current_year + 2]
     year = int(request.GET.get('year', current_year))
@@ -38,6 +39,7 @@ def holiday_list(request):
 
 
 def holiday_edit(request, pk=None):
+    bosses = get_bosses_dict()
     instance = get_object_or_404(Holiday, pk=pk) if pk else None
     form = HolidayForm(request.POST or None, instance=instance)
     if form.is_valid():
@@ -53,6 +55,7 @@ def holiday_edit(request, pk=None):
 
 
 def holiday_delete(request, pk):
+    bosses = get_bosses_dict()
     holiday = get_object_or_404(Holiday, pk=pk)
     if request.method == 'POST':
         holiday.delete()

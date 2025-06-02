@@ -107,6 +107,7 @@
     }
 </style>
 
+{% url 'profile' request.user.id as profile_url %}
 <div class="aside-vac">
     <a href="{% url 'vac_all' otd=0 %}">
         <img style="height: 45px; margin-top: 15px; margin-left: 20px; margin-bottom: 5px;" src={% static "logo_ya_removebg.png" %}>
@@ -139,7 +140,7 @@
         <div class="vertical-tab {% if request.path == '/users/employees/' %}active-tab{% endif %}" onclick="showLoader(this); window.location.href='{% url 'employees' %}'">
             <img class="tab-icon" src="{% static 'group.svg' %}" alt="Сотрудники"> Сотрудники
         </div>
-        <div class="vertical-tab {% if request.path == '/users/vac_my_profile/' %}active-tab{% endif %}" onclick="showLoader(this); window.location.href='{% url 'vac_my_profile' %}'">
+        <div class="vertical-tab {% if request.path == profile_url %}active-tab{% endif %}" onclick="showLoader(this); window.location.href='{% url 'profile' request.user.id %}'">
             <img class="tab-icon" src="{% static 'account.svg' %}" alt="Мой профиль"> Мой профиль
         </div>
     </div>

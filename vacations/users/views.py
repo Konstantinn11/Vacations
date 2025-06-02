@@ -1,16 +1,16 @@
 from django.urls import reverse, reverse_lazy
-from django.contrib.auth import get_user_model, logout
+from django.contrib.auth import get_user_model
 User = get_user_model()
 from django.conf import settings
 from django.shortcuts import render, get_object_or_404, redirect
-from .models import User_info, Unit, Vacation, Position
-from .forms import VacationForm
+from .models import User_info, Unit, Vacation, Position, Tag
+from .forms import VacationForm, TagForm, UnitForm
 import datetime as dt
 import pandas as pd
 from django.contrib import messages as msg
 from calendar import monthrange
 import json
-from .vacation_data import bosses, months_ru, color_cycle
+from .vacation_data import months_ru, color_cycle
 from holiday_calendar.utils import month_num_str
 from holiday_calendar.models import Holiday
 from django.http import JsonResponse
@@ -25,8 +25,11 @@ import re
 import pymorphy2
 from openpyxl.styles import Alignment, Border, Side, Font
 from holiday_calendar.utils import get_calendar_data
-from .utils import calculate_end_date, calculate_working_days
-from django.core.exceptions import ValidationError
+from .utils import calculate_end_date, calculate_working_days, get_bosses_dict
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
+from django.db.models import Count, Q
+from django.core.mail import send_mail
+from django.db import IntegrityError, transaction
 
 class CustomPasswordResetView(PasswordResetView):
     form_class = PasswordResetForm
@@ -188,6 +191,7 @@ def vac_all(request, otd):
     today = dt.datetime.today().date()
     year = today.year
     holidays, _ = get_calendar_data(year)
+    bosses = get_bosses_dict()
 
     current_user_name = request.user.get_full_name()
 
@@ -332,6 +336,7 @@ def vac_calendars(request, otd, year=None):
     future_years = [current_year + 1, current_year + 2]
     current_user_name = request.user.get_full_name()
     today = dt.datetime.today().date()
+    bosses = get_bosses_dict()
 
     year = request.GET.get('year', current_year)
     year = int(year)
@@ -425,6 +430,7 @@ def vac_2(request, year, otd):
 
     holidays, special_work_days = get_calendar_data(year)
     holidays_for_year = holidays.get(year, {})
+    bosses = get_bosses_dict()
 
     bosses_list = list(bosses.keys())
     current_user_name = request.user.get_full_name()
@@ -585,20 +591,29 @@ def vac_2(request, year, otd):
 def vacation_new(request, year):
     holidays_map, _ = get_calendar_data(year)
     current_holidays = holidays_map.get(year, {})
+    bosses = get_bosses_dict()
     # Преобразуем holidays_map в множество date для расчёта
     # предполагаем, что holidays_map[year] — список date
     holidays_set = set(current_holidays)
 
-    vacation = Vacation(user_id=request.user.id)
-    form = VacationForm(request.POST or None, files=request.FILES or None, instance=vacation)
+    employee_id = request.GET.get('employee', None)
 
     current_user_name = request.user.get_full_name()
     is_boss = current_user_name in bosses
 
+    if is_boss and employee_id:
+        try:
+            vacation = Vacation(user_id=int(employee_id))
+        except (ValueError, User.DoesNotExist):
+            vacation = Vacation(user_id=request.user.id)
+    else:
+        vacation = Vacation(user_id=request.user.id)
+
+    form = VacationForm(request.POST or None, files=request.FILES or None, instance=vacation)
+
     employees = None
     departments = Unit.objects.all()
 
-    employee_name = request.GET.get('employee_name', None)
     selected_department = request.GET.get('department', None)
 
     if is_boss:
@@ -630,8 +645,8 @@ def vacation_new(request, year):
         vac.save()
 
         # Редиректы
-        if employee_name:
-            return redirect('vac_2', year=year, otd=0)
+        if employee_id:
+            return redirect(f"{reverse('vac_all_vacations')}?user={vac.user_id}")
         elif is_boss and 'employee' in request.POST and str(vac.user_id) != str(request.user.id):
             return redirect(f"{reverse('vac_all_vacations')}?user={vac.user_id}")
         else:
@@ -650,10 +665,10 @@ def vacation_new(request, year):
         'year': year,
         'show_person': True,
         'holidays_json': json.dumps(current_holidays),
-        'employee_name': employee_name,
         'departments': departments,
         'len_boss_departments': len_boss_departments,
         'selected_department': selected_department,
+        'selected_employee_id': employee_id,
     }
     return render(request, 'vacation_new.html', context)
 
@@ -662,6 +677,7 @@ def vacation_edit(request, year, vac_id):
     holidays_map, _ = get_calendar_data(year)
     current_holidays = holidays_map.get(year, {})
     holidays_set = set(current_holidays)
+    bosses = get_bosses_dict()
 
     vac = get_object_or_404(Vacation, id=vac_id)
     form = VacationForm(request.POST or None, files=request.FILES or None, instance=vac)
@@ -739,6 +755,7 @@ def vacation_delete(request, vac_id):
 
 def vacation_detail(request, vac_id):
     current_user_name = request.user.get_full_name()
+    bosses = get_bosses_dict()
 
     # Проверка прав доступа
     if current_user_name not in bosses:
@@ -768,6 +785,7 @@ def vacation_detail(request, vac_id):
 
 def vac_all_vacations(request):
     today = dt.datetime.today()
+    bosses = get_bosses_dict()
     years_in_vacations = set(Vacation.objects.values_list('year', flat=True))
     year_range = sorted([int(y) for y in years_in_vacations], reverse=True)
 
@@ -845,6 +863,7 @@ def vac_all_vacations(request):
             'period': f"{start_date.day} {months_ru[start_date.month]} {start_date.year} - "
                       f"{end_date.day} {months_ru[end_date.month]} {end_date.year}",
             'days_count': days_count,
+            'user_id': vac.user.id,
             'id': vac.id,
             'is_current': start_date <= today.date() <= end_date,
             'department': department,
@@ -875,9 +894,10 @@ def vac_all_vacations(request):
 
 
 def vac_my_vacations(request):
-    # Отображение отпусков текущего пользователя без серверных расчётов дней
+    # Отображение отпусков текущего пользователя
     today = dt.datetime.today().date()
     year = today.year
+    bosses = get_bosses_dict()
 
     # Получаем все отпуска текущего пользователя, отсортированные по убыванию даты начала
     vacations = Vacation.objects.filter(
@@ -924,6 +944,7 @@ def vac_my_vacations(request):
         
 
 def import_vacations(request):
+    bosses = get_bosses_dict()
     if request.method == 'POST':
         file = request.FILES.get('file')
         if not file:
@@ -1048,35 +1069,39 @@ def import_vacations(request):
     return render(request, 'import_vacations.html', context)
 
 
-def vac_my_profile(request):
+def profile_view(request, user_id):
+    bosses = get_bosses_dict()
+    target_user = get_object_or_404(User, pk=user_id)
+    user_info = get_object_or_404(User_info, user=target_user)
     today = dt.datetime.today().date()
     year = today.year
-    user_info = User_info.objects.get(user=request.user)
 
-    vacations = Vacation.objects.filter(
-        user_id=request.user.id,
+    vacations_qs = Vacation.objects.filter(
+        user=target_user,
         day_end__gte=today
     ).order_by('day_start')
 
     vacations_list = []
 
-    for vac in vacations:
-        start_date = vac.day_start
-        end_date = vac.day_end
-
+    for vac in vacations_qs:
+        start = vac.day_start
+        end   = vac.day_end
         vacations_list.append({
-            'period': f"{start_date.day} {months_ru[start_date.month]} {start_date.year} - {end_date.day} {months_ru[end_date.month]} {end_date.year}",
+            'period': (
+                f"{start.day} {months_ru[start.month]} {start.year} – "
+                f"{end.day} {months_ru[end.month]} {end.year}"
+            ),
             'days_count': vac.how_long,
             'id': vac.id,
-            'is_current': start_date <= today <= end_date,
-            'vacation_year': start_date.year,
+            'is_current': start <= today <= end,
+            'vacation_year': start.year,
         })
     
     vacation_year = vacations_list[0]['vacation_year'] if vacations_list else None
 
     return render(
         request,
-        'my_profile.html',
+        'profile.html',
         {
             'today': today,
             'year': year,
@@ -1085,55 +1110,69 @@ def vac_my_profile(request):
             'navbar_style': 'custom-navbar',
             'bosses': list(bosses.keys()),
             'my_profile': True,
-            'user_info': user_info
+            'user_info': user_info,
+            'is_own_profile':   (target_user == request.user),
         }
     )
 
 
-def profile_edit(request):
-    user_info = User_info.objects.get(user=request.user)
+def profile_edit(request, user_id):
+    bosses = get_bosses_dict()
+    target_user = get_object_or_404(User, pk=user_id)
+    user_info   = get_object_or_404(User_info, user=target_user)
     departments = Unit.objects.all()
+    all_tags    = Tag.objects.all().order_by('name')
 
     if request.method == "POST":
-        new_first_name = request.POST.get("first_name", "").strip()
-        new_last_name = request.POST.get("last_name", "").strip()
-        new_patronymic = request.POST.get("patronymic", "").strip()
+        action = request.POST.get('action')
+        
+        if action == 'archive':
+            user_info.vacs_archiv = True
+            user_info.save()
+            return redirect(f"{reverse('employees')}?tab=employees")
+        
+        new_last  = request.POST.get("last_name", "").strip()
+        new_first = request.POST.get("first_name", "").strip()
+        new_pat   = request.POST.get("patronymic", "").strip()
         new_email = request.POST.get("email", "").strip()
 
         updated = False
 
-        if request.user.first_name != new_first_name:
-            request.user.first_name = new_first_name
-            updated = True
-        if request.user.last_name != new_last_name:
-            request.user.last_name = new_last_name
-            updated = True
-        if getattr(request.user, "patronymic", "") != new_patronymic:
-            request.user.patronymic = new_patronymic
-            updated = True
-        if request.user.email != new_email:
-            request.user.email = new_email
-            updated = True
+        if target_user.first_name != new_first:
+            target_user.first_name = new_first; updated = True
+        if target_user.last_name  != new_last:
+            target_user.last_name  = new_last;  updated = True
+        if getattr(target_user, "patronymic", "") != new_pat:
+            setattr(target_user, "patronymic", new_pat); updated = True
+        if target_user.email != new_email:
+            target_user.email = new_email; updated = True
 
         if updated:
-            request.user.save()
+            target_user.save()
 
-        position_name = request.POST.get("position", "").strip()
-        if position_name and (not user_info.position or user_info.position.position != position_name):
-            position, created = Position.objects.get_or_create(position=position_name)
+        pos_name = request.POST.get("position", "").strip()
+        if pos_name and (not user_info.position or user_info.position.position != pos_name):
+            position, _ = Position.objects.get_or_create(position=pos_name)
             user_info.position = position
             updated = True
 
-        new_department = Unit.objects.get(id=request.POST.get("department")) if request.POST.get("department") else None
-        if user_info.otd_number != new_department:
-            user_info.otd_number = new_department
+        dept_id = request.POST.get("department")
+        new_dept = Unit.objects.get(id=dept_id) if dept_id else None
+        if user_info.otd_number != new_dept:
+            user_info.otd_number = new_dept
             updated = True
 
+        tag_ids = request.POST.getlist("tags")
+        if tag_ids is not None:
+            valid_tags = Tag.objects.filter(id__in=tag_ids)
+            user_info.tags.set(valid_tags)
+            updated = True
+        
         if updated:
             user_info.save()
-            msg.success(request, "Сотрудник успешно обновлен.")
+            msg.success(request, "Сотрудник успешно обновлён.")
 
-        return redirect('vac_my_profile')
+        return redirect('profile', user_id=target_user.id)
 
     return render(request, 'profile_edit.html', {
         'user_info': user_info,
@@ -1142,25 +1181,196 @@ def profile_edit(request):
         'bosses': list(bosses.keys()),
         'profile_edit': True,
         'show_button': True,
+        'is_own_profile': (target_user == request.user),
+        'all_tags': all_tags, 
     })
 
 
-def delete_account(request):
-    user = request.user
-    User_info.objects.filter(user=user).delete()
-    user.delete()
-    logout(request)
-
-    msg.success(request, "Ваш аккаунт был успешно удален.")
-    return redirect('login')
-
-
 def employees(request):
+    bosses = get_bosses_dict()
+    active_tab = request.GET.get('tab', 'employees')
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        ids = request.POST.getlist('ids') or request.POST.getlist('archive_ids')
+        
+        ids = [uid for uid in ids if uid != str(request.user.id)]
+        
+        if ids and action:
+            qs = User_info.objects.filter(user_id__in=ids)
+            if action == 'archive':
+                qs.update(vacs_archiv=True)
+            elif action == 'restore':
+                qs.update(vacs_archiv=False)
+            elif action == 'delete':
+                # Удаляем сам объект User_info и пользователя
+                users = [ui.user for ui in qs.select_related('user')]
+                qs.delete()
+                for user in users:
+                    user.delete()
+        
+        if action == 'delete':
+            tab = 'archive'
+        else:
+            tab = 'employees'
+        return redirect(f"{reverse('employees')}?tab={tab}")
+
+    dept_id = request.GET.get('dept', None)
+    tag_name = request.GET.get('tag', None)
+
+    try:
+        current_user_info = request.user.user_info.first()
+        current_dept = current_user_info.otd_number
+        current_dept_id = current_dept.id if current_dept else None
+    except Exception:
+        current_dept_id = None
+    
+    selected_dept_title = None
+    dept_obj = None
+    if dept_id:
+        try:
+            dept_obj = Unit.objects.get(id=dept_id)
+            selected_dept_title = dept_obj.title
+        except ObjectDoesNotExist:
+            dept_obj = None
+    
+    selected_tag_name = None
+    if tag_name:
+        tag_q = Tag.objects.filter(name=tag_name).first()
+        if tag_q:
+            selected_tag_name = tag_q.name
+        else:
+            selected_tag_name = None
+    
+    user_infos = (
+        User_info.objects
+        .filter(vacs_archiv=False)
+        .select_related('user', 'position', 'otd_number')
+        .prefetch_related('tags')
+        .order_by('user__last_name', 'user__first_name')
+    )
+
+    if dept_obj:
+        user_infos = user_infos.filter(otd_number=dept_obj)
+
+    if selected_tag_name:
+        user_infos = user_infos.filter(tags__name=selected_tag_name)
+    
+    user_colors = {}
+    employees_list = []
+    for ui in user_infos:
+        user = ui.user
+        uid = user.id
+
+        if uid not in user_colors:
+            user_colors[uid] = next(color_cycle)
+            
+        employees_list.append({
+            'id': user.id,
+            'full_name': user.get_full_name(),
+            'position': ui.position.position if ui.position else '',
+            'department': ui.otd_number.title if ui.otd_number else '',
+            'department_id': ui.otd_number.id if ui.otd_number else None,
+            'tags': [tag.name for tag in ui.tags.all()],
+            'color': user_colors[uid],
+        })
+
+    units = Unit.objects.select_related('boss').all().order_by('title')
+    departments_list = []
+    for u in units:
+        count = User_info.objects.filter(otd_number=u, vacs_archiv=False).count()
+        departments_list.append({
+            'id': u.id,
+            'title': u.title,
+            'count': count,
+            'boss': u.boss.get_full_name() if u.boss else '',
+        })
+
+    tags_list = []
+    if active_tab == 'tags':
+        tags_qs = Tag.objects.annotate(
+            employees_count=Count(
+                'tags_info',
+                filter=Q(tags_info__vacs_archiv=False)
+            )
+        ).order_by('name')
+
+        for tag in tags_qs:
+            tags_list.append({
+                'id': tag.id,
+                'name': tag.name,
+                'employees_count': tag.employees_count,
+            })
+
+    archived_list = []
+    if active_tab == 'archive':
+        archived_qs = (
+            User_info.objects
+            .filter(vacs_archiv=True)
+            .select_related('user', 'position', 'otd_number')
+            .prefetch_related('tags')
+            .order_by('user__last_name', 'user__first_name')
+        )
+        for ui in archived_qs:
+            user = ui.user
+            archived_list.append({
+                'id': user.id,
+                'full_name': user.get_full_name(),
+                'position': ui.position.position if ui.position else '',
+                'department': ui.otd_number.title if ui.otd_number else '',
+                'tags': [tag.name for tag in ui.tags.all()],
+            })
+    
+    managers_data = []
+    if active_tab == 'managers':
+        sup_ids = (
+            User_info.objects
+            .filter(supervisor__isnull=False)
+            .values_list('supervisor_id', flat=True)
+            .distinct()
+        )
+        for sup_id in sup_ids:
+            sup_user = User.objects.filter(id=sup_id).first()
+            if not sup_user:
+                continue
+
+            subordinate_depts = (
+                User_info.objects
+                .filter(supervisor_id=sup_id, otd_number__isnull=False)
+                .values_list('otd_number__title', flat=True)
+                .distinct()
+            )
+
+            direct_boss_depts = (
+                Unit.objects
+                .filter(boss_id=sup_id)
+                .values_list('title', flat=True)
+                .distinct()
+            )
+
+            combined = set(subordinate_depts) | set(direct_boss_depts)
+            dept_list = sorted(combined)
+
+            managers_data.append({
+                'id': sup_user.id,
+                'full_name': sup_user.get_full_name(),
+                'departments': dept_list,
+            })
+    
     return render(request, 'employees.html', {
         'navbar_style': 'custom-navbar',
         'bosses': list(bosses.keys()),
         'employees': True,
         'show_button': True,
+        'active_tab': active_tab,
+        'employees_data': employees_list,
+        'departments_data': departments_list,
+        'tags_data': tags_list,
+        'archived_data': archived_list,
+        'selected_dept_title': selected_dept_title,
+        'current_dept_id': current_dept_id,
+        'selected_tag_name': selected_tag_name,
+        'managers_data': managers_data,
     })
 
 
@@ -1408,3 +1618,319 @@ def save_vacations(request):
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)})
     return JsonResponse({'status': 'invalid method'})
+
+
+def tag_create(request):
+    bosses = get_bosses_dict()
+    form = TagForm(request.POST or None)
+
+    context = {
+        'form': form,
+        'navbar_style': 'custom-navbar',
+        'employees_add_tag': True,
+        'bosses': list(bosses.keys()),
+        'show_button': True,
+    }
+    
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        return redirect(f"{reverse('employees')}?tab=tags")
+    
+    return render(request, 'tag_form.html', context)
+
+
+def tag_update(request, pk):
+    bosses = get_bosses_dict()
+    tag = get_object_or_404(Tag, pk=pk)
+
+    form = TagForm(request.POST or None, instance=tag)
+
+    context = {
+        'form': form,
+        'navbar_style': 'custom-navbar',
+        'employees_edit_tag': True,
+        'is_edit': True,
+        'tag': tag,
+        'bosses': list(bosses.keys()),
+        'show_button': True,
+    }
+    
+    if request.method == 'POST':
+        if form.is_valid():
+            form.save()
+            return redirect(f"{reverse('employees')}?tab=tags")
+
+    return render(request, 'tag_form.html', context)
+
+
+def tag_delete(request, pk):
+    tag = get_object_or_404(Tag, pk=pk)
+    if request.method == 'POST':
+        tag.delete()
+        return redirect(f"{reverse('employees')}?tab=tags")
+    return redirect(f"{reverse('employees')}?tab=tags")
+
+
+def unit_create(request):
+    bosses = get_bosses_dict()
+    form = UnitForm(request.POST or None)
+
+    context = {
+        'form': form,
+        'navbar_style': 'custom-navbar',
+        'employees_add_unit': True,
+        'bosses': list(bosses.keys()),
+        'show_button': True,
+    }
+
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        return redirect(f"{reverse('employees')}?tab=departments")
+    
+    return render(request, 'unit_form.html', context)
+
+
+def unit_update(request, pk):
+    bosses = get_bosses_dict()
+    unit = get_object_or_404(Unit, pk=pk)
+
+    form = UnitForm(request.POST or None, instance=unit)
+    
+    context = {
+        'form': form,
+        'navbar_style': 'custom-navbar',
+        'employees_edit_unit': True,
+        'bosses': list(bosses.keys()),
+        'show_button': True,
+        'is_edit': True,
+        'department': unit,
+    }
+    
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        return redirect(f"{reverse('employees')}?tab=departments")
+    
+    return render(request, 'unit_form.html', context)
+
+
+def unit_delete(request, pk):
+    unit = get_object_or_404(Unit, pk=pk)
+    if request.method == 'POST':
+        unit.delete()
+        return redirect(f"{reverse('employees')}?tab=departments")
+    return redirect(f"{reverse('employees')}?tab=departments")
+
+
+def employee_create(request):
+    bosses = get_bosses_dict()
+    departments = Unit.objects.all().order_by('title')
+    all_tags = Tag.objects.all().order_by('name')
+
+    context = {
+        'departments': departments,
+        'all_tags': all_tags,
+        'navbar_style': 'custom-navbar',
+        'show_button': True,
+        'employees_add': True,
+        'bosses': list(bosses.keys()),
+    }
+    
+    if request.method == "POST":
+        last_name = request.POST.get("last_name", "").strip()
+        first_name = request.POST.get("first_name", "").strip()
+        patronymic = request.POST.get("patronymic", "").strip()
+        email = request.POST.get("email", "").strip().lower()
+        position_nm = request.POST.get("position", "").strip()
+        dept_id = request.POST.get("department", "").strip()
+        tag_ids = request.POST.getlist("tags")
+
+        # Проверка обязательных полей
+        if not (last_name and first_name and email):
+            msg.error(request, "Пожалуйста, заполните все обязательные поля (ФИО и email).")
+            return render(request, 'employee_create.html', context)
+
+        # Уникальность email
+        if User.objects.filter(email=email).exists():
+            msg.error(request, "Пользователь с таким email уже существует.")
+            return render(request, 'employee_create.html', context)
+
+        username = email.split("@")[0]
+        # Генерация пароля
+        temp_password = User.objects.make_random_password()
+
+        try:
+            with transaction.atomic():
+                user = User.objects.create_user(
+                    username=username,
+                    email=email,
+                    password=temp_password,
+                    first_name=first_name,
+                    last_name=last_name,
+                )
+                if hasattr(user, 'patronymic'):
+                    user.patronymic = patronymic
+                    user.save()
+
+                position = None
+                if position_nm:
+                    position, _ = Position.objects.get_or_create(position=position_nm)
+
+                department = None
+                if dept_id:
+                    try:
+                        department = Unit.objects.get(id=dept_id)
+                    except ObjectDoesNotExist:
+                        department = None
+
+                ui = User_info.objects.create(
+                    user=user,
+                    otd_number=department,
+                    position=position
+                )
+
+                if tag_ids:
+                    for t_id in tag_ids:
+                        try:
+                            tag_obj = Tag.objects.get(id=t_id)
+                            ui.tags.add(tag_obj)
+                        except Tag.DoesNotExist:
+                            continue
+
+        except IntegrityError:
+            msg.error(request, "Ошибка при создании пользователя. Попробуйте ещё раз.")
+            return render(request, 'employee_create.html', context)
+
+        full_name = " ".join(filter(None, [last_name, first_name, patronymic]))
+        
+        subject = "Ваши учётные данные от информационного ресурса"
+        message = (
+            f"Здравствуйте, {full_name}!\n\n"
+            f"Ваш логин: {username}\n"
+            f"Ваш пароль: {temp_password}\n\n"
+            "Пожалуйста, смените пароль при первом входе.\n\n"
+            "С уважением,\n"
+            "Администратор ресурса."
+        )
+        send_mail(subject, message, None, [email], fail_silently=False)
+
+        msg.success(request, f"Сотрудник {full_name} успешно создан.")
+        return redirect(f"{reverse('employees')}?tab=employees")
+
+    return render(request, 'employee_create.html', context)
+
+
+def manager_create(request):
+    bosses = get_bosses_dict()
+    all_users = User.objects.filter(user_info__vacs_archiv=False).order_by('last_name', 'first_name')
+    departments = Unit.objects.all().order_by('title')
+
+    context = {
+        'all_users': all_users,
+        'departments': departments,
+        'navbar_style': 'custom-navbar',
+        'show_button': True,
+        'manager_add': True,
+        'bosses': list(bosses.keys()),
+    }
+    
+    if request.method == 'POST':
+        supervisor_id = request.POST.get('employee')
+        selected_depts = request.POST.getlist('departments')
+
+        if not supervisor_id or not selected_depts:
+            return render(request, 'manager_form.html', context)
+
+        supervisor_user = get_object_or_404(User, pk=supervisor_id)
+
+        # Пройдём по каждому выбранному отделу
+        for dep_id in selected_depts:
+            unit = Unit.objects.filter(id=dep_id).first()
+            if not unit:
+                continue
+
+            if not unit.boss:
+                continue
+
+            dept_head_user = unit.boss
+
+            try:
+                head_info = User_info.objects.get(user=dept_head_user)
+            except User_info.DoesNotExist:
+                continue
+
+            if head_info.user_id == supervisor_user.id:
+                continue
+
+            head_info.supervisor = supervisor_user
+            head_info.save()
+
+        msg.success(
+            request,
+            f"{supervisor_user.get_full_name()} назначен(а) супервайзером для выбранных отделов."
+        )
+        return redirect(f"{reverse('employees')}?tab=managers")
+
+    return render(request, 'manager_form.html', context)
+
+
+def manager_edit(request, supervisor_id):
+    bosses = get_bosses_dict()
+    all_users = User.objects.filter(user_info__vacs_archiv=False).order_by('last_name', 'first_name')
+    departments = Unit.objects.all().order_by('title')
+
+    sup_user = get_object_or_404(User, pk=supervisor_id)
+    initial_employee = sup_user.id
+
+    subordinate_infos = User_info.objects.filter(supervisor=sup_user, otd_number__isnull=False)
+    depts_from_subs = { ui.otd_number.id for ui in subordinate_infos }
+
+    direct_boss_depts = { unit.id for unit in Unit.objects.filter(boss=sup_user) }
+
+    initial_departments = sorted(depts_from_subs | direct_boss_depts)
+
+    context = {
+        'all_users': all_users,
+        'departments': departments,
+        'initial_employee': initial_employee,
+        'initial_departments': initial_departments,
+        'navbar_style': 'custom-navbar',
+        'show_button': True,
+        'manager_edit': True,
+        'supervisor_id': supervisor_id,
+        'bosses': list(bosses.keys()),
+    }
+    
+    if request.method == 'POST':
+        form_supervisor_id = request.POST.get('supervisor_id') or supervisor_id
+        employee_id = request.POST.get('employee')
+        selected_depts = request.POST.getlist('departments')
+
+        if not employee_id or not selected_depts:
+            return render(request, 'manager_form.html', context)
+
+        supervisor_user = get_object_or_404(User, pk=employee_id)
+
+        if form_supervisor_id:
+            old_sup = get_object_or_404(User, pk=form_supervisor_id)
+            User_info.objects.filter(supervisor=old_sup).update(supervisor=None)
+
+        for dep_id in selected_depts:
+            unit = Unit.objects.filter(id=dep_id).first()
+            if not unit or not unit.boss:
+                continue
+
+            dept_head_user = unit.boss
+            try:
+                head_info = User_info.objects.get(user=dept_head_user)
+            except User_info.DoesNotExist:
+                continue
+
+            if head_info.user_id == supervisor_user.id:
+                continue
+
+            head_info.supervisor = supervisor_user
+            head_info.save()
+
+        return redirect(f"{reverse('employees')}?tab=managers")
+    
+    return render(request, 'manager_form.html', context)

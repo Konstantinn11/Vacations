@@ -78,7 +78,7 @@
             <td>
                 <div class="employee-cell" onclick="filtrByUser(this)">
                     <div class="employee-color" style="background: {{ value.color }};"></div>
-                    <a href="#" class="darker">{{ value.name }}</a>
+                    <a href="{% url 'profile' key %}" class="darker">{{ value.name }}</a>
                     {% if value.in_vacation %}
                         <span class="on-vacation-label">в отпуске</span>
                     {% endif %}
