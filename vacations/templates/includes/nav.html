@@ -7,16 +7,13 @@
 	}
 
 	.navbar {
-		background: #E6E6E6;
-	}
-
-	.navbar.custom-navbar {
 		background: white;
 		box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 		height: 60px;
 	}
 
 	.darker-nav {
+		margin-left: 375px;
 		font-size: 20px;
 		font-weight: normal;
 		color: #15a362;
@@ -26,6 +23,13 @@
 
 	.darker-nav:hover {
 		color: green;
+	}
+
+	.text-nav {
+		font-size: 20px; 
+		color: #5d6778; 
+		font-weight: normal; 
+		display: inline;
 	}
 
 	.btn.sib:hover { 
@@ -79,171 +83,166 @@
 <nav class="navbar navbar-expand-md {% if navbar_style %}{{ navbar_style }}{% endif %}" style="font-weight: bold;">
 	<div class="navbar-collapse collapse w-100 order-1 order-md-0 dual-collapse2" style="min-width: 1000px;">
 		{% if show_add_leave_button %}
-				<a id="toggle-info-block">
-					<img class="menu-icon" style="height: 40px; width: 40px; display: flex; align-items: center; justify-content: center; margin-left: 4px; cursor: pointer;" src="{% static 'menu.svg' %}">
-				</a>
+			<a id="toggle-info-block">
+				<img class="menu-icon" style="height: 40px; width: 40px; display: flex; align-items: center; justify-content: center; margin-left: 4px; cursor: pointer;" src="{% static 'menu.svg' %}">
+			</a>
 		{% endif %}
-		{% if navbar_style == 'custom-navbar' %}
-			{% if show_vacation_link %}
-			<a style="margin-left: 25px;" class="darker-nav" href="{% url 'vac_calendars' 0 %}">
-				Графики отпусков
-			</a>
-			<span style="font-size: 20px; color: #5d6778; font-weight: normal; display: inline;">
-				&nbsp;/ Единый график, {{ year }} г.
-			</span>
-			{% elif show_my_vacations %}
-			<a style="margin-left: 375px;" class="darker-nav" href="{% url 'vac_all' 0 %}">
-				Ближайшие отпуска
-			</a>
-			<span style="font-size: 20px; color: #5d6778; font-weight: normal; display: inline;">
-				&nbsp;/ Мои отпуска
-			</span>
-			{% elif show_person %}
-				{% if employee_name %}
-					<a style="margin-left: 375px;" class="darker-nav" href="{% url 'vac_2' year=year otd=0 %}">
-						График отпусков
-					</a>
-					<span style="font-size: 20px; color: #5d6778; font-weight: normal; display: inline;">
-						&nbsp;/ Добавление отпуска
-					</span>
-				{% else %}
-					<a style="margin-left: 375px;" class="darker-nav" href="{% url 'vac_my_vacations' %}">
-						Мои отпуска
-					</a>
-					<span style="font-size: 20px; color: #5d6778; font-weight: normal; display: inline;">
-						&nbsp;/ Новый отпуск
-					</span>
-				{% endif %}
-			{% elif show_all_vacations %}
-			<a style="margin-left: 375px;" class="darker-nav" href="{% url 'vac_all' 0 %}">
-				Ближайшие отпуска
-			</a>
-			<span style="font-size: 20px; color: #5d6778; font-weight: normal; display: inline;">
-				&nbsp;/ Все отпуска
-			</span>
-			{% elif my_profile %}
-				{% if is_own_profile %}
-					<span style="margin-left: 375px; font-size: 20px; color: #5d6778; font-weight: bold; display: inline;">
-						Мой профиль
-					</span>
-				{% else %}
-					<a style="margin-left: 375px;" class="darker-nav" href="{% url 'employees' %}">
-						Сотрудники
-					</a>
-					<span style="font-size: 19px; color: #5d6778; font-weight: normal; display: inline;">
-						&nbsp;/ {{ user_info.user.get_full_name }}
-					</span>
-				{% endif %}
-			{% elif employees %}
-			<span style="margin-left: 375px; font-size: 20px; color: #5d6778; font-weight: bold; display: inline;">
-				Центр комплексирования
-			</span>
-			{% elif import_vac %}
-			<a style="margin-left: 375px;" class="darker-nav" href="{% url 'vac_calendars' 0 %}">
-				Графики отпусков
-			</a>
-			<span style="font-size: 20px; color: #5d6778; font-weight: normal; display: inline;">
-				&nbsp;/ Импорт отпусков из файла
-			</span>
-			{% elif profile_edit %}
-			<a style="margin-left: 375px;" class="darker-nav" href="{% url 'employees' %}">
-				Сотрудники
-			</a>
-			<span style="font-size: 20px; color: #5d6778; font-weight: normal; display: inline;">
-				&nbsp;/ {{ user_info.user.get_full_name }}
-			</span>
-			{% elif employees_add_tag %}
-			<a style="margin-left: 375px;" class="darker-nav" href="{% url 'employees' %}?tab=tags">
-				Теги
-			</a>
-			<span style="font-size: 20px; color: #5d6778; font-weight: normal; display: inline;">
-				&nbsp;/ Добавление
-			</span>
-			{% elif employees_edit_tag %}
-			<a style="margin-left: 375px;" class="darker-nav" href="{% url 'employees' %}?tab=tags">
-				Теги
-			</a>
-			<span style="font-size: 20px; color: #5d6778; font-weight: normal; display: inline;">
-				&nbsp;/ {{tag}}
-			</span>
-			{% elif employees_add_unit %}
-			<a style="margin-left: 375px;" class="darker-nav" href="{% url 'employees' %}?tab=departments">
-				Отделы
-			</a>
-			<span style="font-size: 20px; color: #5d6778; font-weight: normal; display: inline;">
-				&nbsp;/ Добавление
-			</span>
-			{% elif employees_edit_unit %}
-			<a style="margin-left: 375px;" class="darker-nav" href="{% url 'employees' %}?tab=departments">
-				Отделы
-			</a>
-			<span style="font-size: 20px; color: #5d6778; font-weight: normal; display: inline;">
-				&nbsp;/ {{department}}
-			</span>
-			{% elif employees_add %}
-			<a style="margin-left: 375px;" class="darker-nav" href="{% url 'employees' %}">
-				Сотрудники
-			</a>
-			<span style="font-size: 20px; color: #5d6778; font-weight: normal; display: inline;">
-				&nbsp;/ Добавление
-			</span>
-			{% elif manager_add %}
-			<a style="margin-left: 375px;" class="darker-nav" href="{% url 'employees' %}?tab=managers">
-				Руководители
-			</a>
-			<span style="font-size: 20px; color: #5d6778; font-weight: normal; display: inline;">
-				&nbsp;/ Назначение
-			</span>
-			{% elif manager_edit %}
-			<a style="margin-left: 375px;" class="darker-nav" href="{% url 'employees' %}?tab=managers">
-				Руководители
-			</a>
-			<span style="font-size: 20px; color: #5d6778; font-weight: normal; display: inline;">
-				&nbsp;/ Редактирование
-			</span>
-			{% elif show_vacation_detail %}
-				{% if request.GET.from == 'all_vacations' %}
-					<a style="margin-left: 375px;" class="darker-nav" href="{% url 'vac_all_vacations' %}">
-						Все отпуска
-					</a>
-					<span style="font-size: 20px; color: #5d6778; font-weight: normal; display: inline;">
-						&nbsp;/ Отпуск {{ vacation_user_name }}
-					</span>
-				{% else %}
-					<a style="margin-left: 375px;" class="darker-nav" href="{% url 'vac_my_vacations' %}">
-						Мои отпуска
-					</a>
-					<span style="font-size: 20px; color: #5d6778; font-weight: normal; display: inline;">
-						&nbsp;/ Отпуск {{ vacation_user_name }}
-					</span>
-				{% endif %}
-			{% elif redact_vac %}
-				{% if request.GET.from == 'all_vacations' %}
-					<a style="margin-left: 375px;" class="darker-nav" href="{% url 'vac_all_vacations' %}">
-						Все отпуска
-					</a>
-					<span style="font-size: 20px; color: #5d6778; font-weight: normal; display: inline;">
-						&nbsp;/ Редактирование отпуска
-					</span>
-				{% elif request.GET.from == 'calendars' %}
-					<a style="margin-left: 375px;" class="darker-nav" href="{% url 'vac_2' year=year otd=0 %}">
-						График отпусков
-					</a>
-					<span style="font-size: 20px; color: #5d6778; font-weight: normal; display: inline;">
-						&nbsp;/ Редактирование отпуска
-					</span>
-				{% else %}
-					<a style="margin-left: 375px;" class="darker-nav" href="{% url 'vac_my_vacations' %}">
-						Мои отпуска
-					</a>
-					<span style="font-size: 20px; color: #5d6778; font-weight: normal; display: inline;">
-						&nbsp;/ Редактирование отпуска
-					</span>
-				{% endif %}
+		{% if show_vacation_link %}
+		<a style="margin-left: 25px;" class="darker-nav" href="{% url 'vac_calendars' 0 %}">
+			Графики отпусков
+		</a>
+		<span class="text-nav">
+			&nbsp;/ Единый график, {{ year }} г.
+		</span>
+		{% elif show_my_vacations %}
+		<a class="darker-nav" href="{% url 'vac_all' 0 %}">
+			Ближайшие отпуска
+		</a>
+		<span class="text-nav">
+			&nbsp;/ Мои отпуска
+		</span>
+		{% elif show_person %}
+			{% if employee_name %}
+				<a class="darker-nav" href="{% url 'vac_2' year=year otd=0 %}">
+					График отпусков
+				</a>
+				<span class="text-nav">
+					&nbsp;/ Добавление отпуска
+				</span>
+			{% else %}
+				<a class="darker-nav" href="{% url 'vac_my_vacations' %}">
+					Мои отпуска
+				</a>
+				<span class="text-nav">
+					&nbsp;/ Новый отпуск
+				</span>
 			{% endif %}
-		{% else %}
-			<img style="height: 45px; margin-left: 30px; margin-right: 100px;"
-				src="{% static 'logo_ya_removebg.png' %}" alt="Логотип">
+		{% elif show_all_vacations %}
+		<a class="darker-nav" href="{% url 'vac_all' 0 %}">
+			Ближайшие отпуска
+		</a>
+		<span class="text-nav">
+			&nbsp;/ Все отпуска
+		</span>
+		{% elif my_profile %}
+			{% if is_own_profile %}
+				<span style="margin-left: 375px; font-size: 20px; color: #5d6778; font-weight: bold; display: inline;">
+					Мой профиль
+				</span>
+			{% else %}
+				<a class="darker-nav" href="{% url 'employees' %}">
+					Сотрудники
+				</a>
+				<span style="font-size: 19px; color: #5d6778; font-weight: normal; display: inline;">
+					&nbsp;/ {{ user_info.user.get_full_name }}
+				</span>
+			{% endif %}
+		{% elif employees %}
+		<span style="margin-left: 375px; font-size: 20px; color: #5d6778; font-weight: bold; display: inline;">
+			Центр комплексирования
+		</span>
+		{% elif import_vac %}
+		<a class="darker-nav" href="{% url 'vac_calendars' 0 %}">
+			Графики отпусков
+		</a>
+		<span class="text-nav">
+			&nbsp;/ Импорт отпусков из файла
+		</span>
+		{% elif profile_edit %}
+		<a class="darker-nav" href="{% url 'employees' %}">
+			Сотрудники
+		</a>
+		<span class="text-nav">
+			&nbsp;/ {{ user_info.user.get_full_name }}
+		</span>
+		{% elif employees_add_tag %}
+		<a class="darker-nav" href="{% url 'employees' %}?tab=tags">
+			Теги
+		</a>
+		<span class="text-nav">
+			&nbsp;/ Добавление
+		</span>
+		{% elif employees_edit_tag %}
+		<a class="darker-nav" href="{% url 'employees' %}?tab=tags">
+			Теги
+		</a>
+		<span class="text-nav">
+			&nbsp;/ {{tag}}
+		</span>
+		{% elif employees_add_unit %}
+		<a class="darker-nav" href="{% url 'employees' %}?tab=departments">
+			Отделы
+		</a>
+		<span class="text-nav">
+			&nbsp;/ Добавление
+		</span>
+		{% elif employees_edit_unit %}
+		<a class="darker-nav" href="{% url 'employees' %}?tab=departments">
+			Отделы
+		</a>
+		<span class="text-nav">
+			&nbsp;/ {{department}}
+		</span>
+		{% elif employees_add %}
+		<a class="darker-nav" href="{% url 'employees' %}">
+			Сотрудники
+		</a>
+		<span class="text-nav">
+			&nbsp;/ Добавление
+		</span>
+		{% elif manager_add %}
+		<a class="darker-nav" href="{% url 'employees' %}?tab=managers">
+			Руководители
+		</a>
+		<span class="text-nav">
+			&nbsp;/ Назначение
+		</span>
+		{% elif manager_edit %}
+		<a class="darker-nav" href="{% url 'employees' %}?tab=managers">
+			Руководители
+		</a>
+		<span class="text-nav">
+			&nbsp;/ Редактирование
+		</span>
+		{% elif show_vacation_detail %}
+			{% if request.GET.from == 'all_vacations' %}
+				<a class="darker-nav" href="{% url 'vac_all_vacations' %}">
+					Все отпуска
+				</a>
+				<span class="text-nav">
+					&nbsp;/ Отпуск {{ vacation_user_name }}
+				</span>
+			{% else %}
+				<a class="darker-nav" href="{% url 'vac_my_vacations' %}">
+					Мои отпуска
+				</a>
+				<span class="text-nav">
+					&nbsp;/ Отпуск {{ vacation_user_name }}
+				</span>
+			{% endif %}
+		{% elif redact_vac %}
+			{% if request.GET.from == 'all_vacations' %}
+				<a class="darker-nav" href="{% url 'vac_all_vacations' %}">
+					Все отпуска
+				</a>
+				<span class="text-nav">
+					&nbsp;/ Редактирование отпуска
+				</span>
+			{% elif request.GET.from == 'calendars' %}
+				<a class="darker-nav" href="{% url 'vac_2' year=year otd=0 %}">
+					График отпусков
+				</a>
+				<span class="text-nav">
+					&nbsp;/ Редактирование отпуска
+				</span>
+			{% else %}
+				<a class="darker-nav" href="{% url 'vac_my_vacations' %}">
+					Мои отпуска
+				</a>
+				<span class="text-nav">
+					&nbsp;/ Редактирование отпуска
+				</span>
+			{% endif %}
 		{% endif %}
 	</div>
 

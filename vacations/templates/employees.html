@@ -9,7 +9,7 @@
 {% elif active_tab == 'departments' %}<title>Отделы</title>
 {% elif active_tab == 'tags' %}<title>Теги</title>
 {% else %}<title>Архив сотрудников</title>{% endif %}
-<div style="display: flex; flex-direction: row; justify-content: left; align-items: center; flex-wrap: nowrap; width: 120%; margin-top: 25px;">
+<div style="display: flex; flex-direction: row; justify-content: left; align-items: center; flex-wrap: nowrap; margin-top: 25px;">
     <div style="display: flex; background-color: white; height: 46px; box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.2); margin-left: 358px; border-radius: 1px; overflow: hidden; flex-grow: 1; width: auto;">
         {% if request.user.is_superuser %}
             <div class="header-tab" data-tab="managers">Руководители</div>
@@ -558,7 +558,7 @@
                         <a
                             href="#"
                             class="delete-manager-link"
-                            data-url="#"
+                            data-url="{% url 'manager_delete' mng.id %}"
                             title="Удалить"
                             style="margin-left:8px;"
                         >
@@ -575,6 +575,10 @@
             {% endfor %}
             </tbody>
         </table>
+
+        <form id="delete-manager-form" method="post" style="display:none;">
+            {% csrf_token %}
+        </form>
     {% endif %}
 </div>
 
@@ -697,6 +701,20 @@
             });
         });
 
+        const managerForm = document.getElementById('delete-manager-form');
+        document.querySelectorAll('.delete-manager-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const url = this.dataset.url;
+                const name = this.closest('tr').querySelector('td').textContent.trim();
+                if (!confirm(`Удалить руководителя ${name}? Это снимет его с должности руководителя подразделения у всех подчинённых.`)) {
+                    return;
+                }
+                managerForm.setAttribute('action', url);
+                managerForm.submit();
+            });
+        });
+
         // Действия над архивными сотрудниками (восстановление/удаление)
         const archiveForm = document.getElementById('archive-action-form');
         document.querySelectorAll('.archive-action-link').forEach(link => {
@@ -735,4 +753,4 @@
         });
     });
 </script>
-{% endblock %}
+{% endblock %}ар

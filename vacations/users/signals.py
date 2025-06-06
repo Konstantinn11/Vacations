@@ -4,6 +4,10 @@ from .models import User_info, Unit
 
 @receiver(post_save, sender=User_info)
 def update_superuser_status(instance, **kwargs):
+    # Сохранение прав администратора у пользователя
+    if instance.user.id == 1:
+        return
+    
     # Получаем отдел персонала
     hr_dept = Unit.objects.filter(title='Отдел персонала и безопасности (602)').first()
     

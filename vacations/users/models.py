@@ -84,6 +84,11 @@ class Tag(models.Model):
         return self.name
     
 
+class ActiveUsersManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().filter(vacs_archiv=False)
+    
+
 class User_info(models.Model):
     user = models.ForeignKey(
         CustomUser,
@@ -132,6 +137,9 @@ class User_info(models.Model):
         verbose_name='Архивирован'
     )
 
+    objects = models.Manager()
+    active = ActiveUsersManager()
+    
     class Meta:
         ordering = ('user', )
         verbose_name = 'Информация о пользователе'

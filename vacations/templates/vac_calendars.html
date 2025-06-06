@@ -5,7 +5,7 @@
 {% load static %}
 {% block header %}
 <title>Графики отпусков</title>
-<div style="display: flex; flex-direction: row; justify-content: left; align-items: center; flex-wrap: nowrap; width: 120%;">
+<div style="display: flex; flex-direction: row; justify-content: left; align-items: center; flex-wrap: nowrap;">
     <a style="color: black; font-weight: bold; font-size: 34px; text-align: left; line-height: 50px; white-space: nowrap; margin-left: 358px;">Графики отпусков</a>
     {% if request.user.get_full_name in bosses %}
     <div style="display: flex; flex-direction: row; align-items: center; margin-left: 515px; gap: 20px; justify-content: flex-end;">
@@ -47,6 +47,18 @@
 <style>
     .btn.sib:hover { background-color: rgba(21, 163, 98, 0.8) !important; }
 
+    .years-tabs-container {
+        display: flex;
+        width: 115%;
+        background-color: white;
+        height: 50px;
+        margin-top: 40px;
+        margin-left: 358px;
+        box-shadow: 0 0 5px rgba(0,0,0,0.2);
+        border-radius: 5px;
+        overflow: hidden;
+    }
+    
     .year-tab {
         flex: 1;
         display: flex;
@@ -79,13 +91,33 @@
         width: 115%;
     }
 
-    .styled-table {
-        border-collapse: collapse;
-        flex: 1;
-        text-align: left;
-        box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.2);
-        background-color: #fff;
+    .table-wrapper {
+        flex: 1 1 0;
+        display: flex;            
+        flex-direction: column;   
+        align-items: stretch;     
+        background: white;        
+        box-shadow: 0px 0px 5px rgba(0,0,0,0.2);
         border-radius: 5px;
+    }
+
+    .table-inner {
+        padding: 20px 0 10px;
+        flex: 0 0 auto;
+        align-self: flex-start;
+        width: 100%;   
+    }
+
+    .styled-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+        border-radius: 0;
+    }
+
+    .styled-table th,
+    .styled-table td {
+        vertical-align: top;
     }
 
     .header-cell {
@@ -107,7 +139,7 @@
 
     .no-data {
         padding: 10px;
-        color: gray;
+        color: #5d6778;
         font-size: 18px;
         font-weight: normal;
         padding: 25px;
@@ -230,8 +262,7 @@
     </button>
 </div>
 
-
-<div style="display: flex; width: 115%; background-color: white; height: 50px; margin-top: 40px; box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.2); margin-left: 358px; border-radius: 5px; overflow: hidden;">
+<div class="years-tabs-container">
     {% if has_vacations_in_linked_units %}
         {% for year in years_range %}
             {% if years_vacations_count|get_item:year > 0 %}
@@ -249,44 +280,53 @@
 
 {% if has_vacations_in_linked_units %}
 <div class="table-container">
-    <table id="otd-table" class="styled-table">
-        <thead>
-            <tr>
-                <th colspan="3" class="header-cell">Графики по отделам</th>
-            </tr>
-            <tr>
-                <th class="column-cell">Отдел</th>
-                <th class="column-cell">Сотрудников</th>
-                <th class="column-cell">Отпусков</th>
-            </tr>
-        </thead>
-        <tbody>
-        </tbody>
-        <tr class="table-spacing">
-            <td colspan="3"></td>
-        </tr>
-    </table>
+    <div class="table-wrapper">
+        <div class="table-inner">
+            <table id="otd-table" class="styled-table">
+                <thead>
+                    <tr>
+                        <th colspan="3" class="header-cell" id="otd-header">
+                            Графики {{ year }} по отделам
+                        </th>
+                    </tr>
+                    <tr>
+                        <th class="column-cell">Отдел</th>
+                        <th class="column-cell">Сотрудников</th>
+                        <th class="column-cell">Отпусков</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+                <tr class="table-spacing">
+                    <td colspan="3"></td>
+                </tr>
+            </table>
+        </div>
+    </div>
 
-    <table class="styled-table">
-        <thead>
-            <tr>
-                <th colspan="3" class="header-cell">Графики по тегам</th>
-            </tr>
-            <tr>
-                <th class="no-data">Не найдено сотрудников с тегами.</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td class="cell"></td>
-                <td class="cell"></td>
-                <td class="cell"></td>
-            </tr>
-        </tbody>
-        <tr class="table-spacing">
-            <td colspan="3"></td>
-        </tr>
-    </table>
+    <div class="table-wrapper">
+        <div class="table-inner">
+            <table id="tags-table" class="styled-table">
+                <thead>
+                    <tr>
+                        <th colspan="3" class="header-cell" id="tags-header">
+                            Графики {{ year }} по тегам
+                        </th>
+                    </tr>
+                    <tr id="tags-col-header">
+                        <th class="column-cell">Тег</th>
+                        <th class="column-cell">Сотрудников</th>
+                        <th class="column-cell">Отпусков</th>
+                    </tr>
+                </thead>
+                <tbody id="tags-table-body">
+                </tbody>
+                <tr class="table-spacing">
+                    <td colspan="3"></td>
+                </tr>
+            </table>
+        </div>
+    </div>
 </div>
 {% endif %}
 
@@ -307,10 +347,15 @@
 
         element.classList.add('active');
 
+        // Меняем URL в адресной строке
         const currentUrl = new URL(window.location.href);
         currentUrl.searchParams.set('year', year);
         history.pushState({}, '', currentUrl); 
 
+        document.getElementById('otd-header').innerText = `Графики ${year} по отделам`;
+        document.getElementById('tags-header').innerText = `Графики ${year} по тегам`;
+        
+        // Делаем AJAX-запрос
         fetch(`${currentUrl.pathname}?year=${year}`, { 
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         })
@@ -332,6 +377,46 @@
                         <td class="cell">${otd.vacations}</td>`;
                     tableBody.appendChild(row);
                 });
+            }
+
+            const tagsColHeader = document.getElementById('tags-col-header');
+            const tagsTableBody = document.querySelector('#tags-table-body');
+            tagsTableBody.innerHTML = '';
+            if (data.tags_data && data.tags_data.length > 0) {
+                tagsColHeader.style.display = '';
+                data.tags_data.forEach(tagItem => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="cell">
+                            <a href="/users/vacations/vac_2/${year}/0?tags=${encodeURIComponent(tagItem.tag)}"
+                                style="
+                                    display: inline-block;
+                                    background-color: #5b99ea;
+                                    color: white;
+                                    border-radius: 5px;
+                                    padding: 2px 6px;
+                                    font-size: 0.75em;
+                                    white-space: nowrap;
+                                    font-weight: 600;
+                                    text-decoration: none;">
+                                ${tagItem.tag}
+                            </a>
+                        </td>
+                        <td class="cell"><strong>${tagItem.employees}</strong></td>
+                        <td class="cell">${tagItem.vacations}</td>
+                    `;
+                    tagsTableBody.appendChild(row);
+                });
+            } else {
+                // Если нет ни одного тега с отпусками в этом году, выводим строку «Нет данных»
+                tagsColHeader.style.display = 'none';
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="cell" colspan="3" style="text-align: left; color: #5d6778; padding-top: 25px;">
+                        Не найдено сотрудников с тегами.
+                    </td>
+                `;
+                tagsTableBody.appendChild(row);
             }
         })
         .catch(error => {

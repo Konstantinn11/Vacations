@@ -97,16 +97,15 @@
 						<div style="display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-start;">
 							<div style="display: flex; flex-direction: row; flex-wrap: wrap; justify-content: left; align-items: center;">
 								<div style="width: 15px; height: 15px; background: {{value.color}}; border: 1px solid black; margin-right: 6px;"></div>
-								<a style="color: black; 
+								<span style="color: black; 
 										white-space: nowrap; 
 										overflow: hidden; 
 										text-overflow: ellipsis; 
 										max-width: 275px; 
 										display: inline-block;" 
-								href="#"
 								title="{{value.user.get_full_name}}">
 									{{value.user.get_full_name}}
-								</a>
+								</span>
 							</div>
 							<div style="display: flex; flex-direction: row; flex-wrap: wrap; margin-left: 20px;">
 								{% for date in value.dates %}

@@ -3,7 +3,7 @@
 {% block title %}Добавление сотрудника{% endblock %}
 {% block header %}
 <title>Добавление сотрудника</title>
-<div style="display: flex; flex-direction: row; justify-content: left; align-items: center; width: 120%;">
+<div style="display: flex; flex-direction: row; justify-content: left; align-items: center;">
     <a style="color: black; font-weight: bold; font-size: 34px; margin-left: 358px;">
         Добавление нового сотрудника
     </a>
@@ -79,7 +79,7 @@
 
         <div style="display: flex; gap: 10px; margin-top: 20px;">
             <button class="btn-edit" type="submit">Добавить</button>
-            <a class="btn-my-vacations" href="{% url 'employees' %}?tab=employees">Отмена</a>
+            <a class="btn-my-vacations" href="{% url 'employees' %}">Отмена</a>
         </div>
         <div style="margin-top: 20px;">
             <span style="color: red;">*</span>

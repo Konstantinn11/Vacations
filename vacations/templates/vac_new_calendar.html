@@ -10,19 +10,50 @@
 <link rel="stylesheet" href="{% static 'css/flatpickr.min.css' %}">
 <script src="{% static 'libs/flatpickr.min.js' %}"></script>
 <script src="{% static 'libs/ru.js' %}"></script>
+<link rel="stylesheet" href="{% static 'css/select2.min.css' %}">
+<script src="{% static 'libs/select2.min.js' %}"></script>
 <div style="display: flex; flex-direction: row; justify-content: left; align-items: center; flex-wrap: nowrap; width: 100%;">
     <a style="color: black; font-weight: bold; font-size: 38px; text-align: left; line-height: 50px; white-space: nowrap;">Календарь отпусков на {{year}}</a>
     <div style="display: flex; flex-direction: row; align-items: center; margin-left: 20px; gap: 20px; flex-grow: 1; justify-content: flex-end;">
         <div class="flex-container">
-			<select name="filtr_otd" id="filtr_otd" style="font-size: 18px; padding: 5px 10px; border: 1px solid #5d6778; color: #5d6778; font-family: 'Calibri'; font-style: normal; font-weight: 400; line-height: 22px; width: 140px; height: 35px; cursor: pointer;" onchange="updateDepartment()">
-				<option value="0" disabled selected>Фильтр</option>
-				{% for otd in otds_for_choise %}
-					<option value="{{ otd }}" {% if otd == current_otd %}selected{% endif %}>{{ otd }}</option>
-				{% endfor %}
-				{% if request.user.get_full_name in bosses %}
-					<option value="0" {% if current_otd == 0 %}selected{% endif %}>Все отделы</option>
-				{% endif %}
-			</select>
+			<button id="filter-toggle" type="button" class="filter-button">
+				Фильтр
+			</button>
+
+			<div id="filter-panel" class="filter-panel">
+				<div class="filter-field">
+					<label for="filter_otd" class="filter-label" style="margin-bottom: -6px;">Отдел</label>
+					<select id="filter_otd" name="filter_otd" class="filter-select">
+						{% if request.user.is_superuser or is_supervisor %}
+							<option value="0" {% if otd == 0 %}selected{% endif %}>Все отделы</option>
+							{% for o in otds_for_choise %}
+								<option value="{{ o }}" {% if o == otd %}selected{% endif %}>{{ o }}</option>
+							{% endfor %}
+						{% else %}
+							{% if current_dept_label %}
+								<option value="{{ current_dept_label }}" selected>{{ current_dept_label }}</option>
+							{% endif %}
+						{% endif %}
+					</select>
+				</div>
+
+				<div class="filter-field">
+					<label for="filter_tags" class="filter-label" style="margin-bottom: -2px;">Тег</label>
+					<select id="filter_tags" name="filter_tags" multiple="multiple" class="filter-select-multi">
+						{% for tag in all_tags %}
+							<option value="{{ tag.name }}" {% if tag.name in selected_tags %}selected{% endif %}>
+								{{ tag.name }}
+							</option>
+						{% endfor %}
+					</select>
+				</div>
+
+				<div class="filter-footer">
+					<button type="button" onclick="applyFilters()" class="filter-apply-button">
+						Показать
+					</button>
+				</div>
+			</div>
 
 			<select id="filtr_year" name="filtr_year" style="font-size: 18px; padding: 5px 10px; border: 1px solid #5d6778; color: #5d6778; font-family: 'Calibri'; font-style: normal; font-weight: 400; line-height: 22px; width: 140px; height: 35px; cursor: pointer;" onchange="updateFilters()">
 				<option value="0" disabled selected>Год</option>
@@ -43,8 +74,24 @@
     </div>
 </div>
 
-<div style="display: flex; flex-direction: row; justify-content: left; align-items: center; font-family: 'Calibri'; font-style: normal; font-weight: 400; line-height: 22px; font-size: 18px; color: #5d6778;">
-    Параметры фильтрации: отдел<span style="margin-left: 2px; color: #20c997;">&nbsp;{% if otd == 0%}Все отделы{% else %}{{ otd }}{% endif %}</span>,&nbsp;год<span style="color: #20c997;">&nbsp;{{ year }}</span>.
+<div style="display: flex; flex-wrap: wrap; white-space: normal; flex-direction: row; justify-content: left; align-items: center; font-family: 'Calibri'; font-style: normal; font-weight: 400; line-height: 22px; font-size: 18px; color: #5d6778;">
+    Параметры фильтрации:
+    отдел&nbsp;<span style="color: #20c997;">{% if otd == 0 %}Все отделы{% else %}{{ otd }}{% endif %}</span>,
+    год&nbsp;<span style="color: #20c997;">{{ year }}</span>
+    {% if selected_tags %}
+        , теги&nbsp;
+        {% for tag in selected_tags %}
+            <span style="color: #20c997;">{{ tag }}</span>{% if not forloop.last %},&nbsp;{% endif %}
+        {% endfor %}
+    {% endif %}
+
+    {% if otd != 0 and request.user.get_full_name in bosses or selected_tags %}
+        <span style="margin-left: 0.5rem;">
+            <a class="darker" href="{% url 'vac_2' year=year otd=0 %}">
+                Сбросить все фильтры
+            </a>
+        </span>
+    {% endif %}
 </div>
 
 {% if messages %}
@@ -60,47 +107,93 @@
             </div>
         {% endfor %}
     </div>
-    
-    <script>
-        setTimeout(function() {
-            {% for message in messages %}
-                var messageElement = document.getElementById("message-{{ forloop.counter }}");
-                if (messageElement) {
-                    messageElement.style.display = "none";
-                }
-            {% endfor %}
-        }, 3000);
-    </script>
 {% endif %}
 
 <script>
 	var currentYear = "{{ year }}";
 	var currentOtd = "{{ otd }}";
 
-	function updateDepartment() {
-		var selectedOtd = document.getElementById('filtr_otd').value;
-		window.location.href = "{% url 'vac_2' 0 0 %}".replace("0/0", currentYear + "/" + selectedOtd);
-	}
+	document.addEventListener('DOMContentLoaded', function() {
+		var deptSelect = document.getElementById('filter_otd');
+		if (deptSelect) {
+			deptSelect.value = currentOtd;
+		}
+	});
 	
-	function updateYearDropdown() {
-		var selectedOtd = document.getElementById('filtr_otd').value;
-		var yearDropdown = document.getElementById('filtr_year');
-		if (selectedOtd != "0") {
-			yearDropdown.style.display = 'inline-block'; 
-		} else {
-			yearDropdown.style.display = 'inline-block';
-		}
-	}
+	document.getElementById('filter-toggle').addEventListener('click', function() {
+        const panel = document.getElementById('filter-panel');
+        panel.style.display = (panel.style.display === 'block') ? 'none' : 'block';
+    });
 
+	document.addEventListener('click', function(event) {
+        var panel = document.getElementById('filter-panel');
+        var btn   = document.getElementById('filter-toggle');
+        if (!panel.contains(event.target) && !btn.contains(event.target)) {
+            panel.style.display = 'none';
+        }
+    });
+	
 	function updateFilters() {
-		var selectedYear = document.getElementById('filtr_year').value;
+        var selectedYear = document.getElementById('filtr_year').value;
+        if (!selectedYear || selectedYear === "0") {
+            alert('Пожалуйста, выберите год.');
+            return;
+        }
 
-		if (selectedYear !== "0") {
-			window.location.href = "{% url 'vac_2' 0 0 %}".replace("0/0", selectedYear + "/" + currentOtd);
-		} else {
-			alert('Пожалуйста, выберите год.');
-		}
-	}
+        // Собираем выбранные теги
+        var tagsSelect = document.getElementById('filter_tags');
+        var selectedTags = [];
+        for (var i = 0; i < tagsSelect.options.length; i++) {
+            var opt = tagsSelect.options[i];
+            if (opt.selected) {
+                selectedTags.push(opt.value.trim());
+            }
+        }
+        var tagsParam = selectedTags.join(',');
+        
+        var newUrl = "{% url 'vac_2' 0 0 %}".replace("0/0", selectedYear + "/" + currentOtd);
+        
+        if (tagsParam) {
+            newUrl += "?tags=" + encodeURIComponent(tagsParam);
+        }
+        
+        window.location.href = newUrl;
+    }
+
+	function applyFilters() {
+        var year = currentYear;
+        var selectedDept = document.getElementById('filter_otd').value;
+        var tagsSelect = document.getElementById('filter_tags');
+        var selectedTags = [];
+
+        for (var i = 0; i < tagsSelect.options.length; i++) {
+            var opt = tagsSelect.options[i];
+            if (opt.selected) {
+                selectedTags.push(opt.value.trim());
+            }
+        }
+        var tagsParam = selectedTags.join(',');
+
+        var targetUrl = "{% url 'vac_2' 0 0 %}".replace("0/0", year + "/" + selectedDept);
+        if (tagsParam) {
+            targetUrl += "?tags=" + encodeURIComponent(tagsParam);
+        }
+        window.location.href = targetUrl;
+    }
+
+	$('#filter_tags').select2({
+		placeholder: 'Все теги',
+		width: '100%',
+	});
+
+	setTimeout(function() {
+		{% for message in messages %}
+			var messageElement = document.getElementById("message-{{ forloop.counter }}");
+			if (messageElement) {
+				messageElement.style.display = "none";
+			}
+		{% endfor %}
+	}, 3000);
 </script>
 {% endblock %}
 
@@ -111,6 +204,7 @@
 {% block content %}
 <style>
 	.flex-container {
+		position: relative;
 		display: flex;
 		flex-direction: row;
 		justify-content: flex-start;
@@ -118,14 +212,168 @@
 		gap: 20px;
 		width: 100%;
 	}
-	
-	#filtr_otd {
+
+	.filter-button {
+		font-size: 18px;
+		padding: 5px 10px;
+		border: 1px solid #5d6778;
+		background-color: white;
+		color: #5d6778;
+		cursor: pointer;
+		border-radius: 3px;
+		text-transform: none;
+		width: 140px;
+		height: 35px;
+		font-family: 'Calibri'; 
+		font-style: normal;
+		font-weight: 400;
+		line-height: 22px;
+		margin-top: 1px;
 		background-image: url("{% static 'funnel.svg' %}"), url("{% static 'arrow-drop.svg' %}");
 		background-position: left 10px center, right 5px center;
 		background-repeat: no-repeat, no-repeat;
 		background-size: 20px 20px, 20px 20px;
 		padding-left: 10px;
-		padding-right: 3px; 
+		padding-right: 3px;
+	}
+
+	.filter-button:hover,
+	.filter-button:focus {
+		background-image: url("{% static 'funnel.svg' %}"), url("{% static 'arrow-drop.svg' %}");
+		background-position: left 10px center, right 5px center;
+		background-repeat: no-repeat, no-repeat;
+		background-size: 20px 20px, 20px 20px;
+		padding-left: 10px;
+		padding-right: 3px;
+		background-color: white;
+		border-color: #5d6778;
+		color: #5d6778;
+		box-shadow: none;
+		outline: none;
+	}
+
+	.filter-panel {
+		display: none;
+		position: absolute;
+		top: 105%;
+		left: 0;
+		width: 250px;
+		background-color: #ffffff;
+		border: 1px solid #ced4da;
+		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+		border-radius: 4px;
+		z-index: 1000;
+		padding: 8px 12px;
+	}
+
+	.filter-field {
+		margin-bottom: 10px;
+	}
+
+	.filter-label {
+		display: block;
+		font-size: 15px;
+		color: #5d6778;
+		font-weight: 500;
+	}
+
+	.filter-select {
+		width: 100%;
+		font-size: 14px;
+		padding: 4px 6px;
+		border: 1px solid #ced4da;
+		border-radius: 3px;
+		color: #5d6778;
+		text-align: left;
+		background-color: white;
+		height: 35px;
+		font-family: 'Calibri', sans-serif;
+		font-weight: normal;
+	}
+
+	.filter-select-multi {
+		width: 100%;
+		font-size: 14px;
+		padding: 4px 6px;
+		border: 1px solid #ced4da;
+		border-radius: 3px;
+		color: #5d6778;
+		background-color: white;
+		font-family: 'Calibri', sans-serif;
+	}
+
+	.filter-footer {
+		text-align: left;
+		margin-top: -14px;
+	}
+
+	.filter-apply-button {
+		font-size: 14px;
+		padding: 5px 12px;
+		border: 1px solid #bcc1cb;
+		background-color: white;
+		color: #5d6778;
+		cursor: pointer;
+		border-radius: 4px;
+		text-transform: none;
+		font-weight: 500;
+		width: 106px;
+		height: 33px;
+		font-family: 'Calibri', sans-serif;
+	}
+
+	.filter-apply-button:hover,
+	.filter-apply-button :focus {
+		background-color: white;
+		border-color: #15a362;
+		color: #15a362;
+		box-shadow: none;
+		outline: none;
+	}
+
+	.select2-container--default .select2-selection--multiple {
+		height: auto;
+		min-height: 35px;
+		padding: 2px 4px;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		font-size: 14px;
+		max-height: 120px;
+    	overflow-y: auto;
+		overflow-x: hidden;
+	}
+
+	.select2-container--default .select2-selection--multiple .select2-selection__rendered {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		margin: 0;
+		padding: 0;
+	}
+
+	.select2-container--default .select2-selection--multiple .select2-selection__choice {
+		max-width: 220px;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		display: inline-block;
+		background: transparent;
+		border: none;
+		color: #5d6778;
+		padding: 0;
+		margin: 6px 4px 2px 0;
+		font-weight: normal;
+	}
+
+	.darker { 
+		color: #20c997;
+		font-size: 17px; 
+		text-decoration: underline; 
+	}
+
+    .darker:hover { 
+		color: #15a362; 
 	}
 	
 	#filtr_year {
@@ -434,6 +682,62 @@
 		outline: none;
 		box-shadow: none;
 	}
+
+	.my-swal-popup {
+		border-radius: 12px;
+		box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+		padding: 1.2rem;
+		margin-top: -200px !important;
+	}
+
+	.my-swal-title-success {
+		color: #15a362;
+		font-size: 22px;
+		margin-bottom: 0.4rem;
+		text-align: center !important;
+	}
+
+	.my-swal-title-error {
+		color: #c0392b;
+		font-size: 22px;
+		margin-bottom: 0.4rem;
+		text-align: center !important;
+	}
+
+	.my-swal-content {
+		font-size: 17px;
+		color: #5d6778;
+	}
+
+	.my-swal-button-success,
+	.my-swal-button-error {
+		color: #fff !important;
+		border-radius: 8px;
+		padding: 0.5rem 1.2rem;
+		font-size: 17px;
+		text-transform: none;
+		outline: none !important;
+	}
+
+	.my-swal-button-success {
+		background-color: #15a362 !important;
+	}
+
+	.my-swal-button-error {
+		background-color: #c0392b !important;
+	}
+
+	.my-swal-button-success:active,
+	.my-swal-button-error:active {
+		outline: none !important;
+		box-shadow: none !important;
+		filter: brightness(1.0) !important;
+	}
+
+	.my-swal-button-success:hover,
+	.my-swal-button-error:hover {
+		filter: brightness(1.2);
+	}
 </style>
 <div style="width: 110%; display: flex; flex-direction: row;">
 	<div style="margin: 5px 20px 5px 0px;">{% include "includes/vac_month_table.html" with key="Январь" value=Январь %}</div>
@@ -474,14 +778,38 @@
 				data-start-date="{% for start_date, days_count in value.vacation_start_dates %}{{start_date}}{% if not forloop.last %}, {% endif %}{% endfor %}" 
 				data-end-date="{% for end_date in value.vacation_end_dates %}{{end_date}}{% if not forloop.last %}, {% endif %}{% endfor %}"
 				data-vac-id="{% for vac in value.dates %}{{ vac.vac_id }}{% if not forloop.last %}, {% endif %}{% endfor %}">
-				<th style="text-align: left;">
+				<th style="text-align: left; vertical-align: top; padding-top: 7px;">
 					<div style="display: flex; flex-direction: row; justify-content: left; align-items: center;">
 						<div style="width: 15px; height: 15px; background: {{value.color}}; border: 1px solid black; margin-right: 6px;"></div>
 						<a style="color: black" href="#" onclick="filtrByUser(this)">{{value.user.get_full_name}}</a>
 					</div>
+
+					{% for ui in employees %}
+						{% if ui.user.id == value.user_id %}
+							{% if ui.tags.all %}
+								<div>
+								{% for tag in ui.tags.all %}
+									<span style="
+									display: inline-block;
+									background-color: #5b99ea;
+									color: white;
+									border-radius: 5px;
+									padding: 2px 6px;
+									font-size: 0.7em;
+									white-space: nowrap;
+									font-weight: 500;
+									margin-bottom: 7px;
+									">
+									{{ tag.name }}
+									</span>
+								{% endfor %}
+								</div>
+							{% endif %}
+						{% endif %}
+					{% endfor %}
 				</th>
-				<th>{{value.otd }}</th>
-				<th>{{value.sum }}</th>
+				<th style="vertical-align: top; padding-top: 7px;">{{value.otd }}</th>
+				<th style="vertical-align: top; padding-top: 7px;">{{value.sum }}</th>
 			</tr>
 		{% endfor %}
 	</table>
@@ -566,22 +894,40 @@
 	}
 
 	document.addEventListener("DOMContentLoaded", function () {
-		const currentDate = new Date();
-		const currentDay = currentDate.getDate();
-		const currentMonth = currentDate.getMonth();
-		const currentYear = currentDate.getFullYear();
+		// Год, переданный сервером
+		const selectedYear = parseInt("{{ year }}", 10);
+		// Фактический текущий год
+		const nowDate = new Date();
+		const jsYear  = nowDate.getFullYear();
 
-		const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
-		const firstWeekday = firstDayOfMonth.getDay() === 0 ? 6 : firstDayOfMonth.getDay() - 1;
-		const currentWeekday = currentDate.getDay() === 0 ? 6 : currentDate.getDay() - 1;
+		if (jsYear !== selectedYear) {
+			const messageDiv = document.getElementById("vacation-message");
+			messageDiv.innerText = "В данный момент нет сотрудников в отпуске.";
+			const info = document.getElementById("info");
+			info.innerHTML = "";
+			info.style.display = "none";
+			return;
+		}
+		
+		const currentDay   = nowDate.getDate();
+    	const currentMonth = nowDate.getMonth();
+		const firstOfMonth = new Date(jsYear, currentMonth, 1);
+		const firstWeekday = firstOfMonth.getDay() === 0 ? 6 : firstOfMonth.getDay() - 1;
+		const todayWeekday = nowDate.getDay() === 0 ? 6 : nowDate.getDay() - 1;
 		const weekOffset = Math.floor((currentDay + firstWeekday - 1) / 7) + 1;
 
-		const month = fullMonthNames[currentMonth];
-		const currentId = `${month}_${weekOffset}_${currentWeekday}`;
-
+		const monthLabel = fullMonthNames[currentMonth];
+    	const currentId  = `${monthLabel}_${weekOffset}_${todayWeekday}`;
+		
 		const currentDayElement = document.getElementById(currentId);
 		if (currentDayElement) {
 			showCrossData(currentDayElement);
+		} else {
+			const messageDiv = document.getElementById("vacation-message");
+			messageDiv.innerText = "В данный момент нет сотрудников в отпуске.";
+			const info = document.getElementById("info");
+			info.innerHTML = "";
+			info.style.display = "none";
 		}
 	});
 
@@ -725,6 +1071,9 @@
 		let employeeId = row.getAttribute('data-employee-name');
 		let days = document.getElementsByName('day');
 
+		let colorElement = row.querySelector('div[style*="background:"]');
+    	let employeeColor = colorElement ? colorElement.style.background : '#df691a';
+
 		for (let i = 0; i < days.length; i++) {
 			let [month, week, day] = days[i].id.split('_');
 			if (data[month][week][day]) {
@@ -735,9 +1084,8 @@
 							: 'transparent';
 						days[i].childNodes[1].style.color = '#808080';
 					} else {
-						days[i].childNodes[1].style.background = 'linear-gradient(135deg, #df691a 50%, #4e5d6c 50%, #4e5d6c 100%)';
+						days[i].childNodes[1].style.background = employeeColor;
 						days[i].childNodes[1].style.color = 'white';
-						days[i].childNodes[1].style.borderRadius = '5px';
 						days[i].childNodes[1].style.backgroundSize = '28px 28px';
 						days[i].childNodes[1].style.backgroundPosition = 'center';
 						days[i].childNodes[1].style.backgroundRepeat = 'no-repeat';
@@ -799,7 +1147,7 @@
 
 			<div class="dates-header">
 				<div style="width: 120px;"></div>
-				<div class="date-header">Дата начала</div>
+				<div class="date-header">Дата начала<span style="color: red;">&nbsp;*</span></div>
 				<div class="date-header">
 					Дней
 					<span class="tooltip-wrapper" data-tooltip="Укажите количество календарных дней и дата окончания рассчитается автоматически.">
@@ -811,7 +1159,7 @@
 						>
 					</span>
 				</div>
-				<div class="date-header">Дата окончания</div>
+				<div class="date-header">Дата окончания<span style="color: red;">&nbsp;*</span></div>
 				<div style="width: auto;"></div>
 			</div>
 			
@@ -1051,13 +1399,55 @@
 			});
 
 			if (response.ok) {
-			Swal.fire('Успешно!', 'Отпуска добавлены', 'success')
+			Swal.fire({
+				title: 'Успешно!',
+				text: 'Отпуска добавлены',
+				icon: 'success',
+
+				customClass: {
+					popup: 'my-swal-popup',
+					title: 'my-swal-title-success',
+					content: 'my-swal-content',
+					confirmButton: 'my-swal-button-success'
+				},
+
+				confirmButtonText: 'Отлично',
+				background: 'white',
+			})
 				.then(() => window.location.reload());
 			} else {
-			Swal.fire('Ошибка!', 'Произошла ошибка при сохранении', 'error');
+			Swal.fire({
+				title: 'Ошибка!',
+				text: 'Произошла ошибка при сохранении',
+				icon: 'error',
+
+				customClass: {
+					popup: 'my-swal-popup',
+					title: 'my-swal-title-error',
+					content: 'my-swal-content',
+					confirmButton: 'my-swal-button-error'
+				},
+
+				confirmButtonText: 'Понятно',
+				background: 'white',
+				});
 			}
 		} catch (error) {
-			Swal.fire('Ошибка!', 'Нет соединения с сервером', 'error');
+			Swal.fire({
+				title: 'Ошибка!',
+				text: 'Нет соединения с сервером',
+				icon: 'error',
+
+				customClass: {
+					popup: 'my-swal-popup',
+					title: 'my-swal-title-error',
+					content: 'my-swal-content',
+					confirmButton: 'my-swal-button-error'
+				},
+
+				confirmButtonText: 'Закрыть',
+				background: 'white',
+			});
 		}
 	}
 </script>

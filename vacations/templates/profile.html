@@ -293,9 +293,13 @@
             <td>
                 <ul>
                     {% for vacation in vacations_list %}
-                        <li>
+                    <li>
+                        {% if request.user.get_full_name in bosses or is_own_profile %}
                             <a class="darker" href="{% url 'vacation_detail' vacation.id %}">{{ vacation.period }}</a>
-                        </li>
+                        {% else %}
+                            <span style="color: #5d6778;">{{ vacation.period }}</span>
+                        {% endif %}
+                    </li>
                     {% endfor %}
                 </ul>
             </td>

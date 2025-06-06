@@ -126,35 +126,35 @@
     }
 
     #leave-dropdown {
-        padding: 6px; /* Отступ от краев контейнера */
+        padding: 6px;
     }
 
     #leave-dropdown ul {
-        padding: 6px 0; /* Отступы для списка */
+        padding: 6px 0;
         text-align: center;
     }
 
     #leave-dropdown ul li {
-        margin: 6px 0; /* Расстояние между элементами */
+        margin: 6px 0;
     }
 
     /* Скрытый блок */
     #info-block {
         position: fixed;
         top: 0;
-        left: -407px; /* Скрыть блок слева */
+        left: -407px;
         width: 407px;
         height: 100%;
         background-color: white;
         box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-        transition: left 0.3s ease-in-out; /* Плавная анимация */
+        transition: left 0.3s ease-in-out;
         padding: 20px;
         z-index: 1000;
     }
 
     /* Открытый блок */
     #info-block.open {
-        left: 0; /* При добавлении класса 'open', блок выезжает */
+        left: 0;
     }
 
     /* Стиль для кнопки закрытия */
@@ -175,9 +175,9 @@
     }
 
     #info-block.open .close-btn {
-        opacity: 1; /* Крестик становится видимым */
-        visibility: visible; /* Становится видимым */
-        transition: opacity 0.3s ease, visibility 0s linear 0s; /* Плавное появление */
+        opacity: 1;
+        visibility: visible;
+        transition: opacity 0.3s ease, visibility 0s linear 0s;
     }
 
     .overlay {
@@ -186,9 +186,9 @@
         left: 0;
         width: 100%;
         height: 100%;
-        background-color: rgba(0, 0, 0, 0.5); /* Полупрозрачный черный фон */
-        z-index: 900; /* Меньше, чем у info-block, но больше, чем у основного контента */
-        display: none; /* Скрыто по умолчанию */
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 900;
+        display: none;
     }
 
     /* Показ overlay при открытии info-block */
@@ -239,7 +239,7 @@
     }
 
     .sub-menu-base.open + .vertical-tab .tab-arrow {
-        transform: rotate(180deg); /* Поворот стрелки на 180 градусов */
+        transform: rotate(180deg);
     }
 
     .sub-menu-base {
@@ -396,7 +396,7 @@
                 // Проверка существования кнопки для избежания ошибок
                 if (button) {
                     button.addEventListener('click', (event) => {
-                        event.preventDefault(); // Предотвращаем переход по ссылке
+                        event.preventDefault();
                         
                         // Переключение видимости выпадающего списка
                         dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
@@ -425,9 +425,9 @@
 
                 if (toggleButton) {
                     toggleButton.addEventListener('click', function(e) {
-                        e.preventDefault(); // Чтобы не было перехода по ссылке
-                        infoBlock.classList.toggle('open');  // Показ или скрытие info-block
-                        overlay.classList.toggle('open');    // Показ или скрытие overlay
+                        e.preventDefault();
+                        infoBlock.classList.toggle('open');
+                        overlay.classList.toggle('open');
                     });
                 }
 
@@ -467,9 +467,9 @@
 
                 // Проверяем, открыт ли subMenu, и меняем направление стрелки
                 if (subMenu.classList.contains("open")) {
-                    arrow.style.transform = "rotate(180deg)"; // Поворот стрелки
+                    arrow.style.transform = "rotate(180deg)";
                 } else {
-                    arrow.style.transform = "rotate(0deg)"; // Восстановление стрелки в исходное положение
+                    arrow.style.transform = "rotate(0deg)";
                 }
             }
 

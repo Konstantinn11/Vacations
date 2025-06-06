@@ -1,13 +1,50 @@
 {% extends "base.html" %}
 {% block title %}Ошибка 500{% endblock %}
+{% block navbar %}{% endblock %}
+{% block aside %}{% endblock %}
+
 {% block content %}
+<style>
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 100px;
+  margin-left: 500px;
+}
 
-  <div class="row">
-    <div class="col-md-12">
-      <h1>Ошибка 500</h1>
-      <p class="lead">Ошибка на сервере, попробуйте обновить страницу или обратиться позже</p>
-      <p class="lead"><a href="{% url 'vac_all' 0 %}">Вернуться на главную</a></p>
+.error-box {
+    width: 420px;
+    text-align: center;
+}
+
+.error-box h1 {
+    margin-bottom: 20px;
+    color: #000;
+}
+
+.error-box p {
+    margin-bottom: 15px;
+}
+
+.error-box .error-link a {
+    color: #15a362;
+    text-decoration: none;
+}
+
+.error-box .error-link a:hover {
+    color: green;
+}
+</style>
+
+<title>Ошибка 500</title>
+<div class="error-container">
+    <div class="error-box">
+        <h1>Ошибка 500</h1>
+        <p class="lead">Ошибка на сервере, попробуйте обновить страницу или обратиться позже.</p>
+        <p class="lead error-link">
+            <a href="{% url 'vac_all' 0 %}">Вернуться на главную</a>
+        </p>
     </div>
-  </div>
-
-{% endblock %} 
+</div>
+{% endblock %}

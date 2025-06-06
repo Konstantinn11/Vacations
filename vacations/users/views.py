@@ -197,13 +197,13 @@ def vac_all(request, otd):
 
     # Если пользователь не является боссом
     if current_user_name not in bosses:
-        otd_id = User_info.objects.filter(user_id=request.user.id)[0].otd_number_id
+        otd_id = User_info.active.filter(user_id=request.user.id)[0].otd_number_id
         unit = Unit.objects.filter(id=otd_id).first()
         if unit:
             otd = int(unit.description)
         else:
             otd = 0
-        otd_users = User_info.objects.filter(otd_number_id=otd_id)
+        otd_users = User_info.active.filter(otd_number_id=otd_id)
         otd_users_id = [user.user_id for user in otd_users]
         vacations = Vacation.objects.filter(user_id__in=otd_users_id, day_end__gte=today).order_by('day_start')
         otds_for_choise = [otd]
@@ -212,12 +212,12 @@ def vac_all(request, otd):
         if otd == 0:  # Все отделы, которыми он руководит
             otds_for_choise = bosses[current_user_name]
             otd_ids = [Unit.objects.filter(description=descr).first().id for descr in otds_for_choise if Unit.objects.filter(description=descr).exists()]
-            otd_users = User_info.objects.filter(otd_number_id__in=otd_ids)
+            otd_users = User_info.active.filter(otd_number_id__in=otd_ids)
         else:  # Выбран конкретный отдел
             unit = Unit.objects.filter(description=otd).first()
             if unit:
                 otd_id = unit.id
-                otd_users = User_info.objects.filter(otd_number_id=otd_id)
+                otd_users = User_info.active.filter(otd_number_id=otd_id)
                 otds_for_choise = [otd]
             else:
                 otd_id = None
@@ -247,7 +247,7 @@ def vac_all(request, otd):
 
     # Подготовка данных по пользователям
     vacations_by_user = {}
-    users_otd = User_info.objects.all()
+    users_otd = User_info.active.all()
     for vac in filtered_vacations:
         uid = vac.user.id
         if uid not in vacations_by_user:
@@ -322,7 +322,6 @@ def vac_all(request, otd):
             'otds_for_choise': otds_for_choise,
             'vacation_start_dates': vacation_start_dates,
             'show_button': True,
-            'navbar_style': 'custom-navbar',
             'users_colors': users_colors,
             'bosses': list(bosses.keys()),
             'sort_otd': sort_otd,
@@ -347,8 +346,8 @@ def vac_calendars(request, otd, year=None):
 
     # Проверка, является ли пользователь боссом
     if current_user_name not in bosses.keys():
-        otd_id = User_info.objects.filter(user_id=request.user.id).first().otd_number_id
-        otd_users = User_info.objects.filter(otd_number_id=otd_id)
+        otd_id = User_info.active.filter(user_id=request.user.id).first().otd_number_id
+        otd_users = User_info.active.filter(otd_number_id=otd_id)
         otd_users_id = [user.user_id for user in otd_users]
         unit = Unit.objects.filter(id=otd_id).first()
         if unit:
@@ -364,7 +363,7 @@ def vac_calendars(request, otd, year=None):
             linked_units = [otd]
             otd_ids = [otd_id]
 
-        otd_users = User_info.objects.filter(otd_number_id__in=otd_ids)
+        otd_users = User_info.active.filter(otd_number_id__in=otd_ids)
         otd_users_id = [user.user_id for user in otd_users]
 
     otds_for_choise = linked_units
@@ -372,15 +371,23 @@ def vac_calendars(request, otd, year=None):
     otd_data = []
     units = Unit.objects.filter(description__in=linked_units)
     for unit in units:
-        unit_users = User_info.objects.filter(otd_number_id=unit.id)
+        unit_users = User_info.active.filter(otd_number_id=unit.id)
         unit_user_ids = [user.user_id for user in unit_users]
-        vacations_count = Vacation.objects.filter(user_id__in=unit_user_ids, year=str(year)).count()
+        vacations_count = Vacation.objects.filter(
+            user_id__in=unit_user_ids,
+            year=str(year)
+        ).count()
 
         if vacations_count > 0:
+            employees_with_vac_count = Vacation.objects.filter(
+                user_id__in=unit_user_ids,
+                year=str(year)
+            ).values('user_id').distinct().count()
+            
             otd_data.append({
                 'otd': unit.title,
                 'otd_description': unit.description,
-                'employees': unit_users.count(),
+                'employees': employees_with_vac_count,
                 'vacations': vacations_count
             })
 
@@ -392,12 +399,37 @@ def vac_calendars(request, otd, year=None):
 
     has_vacations_in_linked_units = any(count > 0 for count in filtered_years_vacations_count.values())
 
+    tags_data = []
+    tags_qs = Tag.objects.filter(tags_info__user__id__in=otd_users_id).distinct()
+    for tag in tags_qs:
+        users_with_tag = User_info.active.filter(
+            user__id__in=otd_users_id,
+            tags=tag
+        ).values_list('user_id', flat=True).distinct()
+        users_with_vac = Vacation.objects.filter(
+            user_id__in=users_with_tag,
+            year=str(year)
+        ).values_list('user_id', flat=True).distinct()
+        user_count = users_with_vac.count()
+        vac_count = Vacation.objects.filter(
+            user_id__in=users_with_vac,
+            year=str(year)
+        ).count()
+
+        if user_count > 0:
+            tags_data.append({
+                'tag': tag.name,
+                'employees': user_count,
+                'vacations': vac_count
+            })
+    
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         return JsonResponse({
             'otd_data': otd_data,
+            'tags_data': tags_data,
             'linked_units': linked_units,
         })
-
+    
     holidays_loaded = {}
     for y in years_range:
         holidays_loaded[y] = Holiday.objects.filter(date__year=y).exists()
@@ -413,7 +445,6 @@ def vac_calendars(request, otd, year=None):
             'otds_for_choise': otds_for_choise,
             'bosses': list(bosses.keys()),
             'current_user_name': current_user_name,
-            'navbar_style': 'custom-navbar',
             'show_button': True,
             'years_range': years_range,
             'has_vacations_in_linked_units': has_vacations_in_linked_units,
@@ -441,30 +472,30 @@ def vac_2(request, year, otd):
     years_in_vacations = set(Vacation.objects.values_list('year', flat=True))
     years_in_vacations.update([str(y) for y in future_years])
     years_range = sorted([int(y) for y in years_in_vacations])
-
+    
     if request.user.get_full_name() not in bosses.keys():
-        otd_id = User_info.objects.filter(user_id=request.user.id)[0].otd_number_id
+        otd_id = User_info.active.filter(user_id=request.user.id)[0].otd_number_id
         unit = Unit.objects.filter(id=otd_id).first()
         if unit:
             otd = int(unit.description)
         else:
             otd = 0
-        otd_users = User_info.objects.filter(otd_number_id=otd_id) 
+        otd_users = User_info.active.filter(otd_number_id=otd_id)
         otd_users_id = [user.user_id for user in otd_users] 
         vacations = Vacation.objects.filter(user_id__in=otd_users_id, year=str(year))
-        filtered_users_id = [request.user.id]
+        filtered_users_id = otd_users_id
         otds_for_choise = [otd]
     else:
         if otd == 0:
             boss_departments = bosses[request.user.get_full_name()]
             otd_ids = [Unit.objects.filter(description=str(descr))[0].id for descr in boss_departments]
-            otd_users = User_info.objects.filter(otd_number_id__in=otd_ids)
+            otd_users = User_info.active.filter(otd_number_id__in=otd_ids)
             otd_users_id = [user.user_id for user in otd_users]
             vacations = Vacation.objects.filter(user_id__in=otd_users_id, year=str(year))
             filtered_users_id = otd_users_id.copy()
         else:
             otd_id = Unit.objects.filter(description=otd)[0].id  
-            otd_users = User_info.objects.filter(otd_number_id=otd_id)  
+            otd_users = User_info.active.filter(otd_number_id=otd_id)
             otd_users_id = [user.user_id for user in otd_users]  
             vacations = Vacation.objects.filter(user_id__in=otd_users_id, year=str(year))
             filtered_users_id = otd_users_id.copy()
@@ -473,10 +504,24 @@ def vac_2(request, year, otd):
 
         otd_ids = [Unit.objects.filter(description=descr)[0].id for descr in bosses[request.user.get_full_name()]]
 
-        otd_users = User_info.objects.filter(otd_number_id__in=otd_ids) 
+        otd_users = User_info.active.filter(otd_number_id__in=otd_ids)
         otd_users_id = [user.user_id for user in otd_users]
 
+    vacations = Vacation.objects.filter(user_id__in=filtered_users_id, year=str(year))
+    
+    tags_param = request.GET.get('tags', '')
+    selected_tags = []
+    if tags_param:
+        selected_tags = [t.strip() for t in tags_param.split(',') if t.strip()]
 
+    if selected_tags:
+        tagged_user_ids = User_info.active.filter(
+            tags__name__in=selected_tags
+        ).values_list('user_id', flat=True).distinct()
+
+        filtered_users_id = list(set(filtered_users_id) & set(tagged_user_ids))
+        vacations = Vacation.objects.filter(user_id__in=filtered_users_id, year=str(year))
+    
     vacation_start_dates = {}
     for vac in vacations:
         if vac.user_id not in vacation_start_dates:
@@ -494,7 +539,7 @@ def vac_2(request, year, otd):
     cross_vacation_groups.sort(key=lambda group: min(item['vac'].day_start for item in group))
 
     vacations_by_user = {}
-    users_otd = User_info.objects.all()
+    users_otd = User_info.active.all()
     for vac in vacations:
         if vac.user_id not in vacations_by_user:
             vacations_by_user[vac.user_id] = {
@@ -543,7 +588,7 @@ def vac_2(request, year, otd):
                     date = today.replace(year=int(year), month=m, day=int(days_in_week[i]))
                 month_all[month][week][i] = {'name': days_in_week[i], 'data': data, 'date': date}
 
-    employees = User_info.objects.filter(
+    employees = User_info.active.filter(
         user_id__in=filtered_users_id
     ).select_related('user', 'position')
     
@@ -554,6 +599,16 @@ def vac_2(request, year, otd):
         all_vac_for_js[vac.id] = [str(vac.day_start), str(vac.day_end), vac.how_long]
 
     user_names = {user.id: user.get_full_name() for user in User.objects.filter(id__in=otd_users_id)}
+    is_supervisor = User_info.objects.filter(supervisor=request.user).exists()
+    all_tags = Tag.objects.all().order_by('name')
+
+    current_dept_label = None
+    try:
+        ui = User_info.objects.get(user=request.user)
+        if ui.otd_number:
+            current_dept_label = ui.otd_number.description
+    except User_info.DoesNotExist:
+        pass
 
     return render(
         request,
@@ -581,9 +636,12 @@ def vac_2(request, year, otd):
             'show_add_leave_button': True,
             'bosses_list': json.dumps(bosses_list),
             'current_user_name': current_user_name,
-            'navbar_style': 'custom-navbar',
             'show_vacation_link': True,
             'employees': employees,
+            'all_tags': all_tags,
+            'selected_tags': selected_tags,
+            'is_supervisor': is_supervisor,
+            'current_dept_label': current_dept_label,
         }
     )
 
@@ -619,7 +677,7 @@ def vacation_new(request, year):
     if is_boss:
         boss_depts = bosses[current_user_name]
         dept_ids = Unit.objects.filter(description__in=boss_depts).values_list('id', flat=True)
-        employees = User_info.objects.filter(otd_number_id__in=dept_ids).select_related('user', 'position')
+        employees = User_info.active.filter(otd_number_id__in=dept_ids).select_related('user', 'position')
         if selected_department and selected_department != "0":
             employees = employees.filter(otd_number__description=selected_department)
 
@@ -660,7 +718,6 @@ def vacation_new(request, year):
         'user': request.user,
         'employees': employees,
         'is_boss': is_boss,
-        'navbar_style': 'custom-navbar',
         'bosses': list(bosses.keys()),
         'year': year,
         'show_person': True,
@@ -669,6 +726,7 @@ def vacation_new(request, year):
         'len_boss_departments': len_boss_departments,
         'selected_department': selected_department,
         'selected_employee_id': employee_id,
+        'employee_name': request.GET.get('employee_name', ''),
     }
     return render(request, 'vacation_new.html', context)
 
@@ -727,7 +785,6 @@ def vacation_edit(request, year, vac_id):
         'value': vac,
         'employee_name': employee_name,
         'employee_position': employee_position,
-        'navbar_style': 'custom-navbar',
         'bosses': list(bosses.keys()),
         'redact_vac': True,
         'show_button': True,
@@ -763,7 +820,7 @@ def vacation_detail(request, vac_id):
     else:
         boss_departments = bosses[current_user_name]
         department_ids = Unit.objects.filter(description__in=boss_departments).values_list('id', flat=True)
-        allowed_users = User_info.objects.filter(otd_number_id__in=department_ids).values_list('user_id', flat=True)
+        allowed_users = User_info.active.filter(otd_number_id__in=department_ids).values_list('user_id', flat=True)
         vacation = get_object_or_404(Vacation, id=vac_id, user_id__in=allowed_users)
 
     from_page = request.GET.get('from', None)
@@ -774,7 +831,6 @@ def vacation_detail(request, vac_id):
         'vacation_user_name': vacation.user.get_full_name(),
         'show_button': True,
         'vacation': vacation,
-        'navbar_style': 'custom-navbar',
         'bosses': list(bosses.keys()),
         'show_vacation_detail': True,
         'from_page': from_page,
@@ -820,7 +876,7 @@ def vac_all_vacations(request):
     if selected_year:
         filters['year'] = selected_year
 
-    vacations = Vacation.objects.filter(**filters)
+    vacations = Vacation.objects.filter(user__user_info__vacs_archiv=False, **filters)
 
     vacation_count = vacations.count()
 
@@ -831,15 +887,18 @@ def vac_all_vacations(request):
             description__in=bosses[current_user_name]
         )
         users_for_filter = User.objects.filter(
-            user_info__otd_number_id__in=department_ids
+            user_info__otd_number_id__in=department_ids,
+            user_info__vacs_archiv=False
         )
     else:
-        users_for_filter = User.objects.all()
+        users_for_filter = User.objects.filter(user_info__vacs_archiv=False)
 
     years_vacations_count = {}
     for y in year_range:
         yf = {**filters, 'year': str(y)}
-        years_vacations_count[y] = Vacation.objects.filter(**yf).count()
+        years_vacations_count[y] = Vacation.objects.filter(
+            user__user_info__vacs_archiv=False, **yf
+        ).count()
 
     # Собираем итоговый список отпусков
     vacations_list = []
@@ -885,7 +944,6 @@ def vac_all_vacations(request):
             'year_range': year_range,
             'years_vacations_count': years_vacations_count,
             'show_button': True,
-            'navbar_style': 'custom-navbar',
             'bosses': list(bosses.keys()),
             'show_all_vacations': True,
             'vacation_count': vacation_count,
@@ -936,7 +994,6 @@ def vac_my_vacations(request):
             'vacation_year': vacation_year,
             'vacations_list': vacations_list,
             'show_button': True,
-            'navbar_style': 'custom-navbar',
             'bosses': list(bosses.keys()),
             'show_my_vacations': True,
         }
@@ -958,17 +1015,17 @@ def import_vacations(request):
         try:
             df = pd.read_excel(file)
 
-            required_columns = ['Сотрудник', 'Отдел', 'Дата начала', 'Дата окончания']
+            required_columns = ['Сотрудник', 'Отдел', 'Дата начала', 'Кол-во дней']
             missing_columns = [col for col in required_columns if col not in df.columns]
             if missing_columns:
                 msg.error(request, f"В файле отсутствуют обязательные колонки: {', '.join(missing_columns)}.")
                 return redirect(reverse('import_vacations'))
 
             df['Дата начала'] = pd.to_datetime(df['Дата начала'], format='%d.%m.%Y', dayfirst=True)
-            df['Дата окончания'] = pd.to_datetime(df['Дата окончания'], format='%d.%m.%Y', dayfirst=True)
+            df['Кол-во дней'] = pd.to_numeric(df['Кол-во дней'], errors='coerce').astype('Int64')
 
-            if df['Дата начала'].isnull().any() or df['Дата окончания'].isnull().any():
-                msg.error(request, "Некорректный формат дат в файле.")
+            if df['Дата начала'].isnull().any() or df['Кол-во дней'].isnull().any():
+                msg.error(request, "Некорректный формат дат или количества дней в файле.")
                 return redirect(reverse('import_vacations'))
             
             new_vacations = 0
@@ -998,7 +1055,7 @@ def import_vacations(request):
                         errors_found = True
                         continue
 
-                    qs = User_info.objects.filter(
+                    qs = User_info.active.filter(
                         user__first_name=first_name,
                         user__last_name=last_name,
                         otd_number=unit
@@ -1018,12 +1075,11 @@ def import_vacations(request):
                     user = user_info.user
 
                     start_date = pd.to_datetime(row['Дата начала'], dayfirst=True)
-                    end_date = pd.to_datetime(row['Дата окончания'], dayfirst=True)
-
-                    if start_date > end_date:
+                    days_count = int(row['Кол-во дней'])
+                    if days_count <= 0:
                         msg.error(
-                            request, 
-                            f"Ошибка на строке {index + 1}: дата начала ({start_date.strftime('%d.%m.%Y')}) больше даты окончания ({end_date.strftime('%d.%m.%Y')})."
+                            request,
+                            f"Ошибка на строке {index + 1}: 'Кол-во дней' должно быть положительным."
                         )
                         errors_found = True
                         continue
@@ -1031,6 +1087,14 @@ def import_vacations(request):
                     if first_year is None:
                         first_year = start_date.year
 
+                    holidays = set(
+                        Holiday.objects
+                               .filter(is_workday=False, date__year=start_date.year)
+                               .values_list('date', flat=True)
+                    )
+                    
+                    end_date = calculate_end_date(start_date, days_count, holidays)
+                    
                     existing_vacation = Vacation.objects.filter(
                         user=user,
                         day_start=start_date,
@@ -1041,12 +1105,14 @@ def import_vacations(request):
                     if existing_vacation:
                         continue
                     
-                    Vacation.objects.create(
+                    vac = Vacation.objects.create(
                         user=user,
                         day_start=start_date,
-                        day_end=end_date
+                        day_end=end_date,
+                        how_long=days_count
                     )
                     new_vacations += 1
+                
                 except Exception:
                     errors_found = True
                     continue
@@ -1060,7 +1126,6 @@ def import_vacations(request):
             return redirect(reverse('import_vacations'))
 
     context = {
-        'navbar_style': 'custom-navbar',
         'import_vac': True,
         'show_button': True,
         'bosses': list(bosses.keys()),
@@ -1072,7 +1137,7 @@ def import_vacations(request):
 def profile_view(request, user_id):
     bosses = get_bosses_dict()
     target_user = get_object_or_404(User, pk=user_id)
-    user_info = get_object_or_404(User_info, user=target_user)
+    user_info = get_object_or_404(User_info.active, user=target_user)
     today = dt.datetime.today().date()
     year = today.year
 
@@ -1107,7 +1172,6 @@ def profile_view(request, user_id):
             'year': year,
             'vacation_year': vacation_year,
             'vacations_list': vacations_list,
-            'navbar_style': 'custom-navbar',
             'bosses': list(bosses.keys()),
             'my_profile': True,
             'user_info': user_info,
@@ -1119,9 +1183,9 @@ def profile_view(request, user_id):
 def profile_edit(request, user_id):
     bosses = get_bosses_dict()
     target_user = get_object_or_404(User, pk=user_id)
-    user_info   = get_object_or_404(User_info, user=target_user)
+    user_info = get_object_or_404(User_info.active, user=target_user)
     departments = Unit.objects.all()
-    all_tags    = Tag.objects.all().order_by('name')
+    all_tags = Tag.objects.all().order_by('name')
 
     if request.method == "POST":
         action = request.POST.get('action')
@@ -1151,9 +1215,14 @@ def profile_edit(request, user_id):
             target_user.save()
 
         pos_name = request.POST.get("position", "").strip()
-        if pos_name and (not user_info.position or user_info.position.position != pos_name):
-            position, _ = Position.objects.get_or_create(position=pos_name)
-            user_info.position = position
+        if pos_name:
+            old_pos = user_info.position.position if user_info.position else ""
+            if old_pos != pos_name:
+                position, _ = Position.objects.get_or_create(position=pos_name)
+                user_info.position = position
+                updated = True
+        elif user_info.position:
+            user_info.position = None
             updated = True
 
         dept_id = request.POST.get("department")
@@ -1164,9 +1233,13 @@ def profile_edit(request, user_id):
 
         tag_ids = request.POST.getlist("tags")
         if tag_ids is not None:
-            valid_tags = Tag.objects.filter(id__in=tag_ids)
-            user_info.tags.set(valid_tags)
-            updated = True
+            old_tag_ids = list(user_info.tags.values_list('id', flat=True))
+
+            new_tag_ids = [int(tid) for tid in tag_ids]
+            if set(old_tag_ids) != set(new_tag_ids):
+                valid_tags = Tag.objects.filter(id__in=new_tag_ids)
+                user_info.tags.set(valid_tags)
+                updated = True
         
         if updated:
             user_info.save()
@@ -1177,7 +1250,6 @@ def profile_edit(request, user_id):
     return render(request, 'profile_edit.html', {
         'user_info': user_info,
         'departments': departments,
-        'navbar_style': 'custom-navbar',
         'bosses': list(bosses.keys()),
         'profile_edit': True,
         'show_button': True,
@@ -1243,7 +1315,7 @@ def employees(request):
             selected_tag_name = None
     
     user_infos = (
-        User_info.objects
+        User_info.active
         .filter(vacs_archiv=False)
         .select_related('user', 'position', 'otd_number')
         .prefetch_related('tags')
@@ -1278,7 +1350,7 @@ def employees(request):
     units = Unit.objects.select_related('boss').all().order_by('title')
     departments_list = []
     for u in units:
-        count = User_info.objects.filter(otd_number=u, vacs_archiv=False).count()
+        count = User_info.active.filter(otd_number=u).count()
         departments_list.append({
             'id': u.id,
             'title': u.title,
@@ -1358,7 +1430,6 @@ def employees(request):
             })
     
     return render(request, 'employees.html', {
-        'navbar_style': 'custom-navbar',
         'bosses': list(bosses.keys()),
         'employees': True,
         'show_button': True,
@@ -1379,12 +1450,12 @@ def get_department_employees(request):
     if department_title:
         otd = Unit.objects.filter(title=department_title).first()
         if otd:
-            employees = User.objects.filter(user_info__otd_number=otd)
+            employees = User.objects.filter(user_info__in=User_info.active.filter(otd_number=otd))
         else:
             employees = User.objects.none()
     else:
         # Если отдел не выбран, возвращаем всех сотрудников
-        employees = User.objects.all()
+        employees = User.objects.filter(user_info__in=User_info.active.all())
     
     employee_list = [
         {"id": emp.id, "full_name": emp.get_full_name()} for emp in employees
@@ -1458,7 +1529,7 @@ def export_vacations(request, year, otd):
     ws['A2'] = f"График отпусков на {year} год {title_gen}"
 
     # Получаем пользователей отдела
-    otd_users = User_info.objects.filter(otd_number=otd_obj)
+    otd_users = User_info.active.filter(otd_number=otd_obj)
     user_ids = [user.user_id for user in otd_users]
     vacations = Vacation.objects.filter(user_id__in=user_ids, year=str(year))
 
@@ -1499,7 +1570,19 @@ def export_vacations(request, year, otd):
             position = vac.user.user_info.first().position.position
         except Exception:
             position = ""
-        ws.cell(row=current_row, column=3).value = position
+        
+        position_cell = ws.cell(row=current_row, column=3)
+        position_cell.value = position
+        
+        if position:
+            max_length = 85
+            if len(position) > max_length:
+                font_size = max(13, 14 - (len(position) - max_length) // 5)
+                position_cell.font = Font(
+                    name='Times New Roman',
+                    size=font_size
+                )
+        
         ws.cell(row=current_row, column=4).value = vac.day_start.strftime('%d.%m.%Y')
         ws.cell(row=current_row, column=5).value = vac.how_long
 
@@ -1508,7 +1591,7 @@ def export_vacations(request, year, otd):
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = f'attachment; filename*=UTF-8\'\'{encoded_filename}'
 
-    #Формирование нижнего блока
+    # Формирование нижнего блока
     footer_start_row = start_employee_row + len(vacations) + 2
 
     custom_font = Font(name="Times New Roman", size=14)
@@ -1521,13 +1604,13 @@ def export_vacations(request, year, otd):
     cell.alignment = Alignment(horizontal="left", vertical="top", wrap_text=True)
 
     boss = otd_obj.boss
-    boss_info = User_info.objects.filter(user=boss).first() if boss else None
+    boss_info = User_info.active.filter(user=boss).first() if boss else None
     dept_manager_position = boss_info.position.position if boss_info and boss_info.position else ""
     dept_manager_full_name = boss.get_full_name() if boss else ""
 
     if boss_info and boss_info.supervisor:
         supervisor = boss_info.supervisor
-        supervisor_info = User_info.objects.filter(user=supervisor).first()
+        supervisor_info = User_info.active.filter(user=supervisor).first()
         supervisor_position = supervisor_info.position.position if supervisor_info and supervisor_info.position else ""
         supervisor_full_name = supervisor.get_full_name()
     else:
@@ -1602,6 +1685,10 @@ def save_vacations(request):
         try:
             data = json.loads(request.body)
             for vacation_data in data:
+                user_id = vacation_data.get('employee')
+                if not User_info.active.filter(user_id=user_id).exists():
+                    continue
+                
                 # Создаем объект с валидацией
                 vacation = Vacation(
                     user_id=vacation_data.get('employee'),
@@ -1626,7 +1713,6 @@ def tag_create(request):
 
     context = {
         'form': form,
-        'navbar_style': 'custom-navbar',
         'employees_add_tag': True,
         'bosses': list(bosses.keys()),
         'show_button': True,
@@ -1647,7 +1733,6 @@ def tag_update(request, pk):
 
     context = {
         'form': form,
-        'navbar_style': 'custom-navbar',
         'employees_edit_tag': True,
         'is_edit': True,
         'tag': tag,
@@ -1677,7 +1762,6 @@ def unit_create(request):
 
     context = {
         'form': form,
-        'navbar_style': 'custom-navbar',
         'employees_add_unit': True,
         'bosses': list(bosses.keys()),
         'show_button': True,
@@ -1698,7 +1782,6 @@ def unit_update(request, pk):
     
     context = {
         'form': form,
-        'navbar_style': 'custom-navbar',
         'employees_edit_unit': True,
         'bosses': list(bosses.keys()),
         'show_button': True,
@@ -1729,7 +1812,6 @@ def employee_create(request):
     context = {
         'departments': departments,
         'all_tags': all_tags,
-        'navbar_style': 'custom-navbar',
         'show_button': True,
         'employees_add': True,
         'bosses': list(bosses.keys()),
@@ -1821,13 +1903,12 @@ def employee_create(request):
 
 def manager_create(request):
     bosses = get_bosses_dict()
-    all_users = User.objects.filter(user_info__vacs_archiv=False).order_by('last_name', 'first_name')
+    all_users = User.objects.filter(user_info__in=User_info.active.all()).order_by('last_name', 'first_name')
     departments = Unit.objects.all().order_by('title')
 
     context = {
         'all_users': all_users,
         'departments': departments,
-        'navbar_style': 'custom-navbar',
         'show_button': True,
         'manager_add': True,
         'bosses': list(bosses.keys()),
@@ -1866,7 +1947,7 @@ def manager_create(request):
 
         msg.success(
             request,
-            f"{supervisor_user.get_full_name()} назначен(а) супервайзером для выбранных отделов."
+            f"{supervisor_user.get_full_name()} назначен(а) руководителем для выбранных отделов."
         )
         return redirect(f"{reverse('employees')}?tab=managers")
 
@@ -1875,13 +1956,13 @@ def manager_create(request):
 
 def manager_edit(request, supervisor_id):
     bosses = get_bosses_dict()
-    all_users = User.objects.filter(user_info__vacs_archiv=False).order_by('last_name', 'first_name')
+    all_users = User.objects.filter(user_info__in=User_info.active.all()).order_by('last_name', 'first_name')
     departments = Unit.objects.all().order_by('title')
 
     sup_user = get_object_or_404(User, pk=supervisor_id)
     initial_employee = sup_user.id
 
-    subordinate_infos = User_info.objects.filter(supervisor=sup_user, otd_number__isnull=False)
+    subordinate_infos = User_info.active.filter(supervisor=sup_user, otd_number__isnull=False)
     depts_from_subs = { ui.otd_number.id for ui in subordinate_infos }
 
     direct_boss_depts = { unit.id for unit in Unit.objects.filter(boss=sup_user) }
@@ -1893,7 +1974,6 @@ def manager_edit(request, supervisor_id):
         'departments': departments,
         'initial_employee': initial_employee,
         'initial_departments': initial_departments,
-        'navbar_style': 'custom-navbar',
         'show_button': True,
         'manager_edit': True,
         'supervisor_id': supervisor_id,
@@ -1934,3 +2014,10 @@ def manager_edit(request, supervisor_id):
         return redirect(f"{reverse('employees')}?tab=managers")
     
     return render(request, 'manager_form.html', context)
+
+
+def manager_delete(request, pk):
+    if request.method == 'POST':
+        User_info.objects.filter(supervisor_id=pk).update(supervisor=None)
+        return redirect(f"{reverse('employees')}?tab=managers")
+    return redirect(f"{reverse('employees')}?tab=managers")

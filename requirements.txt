@@ -19,14 +19,19 @@ click-repl==0.3.0
 cmake==3.31.4
 colorama==0.4.6
 cron-descriptor==1.4.5
+DAWG-Python==0.7.2
 defusedxml==0.7.1
 distlib==0.3.9
 Django==4.2.19
+django-appconf==1.1.0
 django-background-tasks==1.2.8
 django-celery-beat==2.7.0
 django-postgrespool2==2.0.5
+django-select2==8.4.1
 django-timezone-field==7.1
+django-widget-tweaks==1.5.0
 djangorestframework==3.15.2
+docopt==0.6.2
 docutils==0.20.1
 et_xmlfile==2.0.0
 exceptiongroup==1.2.2
@@ -51,7 +56,6 @@ numpy==1.24.4
 openpyxl==3.1.5
 packaging==24.2
 pandas==2.0.3
-pguard==0.4.0
 pillow==10.4.0
 platformdirs==4.3.6
 pluggy==1.5.0
@@ -61,6 +65,8 @@ py==1.11.0
 pycodestyle==2.12.1
 pyflakes==3.2.0
 Pygments==2.19.1
+pymorphy2==0.9.1
+pymorphy2-dicts-ru==2.4.417127.4579844
 pyparsing==3.1.4
 pytest==8.3.4
 pytest-django==4.10.0
@@ -86,6 +92,7 @@ sphinxcontrib-qthelp==1.0.3
 sphinxcontrib-serializinghtml==1.1.5
 SQLAlchemy==2.0.38
 sqlparse==0.5.3
+tinycss2==1.4.0
 tomli==2.2.1
 transliterate==1.10.2
 typing_extensions==4.12.2

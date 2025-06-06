@@ -32,7 +32,6 @@ def holiday_list(request):
         'holidays': holidays,
         'years_range': years_range,
         'selected_year': year,
-        'navbar_style': 'custom-navbar',
         'bosses': list(bosses.keys()),
     }
     return render(request, 'holiday_calendar/holiday_list.html', context)
@@ -48,7 +47,6 @@ def holiday_edit(request, pk=None):
     
     context = {
         'form': form,
-        'navbar_style': 'custom-navbar',
         'bosses': list(bosses.keys()),
     }
     return render(request, 'holiday_calendar/holiday_edit.html', context)
@@ -63,7 +61,6 @@ def holiday_delete(request, pk):
     
     context = {
         'holiday': holiday,
-        'navbar_style': 'custom-navbar',
         'bosses': list(bosses.keys()),
     }
     return render(request, 'holiday_calendar/holiday_confirm_delete.html', context)

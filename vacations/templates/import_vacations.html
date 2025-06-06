@@ -5,7 +5,7 @@
 {% load static %}
 {% block header %}
 <title>Импорт отпусков</title>
-<div style="display: flex; flex-direction: row; justify-content: left; align-items: center; flex-wrap: nowrap; width: 120%;">
+<div style="display: flex; flex-direction: row; justify-content: left; align-items: center; flex-wrap: nowrap;">
     <a style="color: black; font-weight: bold; font-size: 34px; text-align: left; line-height: 50px; white-space: nowrap; margin-left: 358px;">Загрузить отпуска из Excel</a>
 </div>
 
@@ -38,14 +38,14 @@
         <strong>Формат файла:</strong> в первой строке идут названия полей (обязательно!), далее строки с отпусками. Пример:
     </p>
     <pre style="background-color: rgb(252, 242, 217); padding: 10px; border-radius: 5px; font-size: 21px; color: rgb(95, 76, 26);">
-<strong>ФИО;Отдел;Дата начала;Дата окончания;</strong>
-Иванов Иван Иванович;307;01.06.2024;28.06.2024
-Петров Петр Петрович;306;15.08.2024;05.09.2024
+<strong>ФИО;Отдел;Дата начала;Кол-во дней;</strong>
+Иванов Иван Иванович;307;01.06.2024;28
+Петров Петр Петрович;306;15.08.2024;21
 ...</pre>
     <p>Шаблон файла: <a class="darker" href="{% static 'files/vacations_import.xlsx' %}" download="vacations_import.xlsx">Excel</a>.</p>
     <p><strong>Обратите внимание:</strong></p>
     <ul style="max-width: 750px;">
-        <li>Перед тем, как загружать отпуска, необходимо завести сотрудников <a href="#" class="darker">здесь</a>. <strong>Отпуска неизвестных сотрудников будут пропущены;</strong></li>
+        <li>Перед тем, как загружать отпуска, необходимо завести сотрудников <a href="{% url 'employees' %}" class="darker">здесь</a>. <strong>Отпуска неизвестных и архивированных сотрудников будут пропущены;</strong></li>
         <li>Порядок колонок не имеет значения, система распознает колонки по их заголовкам;</li>
         <li>Файл можно загружать несколько раз, будут добавлены только новые отпуска.</li>
     </ul>

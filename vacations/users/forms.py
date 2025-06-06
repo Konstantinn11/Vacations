@@ -1,5 +1,5 @@
 from django import forms
-from .models import Vacation, Tag, Unit, CustomUser
+from .models import Vacation, Tag, Unit, CustomUser, User_info
 
 class VacationForm(forms.ModelForm):
     class Meta:
@@ -97,7 +97,9 @@ class UserModelChoiceField(forms.ModelChoiceField):
 
 class UnitForm(forms.ModelForm):
     boss = UserModelChoiceField(
-        queryset=CustomUser.objects.all(),
+        queryset=CustomUser.objects.filter(
+            user_info__in=User_info.active.all()
+        ).distinct(),
         widget=forms.Select(attrs={'class': 'form-control select2'}),
         label='Руководитель отдела',
         required=False,

@@ -6,18 +6,17 @@
 {% load static %}
 {% block header %}
 <title>Ближайшие отпуска</title>
-<div style="display: flex; flex-direction: row; justify-content: left; align-items: center; flex-wrap: nowrap; width: 120%;">
+<div style="display: flex; flex-direction: row; justify-content: left; align-items: center; flex-wrap: nowrap;">
     <a style="color: black; font-weight: bold; font-size: 38px; text-align: left; line-height: 50px; white-space: nowrap; margin-left: 358px;">Ближайшие отпуска коллег</a>
     <div style="display: flex; flex-direction: row; align-items: center; margin-left: 20px; gap: 20px; flex-grow: 1; justify-content: flex-end;">
         <a class="btn sib" style="background-color:#15a362; font-family: 'Calibri'; font-style: normal; font-weight: 400; width: 280px; height: 44px; font-size: 21px;
-        padding: 0 10px; margin-right: -302px; border-radius: 5px; color: white; text-align: center; display: flex; align-items: center; justify-content: center;" href="{% url 'vac_my_vacations' %}">
+        padding: 0 10px; margin-right: -524px; border-radius: 5px; color: white; text-align: center; display: flex; align-items: center; justify-content: center;" href="{% url 'vac_my_vacations' %}">
             Перейти к моим отпускам
         </a>
     </div>
 </div>
 
 <style>
-    /* Стили таблицы и кнопок */
     .btn.sib:hover { background-color: rgba(21, 163, 98, 0.8) !important; }
     .table-container { width: 1275px; display: flex; flex-direction: row; margin-top: 20px; margin-left: 360px; box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.2); border-radius: 5px; }
     .custom-table { width: 1275px; border-collapse: collapse; }
