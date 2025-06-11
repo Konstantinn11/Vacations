@@ -7,7 +7,7 @@ from .models import User_info, Unit, Vacation, Position, Tag
 from .forms import VacationForm, TagForm, UnitForm
 import datetime as dt
 import pandas as pd
-from django.contrib import messages as msg
+from django.contrib import messages
 from calendar import monthrange
 import json
 from .vacation_data import months_ru, color_cycle
@@ -41,7 +41,7 @@ class CustomPasswordResetView(PasswordResetView):
 
         # Проверяем, существует ли пользователь с таким email
         if not User.objects.filter(email=email).exists():
-            msg.error(self.request, "Такого адреса электронной почты не существует")
+            messages.error(self.request, "Такого адреса электронной почты не существует.")
             return self.form_invalid(form)
 
         # Сохраняем email в сессии
@@ -702,6 +702,8 @@ def vacation_new(request, year):
         vac.year = vac.day_start.year
         vac.save()
 
+        messages.success(request, "Отпуск добавлен.")
+
         # Редиректы
         if employee_id:
             return redirect(f"{reverse('vac_all_vacations')}?user={vac.user_id}")
@@ -766,6 +768,8 @@ def vacation_edit(request, year, vac_id):
             vac.year = vac.day_start.year
             vac.save()
 
+            messages.success(request, "Отпуск обновлен.")
+            
             from_page = request.GET.get('from')
             if from_page == 'calendars':
                 return redirect('vac_2', year=year, otd=0)
@@ -799,6 +803,8 @@ def vacation_delete(request, vac_id):
     vac = get_object_or_404(Vacation, id=vac_id)
     year = vac.day_start.year
     vac.delete()
+
+    messages.success(request, "Отпуск удален.")
 
     if redirect_from == 'calendars':
         return redirect('vac_2', year=year, otd=0)
@@ -1005,11 +1011,11 @@ def import_vacations(request):
     if request.method == 'POST':
         file = request.FILES.get('file')
         if not file:
-            msg.error(request, "Файл не выбран.")
+            messages.error(request, "Файл не выбран.")
             return redirect(reverse('import_vacations'))
 
         if not file.name.endswith(('.xlsx', '.xls')):
-            msg.error(request, "Неверный формат файла. Загрузите файл в формате .xlsx или .xls.")
+            messages.error(request, "Неверный формат файла. Загрузите файл в формате .xlsx или .xls.")
             return redirect(reverse('import_vacations'))
         
         try:
@@ -1018,14 +1024,14 @@ def import_vacations(request):
             required_columns = ['Сотрудник', 'Отдел', 'Дата начала', 'Кол-во дней']
             missing_columns = [col for col in required_columns if col not in df.columns]
             if missing_columns:
-                msg.error(request, f"В файле отсутствуют обязательные колонки: {', '.join(missing_columns)}.")
+                messages.error(request, f"В файле отсутствуют обязательные колонки: {', '.join(missing_columns)}.")
                 return redirect(reverse('import_vacations'))
 
             df['Дата начала'] = pd.to_datetime(df['Дата начала'], format='%d.%m.%Y', dayfirst=True)
             df['Кол-во дней'] = pd.to_numeric(df['Кол-во дней'], errors='coerce').astype('Int64')
 
             if df['Дата начала'].isnull().any() or df['Кол-во дней'].isnull().any():
-                msg.error(request, "Некорректный формат дат или количества дней в файле.")
+                messages.error(request, "Некорректный формат дат или количества дней в файле.")
                 return redirect(reverse('import_vacations'))
             
             new_vacations = 0
@@ -1048,7 +1054,7 @@ def import_vacations(request):
 
                     unit = Unit.objects.filter(description=row['Отдел']).first()
                     if not unit:
-                        msg.error(
+                        messages.error(
                             request,
                             f"Ошибка на строке {index + 1}: отдел '{row['Отдел']}' не найден."
                         )
@@ -1065,7 +1071,7 @@ def import_vacations(request):
                     
                     user_info = qs.first()
                     if not user_info:
-                        msg.error(
+                        messages.error(
                             request,
                             f"Ошибка на строке {index + 1}: сотрудник '{full_name}' не принадлежит отделу '{row['Отдел']}'."
                         )
@@ -1077,7 +1083,7 @@ def import_vacations(request):
                     start_date = pd.to_datetime(row['Дата начала'], dayfirst=True)
                     days_count = int(row['Кол-во дней'])
                     if days_count <= 0:
-                        msg.error(
+                        messages.error(
                             request,
                             f"Ошибка на строке {index + 1}: 'Кол-во дней' должно быть положительным."
                         )
@@ -1118,11 +1124,11 @@ def import_vacations(request):
                     continue
             
             if not errors_found:
-                msg.success(request, f"Добавлено новых отпусков: {new_vacations}.")
+                messages.success(request, f"Добавлено новых отпусков: {new_vacations}.")
                 return redirect(reverse('vac_2', kwargs={'otd': 0, 'year': first_year}))
             
         except Exception:
-            msg.error(request, f"Ни одного отпуска не добавлено. Убедитесь, что все сотрудники уже добавлены.")
+            messages.error(request, f"Ни одного отпуска не добавлено. Убедитесь, что все сотрудники уже добавлены.")
             return redirect(reverse('import_vacations'))
 
     context = {
@@ -1243,7 +1249,7 @@ def profile_edit(request, user_id):
         
         if updated:
             user_info.save()
-            msg.success(request, "Сотрудник успешно обновлён.")
+            messages.success(request, "Сотрудник успешно обновлён.")
 
         return redirect('profile', user_id=target_user.id)
 
@@ -1268,23 +1274,27 @@ def employees(request):
         
         ids = [uid for uid in ids if uid != str(request.user.id)]
         
-        if ids and action:
-            qs = User_info.objects.filter(user_id__in=ids)
-            if action == 'archive':
-                qs.update(vacs_archiv=True)
-            elif action == 'restore':
-                qs.update(vacs_archiv=False)
-            elif action == 'delete':
-                # Удаляем сам объект User_info и пользователя
-                users = [ui.user for ui in qs.select_related('user')]
-                qs.delete()
-                for user in users:
-                    user.delete()
-        
-        if action == 'delete':
+        qs = User_info.objects.filter(user_id__in=ids)
+
+        if action == 'archive':
+            qs.update(vacs_archiv=True)
+            messages.success(request, "Сотрудники успешно перемещены в архив.")
+            tab = 'employees'
+        elif action == 'restore':
+            qs.update(vacs_archiv=False)
+            messages.success(request, "Сотрудники успешно восстановлены.")
+            tab = 'employees'
+        elif action == 'delete':
+            users_to_delete = [ui.user for ui in qs.select_related('user')]
+            qs.delete()
+            for user in users_to_delete:
+                user.delete()
+            messages.success(request, "Учётные записи сотрудников успешно удалены.")
             tab = 'archive'
         else:
-            tab = 'employees'
+            messages.error(request, "Неизвестное действие.")
+            tab = active_tab
+
         return redirect(f"{reverse('employees')}?tab={tab}")
 
     dept_id = request.GET.get('dept', None)
@@ -1489,7 +1499,7 @@ def get_initials(user):
 
 def export_vacations(request, year, otd):
     if otd == 0:
-        msg.error(request, "Пожалуйста, выберите отдел для экспорта отпусков.")
+        messages.error(request, "Пожалуйста, выберите отдел для экспорта отпусков.")
         return redirect('vac_2', year=year, otd=otd)
 
     template_path = os.path.join(settings.BASE_DIR, 'export_templates', 'vacation_template.xlsx')
@@ -1718,9 +1728,13 @@ def tag_create(request):
         'show_button': True,
     }
     
-    if request.method == 'POST' and form.is_valid():
-        form.save()
-        return redirect(f"{reverse('employees')}?tab=tags")
+    if request.method == 'POST':
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Тег успешно создан.")
+            return redirect(f"{reverse('employees')}?tab=tags")
+        else:
+            messages.error(request, "Не удалось создать тег. Проверьте корректность введённых данных.")
     
     return render(request, 'tag_form.html', context)
 
@@ -1743,7 +1757,10 @@ def tag_update(request, pk):
     if request.method == 'POST':
         if form.is_valid():
             form.save()
+            messages.success(request, "Тег успешно обновлён.")
             return redirect(f"{reverse('employees')}?tab=tags")
+        else:
+            messages.error(request, "Не удалось обновить тег. Проверьте введённые данные.")
 
     return render(request, 'tag_form.html', context)
 
@@ -1752,7 +1769,7 @@ def tag_delete(request, pk):
     tag = get_object_or_404(Tag, pk=pk)
     if request.method == 'POST':
         tag.delete()
-        return redirect(f"{reverse('employees')}?tab=tags")
+        messages.success(request, "Тег удален.")
     return redirect(f"{reverse('employees')}?tab=tags")
 
 
@@ -1767,9 +1784,13 @@ def unit_create(request):
         'show_button': True,
     }
 
-    if request.method == 'POST' and form.is_valid():
-        form.save()
-        return redirect(f"{reverse('employees')}?tab=departments")
+    if request.method == 'POST':
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Отдел успешно создан.")
+            return redirect(f"{reverse('employees')}?tab=departments")
+        else:
+            messages.error(request, "Не удалось создать отдел. Проверьте корректность введённых данных.")
     
     return render(request, 'unit_form.html', context)
 
@@ -1789,9 +1810,13 @@ def unit_update(request, pk):
         'department': unit,
     }
     
-    if request.method == 'POST' and form.is_valid():
-        form.save()
-        return redirect(f"{reverse('employees')}?tab=departments")
+    if request.method == 'POST':
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Отдел успешно обновлён.")
+            return redirect(f"{reverse('employees')}?tab=departments")
+        else:
+            messages.error(request, "Не удалось обновить отдел. Проверьте корректность введённых данных.")
     
     return render(request, 'unit_form.html', context)
 
@@ -1800,7 +1825,7 @@ def unit_delete(request, pk):
     unit = get_object_or_404(Unit, pk=pk)
     if request.method == 'POST':
         unit.delete()
-        return redirect(f"{reverse('employees')}?tab=departments")
+        messages.success(request, "Отдел удалён.")
     return redirect(f"{reverse('employees')}?tab=departments")
 
 
@@ -1828,12 +1853,12 @@ def employee_create(request):
 
         # Проверка обязательных полей
         if not (last_name and first_name and email):
-            msg.error(request, "Пожалуйста, заполните все обязательные поля (ФИО и email).")
+            messages.error(request, "Пожалуйста, заполните все обязательные поля (ФИО и email).")
             return render(request, 'employee_create.html', context)
 
         # Уникальность email
         if User.objects.filter(email=email).exists():
-            msg.error(request, "Пользователь с таким email уже существует.")
+            messages.error(request, "Пользователь с таким email уже существует.")
             return render(request, 'employee_create.html', context)
 
         username = email.split("@")[0]
@@ -1879,10 +1904,13 @@ def employee_create(request):
                             continue
 
         except IntegrityError:
-            msg.error(request, "Ошибка при создании пользователя. Попробуйте ещё раз.")
+            messages.error(request, "Ошибка при создании пользователя. Попробуйте ещё раз.")
             return render(request, 'employee_create.html', context)
 
         full_name = " ".join(filter(None, [last_name, first_name, patronymic]))
+
+        # Генерируем URL для входа
+        login_url = request.build_absolute_uri(reverse('login'))
         
         subject = "Ваши учётные данные от информационного ресурса"
         message = (
@@ -1890,12 +1918,14 @@ def employee_create(request):
             f"Ваш логин: {username}\n"
             f"Ваш пароль: {temp_password}\n\n"
             "Пожалуйста, смените пароль при первом входе.\n\n"
+            "Для входа на информационный ресурс воспользуйтесь ссылкой:\n"
+            f"{login_url}\n\n"
             "С уважением,\n"
             "Администратор ресурса."
         )
         send_mail(subject, message, None, [email], fail_silently=False)
 
-        msg.success(request, f"Сотрудник {full_name} успешно создан.")
+        messages.success(request, f"Сотрудник {full_name} успешно создан.")
         return redirect(f"{reverse('employees')}?tab=employees")
 
     return render(request, 'employee_create.html', context)
@@ -1919,6 +1949,7 @@ def manager_create(request):
         selected_depts = request.POST.getlist('departments')
 
         if not supervisor_id or not selected_depts:
+            messages.error(request, "Пожалуйста, выберите руководителя и отдел.")
             return render(request, 'manager_form.html', context)
 
         supervisor_user = get_object_or_404(User, pk=supervisor_id)
@@ -1945,7 +1976,7 @@ def manager_create(request):
             head_info.supervisor = supervisor_user
             head_info.save()
 
-        msg.success(
+        messages.success(
             request,
             f"{supervisor_user.get_full_name()} назначен(а) руководителем для выбранных отделов."
         )
@@ -1986,6 +2017,7 @@ def manager_edit(request, supervisor_id):
         selected_depts = request.POST.getlist('departments')
 
         if not employee_id or not selected_depts:
+            messages.error(request, "Пожалуйста, выберите руководителя и отдел.")
             return render(request, 'manager_form.html', context)
 
         supervisor_user = get_object_or_404(User, pk=employee_id)
@@ -2011,6 +2043,7 @@ def manager_edit(request, supervisor_id):
             head_info.supervisor = supervisor_user
             head_info.save()
 
+        messages.success(request, f"Руководитель для выбранных отделов успешно обновлён.")
         return redirect(f"{reverse('employees')}?tab=managers")
     
     return render(request, 'manager_form.html', context)
@@ -2019,5 +2052,5 @@ def manager_edit(request, supervisor_id):
 def manager_delete(request, pk):
     if request.method == 'POST':
         User_info.objects.filter(supervisor_id=pk).update(supervisor=None)
-        return redirect(f"{reverse('employees')}?tab=managers")
+        messages.success(request, "Руководитель успешно удален.")
     return redirect(f"{reverse('employees')}?tab=managers")

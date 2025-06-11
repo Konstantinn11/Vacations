@@ -4,7 +4,7 @@
 {% block header %}
 <title>Добавление сотрудника</title>
 <div style="display: flex; flex-direction: row; justify-content: left; align-items: center;">
-    <a style="color: black; font-weight: bold; font-size: 34px; margin-left: 358px;">
+    <a style="color: black; font-weight: bold; font-size: 27px; margin-left: 358px;">
         Добавление нового сотрудника
     </a>
 </div>
@@ -12,29 +12,23 @@
 <script src="{% static 'libs/select2.min.js' %}"></script>
 
 <style>
-    .table-container { width: 750px; margin: 0 auto; margin-top: 20px; margin-left: 358px; padding: 30px; background-color: white; box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.2); border-radius: 5px; }
-	.btn-edit { background-color: #15a362; font-family: 'Calibri'; font-style: normal; width: 140px; height: 44px; font-weight: 700; font-size: 20px; padding: 0 10px; border-radius: 5px; color: white; text-align: center; display: flex; align-items: center; justify-content: center; text-decoration: none; text-transform: none; margin: 0;}
-	.btn-my-vacations { background-color: white; color: #5d6778 !important; border: 1px solid #ccc; font-family: 'Calibri'; font-style: normal; font-weight: 700; width: 130px; height: 44px; font-size: 20px; padding: 0 10px; border-radius: 5px; color: white; text-align: center; display: flex; align-items: center; justify-content: center; text-decoration: none; margin-left: 20px; }
+    .table-container { width: 650px; margin: 0 auto; margin-top: 20px; margin-left: 358px; padding: 25px; background-color: white; box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.2); border-radius: 5px; }
+	.btn-edit { background-color: #15a362; font-family: 'Calibri'; font-style: normal; width: 120px; height: 38px; font-weight: 600; font-size: 18px; padding: 0 10px; border-radius: 5px; color: white; text-align: center; display: flex; align-items: center; justify-content: center; text-decoration: none; text-transform: none; margin: 0;}
+	.btn-my-vacations { background-color: white; color: #5d6778; border: 1px solid #ccc; font-family: 'Calibri'; font-style: normal; font-weight: 600; width: 110px; height: 38px; font-size: 18px; padding: 0 10px; border-radius: 5px; text-align: center; display: flex; align-items: center; justify-content: center; text-decoration: none; margin-left: 20px; }
 	.btn-edit:hover { background-color: rgba(21, 163, 98, 0.8); text-decoration: none; color: white; }
 	.btn-my-vacations:hover { text-decoration: none; color: #15a362 !important; border: 1px solid #15a362; }
-    .btn-delete { background-color: #d26d69; font-family: 'Calibri'; font-style: normal; font-weight: 700; width: 140px; height: 44px; font-size: 20px; padding: 0 10px; border-radius: 5px; color: white; text-align: center; display: flex; align-items: center; justify-content: center; text-decoration: none; margin-left: 170px; }
-    .btn-delete:hover { background-color: rgba(210, 109, 105, 0.9); text-decoration: none; color: white; }
-    .form-label { font-size: 20px; color: #5d6778; font-weight: bold; margin-bottom: 8px; }  
-    .table-container form { display: flex; flex-direction: column; max-width: 620px; align-items: flex-start; font-size: 20px; }  
-    .table-container input, .table-container select { font-size: 20px; padding: 8px; width: 100%; max-width: 620px; height: 50px; border: 1px solid #ccc; border-radius: 5px; margin-bottom: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transition: border-color 0.3s ease; color: #5d6778; }  
+    .form-label { font-size: 18px; color: #5d6778; font-weight: bold; margin-bottom: 8px; }  
+    .table-container form { display: flex; flex-direction: column; max-width: 520px; align-items: flex-start; } 
+    .table-container input, .table-container select { font-size: 18px; padding: 8px; width: 100%; max-width: 520px; height: 45px; border: 1px solid #ccc; border-radius: 5px; margin-bottom: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transition: border-color 0.3s ease; color: #5d6778; }  
     .table-container select { appearance: none; text-align: left; font-weight: normal; background-color: white; }  
     .table-container input:focus, .table-container select:focus { border-color: #0d6efd; outline: none; }
-
-    .select2-container--default .select2-selection--multiple .select2-selection__choice {
-        background: transparent;
-        border: none;
-        padding: 0;
-        margin: 0;
-    }
-
-    .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
-        display: none;
-    }
+    .table-container .select2-container--default .select2-selection--multiple { min-height: 45px; max-height: 90px; font-size: 18px; border: 1px solid #ccc; border-radius: 5px; padding: 0 8px; display: flex; align-items: center; color: #5d6778; }
+    .table-container .select2-container--default .select2-selection--multiple .select2-selection__rendered { display: flex; flex-wrap: wrap; align-items: center; padding: 0; margin: 0; }
+    .table-container .select2-container--default .select2-selection--multiple .select2-selection__choice { background: transparent; border: none; margin: 0; padding: 0; }
+    .table-container .select2-container--default .select2-selection--multiple .select2-selection__choice::after { content: ","; margin-left: -5px; }
+    .table-container .select2-container--default .select2-selection--multiple .select2-selection__choice:last-child::after { content: ""; }
+    .table-container .select2-container--default .select2-selection__choice__remove { display: none; }
+    .select2-container--default .select2-selection--multiple .select2-search__field { padding: 0; margin: 0; height: 45px; line-height: 45px; color: #5d6778; vertical-align: middle; box-sizing: border-box; }
 </style>
 {% endblock %}
 
@@ -77,7 +71,7 @@
             {% endfor %}
         </select>
 
-        <div style="display: flex; gap: 10px; margin-top: 20px;">
+        <div style="display: flex; gap: 10px; margin-top: 25px;">
             <button class="btn-edit" type="submit">Добавить</button>
             <a class="btn-my-vacations" href="{% url 'employees' %}">Отмена</a>
         </div>

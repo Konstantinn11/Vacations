@@ -1,0 +1,92 @@
+{% load static %}
+
+{% if messages %}
+  <div aria-live="polite" aria-atomic="true"
+       style="position: fixed; top: 2rem; left: 50%; transform: translateX(-50%);
+              z-index: 1080; max-width: 600px; text-align: center;">
+    {% for message in messages %}
+      <div class="toast show"
+           role="alert" aria-live="assertive" aria-atomic="true"
+           style="background-color: rgba(255, 255, 255, 0.6);
+                  border: 1px solid #ccc; border-radius: .25rem;
+                  box-shadow: 0 .25rem .75rem rgba(0,0,0,.1);
+                  margin-bottom: .5rem;">
+        
+        <div class="toast-header d-flex justify-content-between align-items-center"
+             style="background: transparent; border-bottom: none; padding: .5rem .75rem; border-bottom: 1px solid #dee2e6;">
+          <strong class="me-auto" style="font-weight: 600; color: #5d6778; text-align: left;">
+            Уведомление от сайта
+          </strong>
+
+          <button type="button"
+                  class="toast-close-btn"
+                  aria-label="Закрыть">
+            <img src="{% static 'close.svg' %}" alt="Закрыть" class="toast-close-icon">
+          </button>
+        </div>
+
+        <div class="toast-body" style="padding: .75rem; color: #5d6778; text-align: left;">
+          {{ message }}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <style>
+    .toast-close-btn {
+      all: unset;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      width: 24px;
+      height: 24px;
+      margin-left: 1rem;
+    }
+
+    .toast-close-btn:hover {
+      background-color: transparent !important;
+      box-shadow: none;
+    }
+
+    .toast-close-btn:focus {
+      outline: none;
+      box-shadow: none;
+    }
+
+    .toast-close-icon {
+      width: 15px;
+      height: 15px;
+    }
+
+    .toast {
+      opacity: 1;
+      transition: none;
+    }
+
+    .toast.fade {
+      opacity: 0;
+      transition: opacity 0.6s ease-in-out;
+    }
+  </style>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      document.querySelectorAll('.toast').forEach(function (el) {
+        // Автозакрытие через 5 секунд
+        const hideTimeout = setTimeout(function () {
+          el.classList.add('fade');
+          setTimeout(function () {
+            el.remove();
+          }, 600);
+        }, 5000);
+
+        // Мгновенное закрытие по нажатию на крестик
+        el.querySelector('.toast-close-btn').addEventListener('click', function () {
+          clearTimeout(hideTimeout);
+          el.remove();
+        });
+      });
+    });
+  </script>
+{% endif %}

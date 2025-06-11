@@ -174,29 +174,6 @@
 {% endblock %}
 
 {% block content %}
-{% if messages %}
-    <div style="margin-top: 10px; margin-left: 384px; font-size: 18px; text-align: center; width: 110%;">
-        {% for message in messages %}
-            <div id="message-{{ forloop.counter }}" style="padding: 10px; border-radius: 5px; max-width: 800px; margin: 0 auto; margin-bottom: -23px;
-                {% if message.tags == 'success' %}background-color: #d4edda; color: #155724; 
-                {% endif %}">
-                {{ message }}
-            </div>
-        {% endfor %}
-    </div>
-    
-    <script>
-        setTimeout(function() {
-            {% for message in messages %}
-                var messageElement = document.getElementById("message-{{ forloop.counter }}");
-                if (messageElement) {
-                    messageElement.style.display = "none";
-                }
-            {% endfor %}
-        }, 3000);
-    </script>
-{% endif %}
-
 <div class="table-container">
     <table class="styled-table">
         <tr>
@@ -352,8 +329,8 @@
                 const buttonRect = addLeaveButton.getBoundingClientRect();
                 const dropdownWidth = leaveDropdown.offsetWidth;
 
-                leaveDropdown.style.top = `${buttonRect.bottom + window.scrollY + 20}px`; // 20px отступа
-                leaveDropdown.style.left = `${buttonRect.left + window.scrollX + (buttonRect.width - dropdownWidth) / 2}px`; // Центрирование
+                leaveDropdown.style.top = `${buttonRect.bottom + window.scrollY + 20}px`;
+                leaveDropdown.style.left = `${buttonRect.left + window.scrollX + (buttonRect.width - dropdownWidth) / 2}px`;
             }
         });
 

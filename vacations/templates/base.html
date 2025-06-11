@@ -296,6 +296,7 @@
         <link rel="stylesheet" href="{% static 'bootstrap/dist/css/bootstrap.min.css' %}">
         <script src="{% static 'jquery/dist/jquery.min.js' %}"></script>
         <script src="{% static 'bootstrap/dist/js/bootstrap.min.js' %}"></script>
+        <script src="{% static 'libs/bootstrap.bundle.min.js' %}"></script>
 		<link rel="stylesheet" href="{% static 'css/my_try.css'%}">
     </head>
 
@@ -307,8 +308,10 @@
             </div>
         </div>
         {% block navbar %}
-        {% include 'includes/nav.html' with show_button=show_button show_add_leave_button=show_add_leave_button navbar_style=navbar_style %}
+        {% include 'includes/nav.html' with show_button=show_button show_add_leave_button=show_add_leave_button %}
         {% endblock %}
+
+        {% include 'includes/toasts.html' %}
         <div id="info-block" class="info-block">
             <a href="{% url 'vac_all' otd=0 %}">
                 <img style="height: 45px; margin-bottom: 5px;" src="{% static 'logo_ya_removebg.png' %}">

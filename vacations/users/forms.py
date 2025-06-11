@@ -2,6 +2,20 @@ from django import forms
 from .models import Vacation, Tag, Unit, CustomUser, User_info
 
 class VacationForm(forms.ModelForm):
+    how_long = forms.IntegerField(
+        required=False,
+        label='Кол-во дней',
+        min_value=1,
+        error_messages={'min_value': 'Количество дней должно быть не меньше 1.'},
+        widget=forms.NumberInput(attrs={
+            'id': 'id_how_long',
+            'placeholder': 'календарных дней',
+            'min': '1',
+            'step': '1',
+            'class': 'form-control'
+        })
+    )
+    
     class Meta:
         model = Vacation
         exclude = ['user', 'year']
@@ -15,20 +29,10 @@ class VacationForm(forms.ModelForm):
                 format='%Y-%m-%d', 
                 attrs={'id': 'id_day_end', 'placeholder': 'Выберите дату'}
             ),
-            'how_long': forms.NumberInput(
-                attrs={ 
-                    'id': 'id_how_long', 
-                    'placeholder': 'календарных дней', 
-                    'min': '1', 
-                    'step': '1', 
-                    'class': 'form-control'
-                }
-            ),
         }
         labels = {
             'day_start': 'Начало отпуска',
             'day_end': 'Окончание отпуска',
-            'how_long': 'Кол-во дней',
         }
     
     def __init__(self, *args, **kwargs):

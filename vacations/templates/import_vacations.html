@@ -11,7 +11,7 @@
 
 <style>
     .btn-edit { background-color: #15a362; font-family: 'Calibri'; font-style: normal; width: 200px; height: 44px; font-weight: 700; font-size: 20px; padding: 0 10px; border-radius: 5px; color: white; text-align: center; display: flex; align-items: center; justify-content: center; text-decoration: none; text-transform: none; margin: 0;}
-	.btn-my-vacations { background-color: white; color: #5d6778 !important; border: 1px solid #ccc; font-family: 'Calibri'; font-style: normal; font-weight: 700; width: 130px; height: 44px; font-size: 20px; padding: 0 10px; border-radius: 5px; color: white; text-align: center; display: flex; align-items: center; justify-content: center; text-decoration: none; margin-left: 10px; }
+	.btn-my-vacations { background-color: white; color: #5d6778; border: 1px solid #ccc; font-family: 'Calibri'; font-style: normal; font-weight: 700; width: 130px; height: 44px; font-size: 20px; padding: 0 10px; border-radius: 5px; text-align: center; display: flex; align-items: center; justify-content: center; text-decoration: none; margin-left: 10px; }
 	.btn-edit:hover { background-color: rgba(21, 163, 98, 0.8); text-decoration: none; color: white; }
 	.btn-my-vacations:hover { text-decoration: none; color: #15a362 !important; border: 1px solid #15a362; }
     .darker { color: #15a362; font-size: 19px; text-decoration: underline; }
@@ -25,19 +25,10 @@
 
 {% block content %}
 <div style="display: flex; justify-content: center; margin-top: 20px; margin-left: 358px; width: 800px; height: auto; background-color: white; box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.2); border-radius: 5px; flex-direction: column; text-decoration: none; padding: 20px; font-size: 20px; text-align: left; color: #5d6778;">
-    {% if messages %}
-        <div style="margin-bottom: 10px;">
-            {% for message in messages %}
-                <div style="padding: 10px; border-radius: 5px; {% if message.tags == 'error' %}background-color: #f8d7da; color: #842029;{% elif message.tags == 'success' %}background-color: #d4edda; color: #155724;{% endif %}">
-                    {{ message }}
-                </div>
-            {% endfor %}
-        </div>
-    {% endif %}
-    <p>
-        <strong>Формат файла:</strong> в первой строке идут названия полей (обязательно!), далее строки с отпусками. Пример:
-    </p>
-    <pre style="background-color: rgb(252, 242, 217); padding: 10px; border-radius: 5px; font-size: 21px; color: rgb(95, 76, 26);">
+<p>
+    <strong>Формат файла:</strong> в первой строке идут названия полей (обязательно!), далее строки с отпусками. Пример:
+</p>
+<pre style="background-color: rgb(252, 242, 217); padding: 10px; border-radius: 5px; font-size: 21px; color: rgb(95, 76, 26);">
 <strong>ФИО;Отдел;Дата начала;Кол-во дней;</strong>
 Иванов Иван Иванович;307;01.06.2024;28
 Петров Петр Петрович;306;15.08.2024;21

@@ -7,34 +7,158 @@
     Добавление тега
   {% endif %}
 {% endblock %}
+
 {% block header %}
-{% if is_edit %}<title>Редактирование тега</title>{% else %}<title>Добавление тега</title>{% endif %}
-<div style="display: flex; flex-direction: row; justify-content: left; align-items: center; flex-wrap: nowrap;">
-    <a style="color: black; font-weight: bold; font-size: 34px; text-align: left; line-height: 50px; white-space: nowrap; margin-left: 358px;">
-      {% if is_edit %}Редактирование тега{% else %}Добавление тега{% endif %}
+<title>{% if is_edit %}Редактирование тега{% else %}Добавление тега{% endif %}</title>
+<div style="display: flex; flex-direction: row; justify-content: left; align-items: center;">
+    <a style="color: black; font-weight: bold; font-size: 27px; margin-left: 358px;">
+      {% if is_edit %}Редактирование тега{% else %}Добавление нового тега{% endif %}
     </a>
 </div>
+
+<style>
+  .table-container { 
+      width: 600px; 
+      margin: 0 auto; 
+      margin-top: 20px; 
+      margin-left: 358px; 
+      padding: 25px; 
+      background-color: white; 
+      box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.2); 
+      border-radius: 5px; 
+  }
+
+  .btn-edit { 
+      background-color: #15a362; 
+      font-family: 'Calibri'; 
+      font-style: normal; 
+      width: 120px; 
+      height: 38px; 
+      font-weight: 600; 
+      font-size: 18px; 
+      padding: 0 10px; 
+      border-radius: 5px; 
+      color: white; 
+      text-align: center; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      text-decoration: none; 
+      text-transform: none; 
+      margin: 0;
+      border: none;
+      cursor: pointer;
+  }
+
+  .btn-my-vacations { 
+      background-color: white; 
+      color: #5d6778; 
+      border: 1px solid #ccc; 
+      font-family: 'Calibri'; 
+      font-style: normal; 
+      font-weight: 600; 
+      width: 110px; 
+      height: 38px; 
+      font-size: 18px; 
+      padding: 0 10px; 
+      border-radius: 5px; 
+      text-align: center; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      text-decoration: none; 
+      margin-left: 20px; 
+  }
+
+  .btn-edit:hover { 
+      background-color: rgba(21, 163, 98, 0.8); 
+      text-decoration: none; 
+      color: white;
+  }
+
+  .btn-my-vacations:hover { 
+      text-decoration: none; 
+      color: #15a362 !important; 
+      border: 1px solid #15a362; 
+  }
+
+  .form-label { 
+      font-size: 18px; 
+      color: #5d6778; 
+      font-weight: bold; 
+      margin-bottom: 8px; 
+  }
+
+  .table-container form { 
+      display: flex; 
+      flex-direction: column; 
+      max-width: 500px; 
+      align-items: flex-start; 
+  } 
+
+  .table-container input, 
+  .table-container select { 
+      font-size: 18px; 
+      padding: 8px; 
+      width: 100%; 
+      max-width: 500px; 
+      height: 45px; 
+      border: 1px solid #ccc; 
+      border-radius: 5px; 
+      margin-bottom: 16px; 
+      overflow: hidden; 
+      text-overflow: ellipsis; 
+      white-space: nowrap; 
+      transition: border-color 0.3s ease; 
+      color: #5d6778; 
+  }  
+
+  .table-container input:focus { 
+      border-color: #0d6efd; 
+      outline: none; 
+      box-shadow: none;
+  }
+
+  .required-field::after {
+      content: " *";
+      color: red;
+  }
+
+  .text-danger {
+      color: #dc3545;
+      font-size: 16px;
+      margin-top: -10px;
+      margin-bottom: 10px;
+  }
+</style>
+{% endblock %}
+
+{% block aside %}
+    {% include 'includes/aside_vac_all.html' %}
 {% endblock %}
 
 {% block content %}
-<div style="margin-left: 358px; margin-top: 20px; margin-right: 40px; max-width: 500px;">
-  <form method="post" action="">
-    {% csrf_token %}
-    <div class="form-group">
-      <label for="{{ form.name.id_for_label }}">Название</label>
-      {{ form.name }}
-      {% for err in form.name.errors %}
+<div class="table-container">
+    <form method="post" action="">
+        {% csrf_token %}
+        
+        <label for="{{ form.name.id_for_label }}" class="form-label required-field">Название</label>
+        {{ form.name }}
+        {% for err in form.name.errors %}
         <div class="text-danger">{{ err }}</div>
-      {% endfor %}
-    </div>
-    
-    <button type="submit" class="btn btn-primary">
-      {% if is_edit %}Сохранить{% else %}Добавить{% endif %}
-    </button>
-    
-    <a href="{% url 'employees' %}?tab=tags" class="btn btn-secondary" style="margin-left:8px;">
-      Отмена
-    </a>
-  </form>
+        {% endfor %}
+        
+        <div style="display: flex; gap: 10px; margin-top: 5px;">
+            <button class="btn-edit" type="submit">
+                {% if is_edit %}Сохранить{% else %}Добавить{% endif %}
+            </button>
+            <a class="btn-my-vacations" href="{% url 'employees' %}?tab=tags">Отмена</a>
+        </div>
+        
+        <div style="margin-top: 15px;">
+            <span style="color: red;">*</span>
+            <span style="font-style: italic; color: #5d6778;"> — обязательные поля.</span>
+        </div>
+    </form>
 </div>
 {% endblock %}

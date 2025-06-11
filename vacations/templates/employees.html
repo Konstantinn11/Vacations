@@ -220,8 +220,15 @@
                 </tbody>
             </table>
             {% if request.user.get_full_name in bosses %}
-                <button type="submit" name="action" value="archive" class="btn btn-outline-danger" disabled
-                        id="archive-selected">
+                <button
+                    type="submit"
+                    name="action"
+                    value="archive"
+                    class="btn btn-outline-danger"
+                    disabled
+                    id="archive-selected"
+                    onclick="return confirm('Архивировать сотрудников?')"
+                >
                     Архивировать
                 </button>
             {% endif %}
@@ -489,6 +496,7 @@
                     class="btn btn-outline-success"
                     id="restore-selected"
                     disabled
+                    onclick="return confirm('Активировать сотрудников?')"
                 >
                     Активировать
                 </button>
@@ -500,6 +508,7 @@
                     id="delete-selected"
                     disabled
                     style="margin-left: 10px;"
+                    onclick="return confirm('Удалить выбранных сотрудников?')"
                 >
                     Удалить
                 </button>
@@ -753,4 +762,4 @@
         });
     });
 </script>
-{% endblock %}ар
+{% endblock %}
