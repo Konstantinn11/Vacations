@@ -1,0 +1,31 @@
+services:
+  db:
+    image: postgres:15
+    restart: unless-stopped
+    env_file:
+      - .env.docker
+    environment:
+      POSTGRES_DB:   ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  web:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env.docker
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    working_dir: /app
+    command: >
+      bash -c "
+        python manage.py migrate &&
+        gunicorn vacations.wsgi:application --bind 0.0.0.0:8000
+      "
+
+volumes:
+  pgdata:

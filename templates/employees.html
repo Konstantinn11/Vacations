@@ -1,0 +1,991 @@
+{% extends "base.html" %}
+{% load cache %}
+{% block title %}Сотрудники{% endblock %}
+{% load user_filters %}
+{% load static %}
+{% block header %}
+{% if active_tab == 'employees' %}<title>Сотрудники</title>
+{% elif active_tab == 'managers' %}<title>Руководители</title>
+{% elif active_tab == 'departments' %}<title>Отделы</title>
+{% elif active_tab == 'tags' %}<title>Теги</title>
+{% else %}<title>Архив сотрудников</title>{% endif %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-top: 25px; margin-left: 358px; width: 115%;">
+    <div style="display: flex; background-color: white; height: 46px; box-shadow: 0 0 5px rgba(0,0,0,0.2); border-radius: 1px; overflow: hidden;">
+        {% if request.user.is_superuser %}
+            <div class="header-tab" data-tab="managers">Руководители</div>
+        {% endif %}
+        <div class="header-tab" data-tab="departments">Отделы</div>
+        <div class="header-tab active" data-tab="employees">Сотрудники</div>
+        <div class="header-tab" data-tab="tags">Теги</div>
+        {% if request.user.is_superuser %}
+            <div class="header-tab" data-tab="archive">Архив</div>
+        {% endif %}
+    </div>
+
+    {% if request.user.get_full_name in bosses %}
+        <div style="display: flex; gap: 20px; align-items: center; margin-right: 2px;">
+            {% if active_tab == 'departments' %}
+                <a href="{% url 'unit_create' %}" class="btn sib">
+                    <img style="height: 20px; margin-right: 5px;" src="{% static 'circle_plus.png' %}">
+                    Добавить отдел
+                </a>
+            {% elif active_tab == 'managers' %}
+                <a href="{% url 'manager_create' %}" class="btn sib">Добавить руководителя</a>
+            {% elif active_tab == 'employees' %}
+                <a href="{% url 'employee_create' %}" class="btn sib">Добавить сотрудника</a>
+            {% elif active_tab == 'tags' %}
+                <a href="{% url 'tag_create' %}" class="btn sib">
+                    <img style="height: 20px; margin-right: 5px;" src="{% static 'circle_plus.png' %}">
+                    Добавить тег
+                </a>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+
+<style>
+    .btn.sib {
+        background-color:#15a362; 
+        font-family: 'Calibri'; 
+        font-style: normal; 
+        font-weight: 500; 
+        width: auto; 
+        height: 44px; 
+        font-size: 20px;
+        padding: 0 10px; 
+        border-radius: 5px; 
+        color: white; 
+        text-align: center; 
+        display: flex; 
+        align-items: center; 
+        justify-content: center;
+    }
+
+    .btn.sib:hover { 
+        background-color: rgba(21, 163, 98, 0.8) !important; 
+    }
+
+    .header-tab {
+        width: 140px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        cursor: pointer;
+        font-size: 18px;
+        transition: background-color 0.3s ease;
+        color: #5d6778;
+        background-color: white;
+    }
+
+    .header-tab:hover {
+        background-color: rgba(21, 163, 98, 0.1);
+        color: #15a362;
+    }
+
+    .header-tab.active {
+        border-bottom: 3px solid #15a362;
+        color: #15a362;
+    }
+
+    .employee-color { 
+        width: 15px; 
+        height: 15px; 
+        border: 1px solid black; 
+        margin-right: 6px; 
+    }
+
+    .table-container { 
+        width: 1275px; 
+        display: block;
+        margin-top: 15px;
+        box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.2); 
+        border-radius: 5px;
+        padding: 0;
+    }
+
+    .custom-table { 
+        width: 1275px; 
+        border-collapse: collapse; 
+    }
+    
+    .custom-table th, .custom-table td { 
+        text-align: left; 
+        border-bottom: 1px solid #e7e9ed; 
+        padding: 10px; 
+        font-size: 16px; 
+        vertical-align: middle; 
+        color: #5d6778;
+    }
+
+    .ellipsis {
+        max-width: 400px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: inline-block;
+        vertical-align: middle;
+        cursor: default; 
+    }
+
+    .custom-table th.col-edit,
+    .custom-table td.col-edit {
+        padding-right: 20px;
+        text-align: left;
+    }
+    
+    .custom-table th:nth-child(4),
+    .custom-table td:nth-child(4) {
+        max-width: 350px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        cursor: default; 
+    }
+
+    .department-link, 
+    .employee-link,
+    .archive-action-link {
+        color: #15a362;
+        text-decoration: underline;
+    }
+
+    .department-link:hover, 
+    .employee-link:hover,
+    .archive-action-link:hover {
+        text-decoration: underline;
+        color: green;
+    }
+
+    .custom-table td.checkbox-cell {
+        vertical-align: top;
+        padding-top: 12px;
+    }
+
+    .custom-table td.checkbox-cell .select-row {
+        display: block;
+        margin-top: 4px;
+    }
+
+    #search-container {
+        margin-top: 5px;
+        margin-bottom: 10px;
+    }
+
+    #search-input,
+    #search-arch-input {
+        font-size: 18px;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+        width: 100%;
+        padding: 8px;
+        box-sizing: border-box;
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    #search-input:focus,
+    #search-arch-input:focus {
+        border-color: #0d6efd;
+        outline: none;
+    }
+
+    .tag-badge {
+        display: inline-block;
+        background-color: #5b99ea;
+        color: white;
+        border-radius: 5px;
+        padding: 2px 6px;
+        font-size: 0.75em;
+        white-space: nowrap;
+        font-weight: 600;
+        text-decoration: none;
+        margin-right: 4px;
+        transition: background-color 0.2s ease;
+    }
+
+    .tag-badge:hover {
+        color: white;
+        text-decoration: none;
+        background-color: #4f89d9;
+    }
+
+    .number-badge {
+        background-color: #5b99ea;
+        color: white;
+        padding: 0 10px;
+        border-radius: 20px;
+        font-size: 15px;
+        width: 30px;
+        height: 25px;
+        line-height: 25px;
+        font-weight: 500;
+        text-align: center;
+        display: inline-block;
+        margin-left: 5px;
+    }
+
+    .table-actions {
+        display: flex;
+        text-align: left;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-my-vacations {
+        background-color: white;
+        color: #5d6778;
+        border: 1px solid #ccc;
+        font-family: 'Calibri';
+        font-weight: 600;
+        width: 140px;
+        height: 40px;
+        font-size: 17px;
+        border-radius: 5px;
+        text-align: center;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        text-transform: none;
+        transition: border-color 0.2s, color 0.2s;
+        margin: 10px;
+    }
+
+    .btn-my-vacations:hover {
+        color: #15a362;
+        border-color: #15a362;
+        background-color: white;
+        cursor: pointer;
+    }
+
+    .btn-my-vacations:focus {
+        color: #15a362;
+        border-color: #15a362;
+        background-color: white;
+        outline: none;
+    }
+
+    .btn-my-vacations:disabled {
+        background-color: white;
+        color: #b0b0b0;
+        border-color: #e0e0e0;
+        cursor: default;
+    }
+
+    .btn-active {
+        background-color:#15a362; 
+        font-family: 'Calibri'; 
+        font-style: normal; 
+        font-weight: 600;
+        text-transform: none;
+        width: auto; 
+        height: 40px; 
+        font-size: 17px;
+        padding: 0 10px;
+        border-radius: 5px; 
+        color: white; 
+        text-align: center; 
+        display: flex; 
+        align-items: center; 
+        justify-content: center;
+        margin: 10px;
+        transition: border-color 0.2s, color 0.2s;
+    }
+
+    .btn-active:hover { 
+        background-color: rgba(21, 163, 98, 0.8);
+        color: white;
+        text-decoration: none;
+    }
+
+    .btn-delete {
+        background-color: white;
+        font-family: 'Calibri'; 
+        font-style: normal; 
+        font-weight: 600;
+        text-transform: none;
+        width: auto; 
+        height: 40px; 
+        font-size: 17px;
+        padding: 0 10px;
+        border-radius: 5px; 
+        color: #d26d69;
+        text-align: center; 
+        display: flex; 
+        align-items: center; 
+        justify-content: center;
+        margin: 10px;
+        transition: border-color 0.2s, color 0.2s;
+    }
+
+    .btn-delete:hover { 
+        background-color: #d26d69;
+        color: white;
+    }
+
+    .btn-active:disabled {
+        background-color: #15a363a3;
+        color: white;
+        cursor: default;
+    }
+
+    .btn-delete:disabled {
+        background-color: white;
+        color: #e6a0a0;
+        cursor: default;
+    }
+
+    .btn-active:focus,
+    .btn-delete:focus {
+        outline: none;
+    }
+
+    .filter-link {
+        margin-left: 7px; 
+        font-size: 17px;
+        color: #15a362;
+        text-decoration: underline;
+    }
+
+    .filter-link:hover {
+        color: green;
+    }
+
+    .col-edit a {
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .col-edit a:hover {
+        text-decoration: none;
+    }
+</style>
+{% endblock %}
+
+{% block aside %}
+    {% include 'includes/aside_vac_all.html' %}
+{% endblock %}
+
+{% block content %}
+<div style="margin-left: 358px; margin-top: 15px; margin-right: 40px;">
+    {% if active_tab == 'employees' %}
+        <form method="post" action="#">
+            {% csrf_token %}
+            {% if employees_data %}
+                <div style="display: flex; align-items: center; flex-wrap: nowrap; margin-bottom: 10px; font-size: 18px; font-weight: 500;">
+                    {% if selected_tag_name %}
+                        <div>Сотрудники с тегом «{{ selected_tag_name }}»</div>
+                    {% elif selected_dept_title %}
+                        <div>Сотрудники отдела «{{ selected_dept_title }}»</div>
+                    {% else %}
+                        <div>Все сотрудники</div>
+                    {% endif %}
+                    <span class="number-badge">
+                        {{ employees_data|length }}
+                    </span>
+                    {% if selected_tag_name %}
+                        <a href="{% url 'employees' %}" class="filter-link">показать всех</a>
+                    {% elif selected_dept_title %}
+                        <a href="{% url 'employees' %}" class="filter-link">
+                            показать всех
+                        </a>
+                    {% else %}
+                        <a 
+                            href="{% url 'employees' %}?dept={{ current_dept_id }}"
+                            {% if not current_dept_id %}class="disabled"{% endif %} class="filter-link">
+                            показать мой отдел
+                        </a>
+                    {% endif %}
+                </div>
+                
+                <div class="table-container" style="display: block;">
+                    <div style="width: 100%; padding: 10px; padding-bottom: 0;">
+                        <div id="search-container" style="width: 100%;">
+                            <input
+                                type="text"
+                                id="search-input"
+                                name="search"
+                                value="{{ request.GET.search }}"
+                                placeholder="Поиск по имени..."
+                                oninput="filterEmployees()"
+                            >
+                        </div>
+                    </div>
+
+                    <table class="custom-table" id="vacation-table">
+                        <thead>
+                            <tr>
+                                {% if request.user.get_full_name in bosses %}
+                                <th style="width: 1%;"><input type="checkbox" id="select-all"></th>
+                                {% endif %}
+                                <th>Сотрудник</th>
+                                <th>Должность</th>
+                                <th>Отдел</th>
+                                {% if request.user.get_full_name in bosses %}
+                                <th class="col-edit"></th>
+                                {% endif %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for emp in employees_data %}
+                        <tr {% if emp.id == request.user.id %}style="background-color: rgba(21, 163, 98, 0.2);"{% endif %}>
+                            {% if request.user.get_full_name in bosses %}
+                                <td class="checkbox-cell">
+                                    <input type="checkbox" name="archive_ids" value="{{ emp.id }}" class="select-row">
+                                </td>
+                            {% endif %}
+                            <td>
+                            <div style="display: flex; align-items: center;">
+                                <div class="employee-color"
+                                    style="background-color: {{ emp.color }}">
+                                </div>
+                                <a href="{% url 'profile' emp.id %}" class="employee-link">
+                                {{ emp.full_name }} {% if emp.id == request.user.id %} (вы){% endif %}
+                                </a>
+                            </div>
+                            {% if emp.tags %}
+                                <div style="margin-top: 4px;">
+                                {% for tag in emp.tags %}
+                                    <a href="{% url 'employees' %}?tag={{ tag }}" class="tag-badge">
+                                        {{ tag }}
+                                    </a>
+                                {% endfor %}
+                                </div>
+                            {% endif %}
+                            </td>
+                            <td>
+                                <div class="ellipsis" title="{{ emp.position }}">{{ emp.position }}</div>
+                            </td>
+                            <td>
+                                <a href="{% url 'employees' %}?dept={{ emp.department_id }}"
+                                    class="department-link"
+                                    title="{{ emp.department }}">
+                                    {{ emp.department }}
+                                </a>
+                            </td>
+                            {% if request.user.get_full_name in bosses %}
+                                <td class="col-edit">
+                                    <a href="{% url 'profile_edit' emp.id %}" title="Редактировать">
+                                        <img src="{% static 'edit.svg' %}" alt="Редактировать" style="width:20px; height:20px;">
+                                    </a>
+                                </td>
+                            {% endif %}
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                    {% if request.user.get_full_name in bosses %}
+                        <div class="table-actions">
+                            <button
+                                type="submit"
+                                name="action"
+                                value="archive"
+                                class="btn-my-vacations"
+                                id="archive-selected"
+                                disabled
+                                onclick="return confirm('Архивировать сотрудников?')"
+                            >
+                                Архивировать
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+            {% else %}
+                <p class="text-left text-muted" style="font-size: 17px; margin-left: 5px; margin-top: 2px;">
+                    Сотрудники не найдены.
+                </p>
+            {% endif %}
+        </form>
+
+    {% elif active_tab == 'departments' %}
+        {% if departments_data %}
+            <div style="display: flex; align-items: center; margin-bottom: 10px; font-size: 18px; font-weight: 500;">
+                <div>Все отделы</div>
+                <span class="number-badge">
+                    {{ departments_data|length }}
+                </span>
+            </div>
+
+            <div class="table-container" style="display: block;">
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th>Название</th>
+                            <th>Сотрудников, чел.</th>
+                            <th>Руководитель</th>
+                            {% if request.user.get_full_name in bosses %}
+                            <th class="col-edit">Действия</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for dept in departments_data %}
+                        <tr>
+                            <td>{{ dept.title }}</td>
+                            <td>
+                                {% if dept.count %}
+                                    {{ dept.count }}
+                                    <a href="{% url 'employees' %}?tab=employees&dept={{ dept.id }}" class="archive-action-link" style="margin-left: 8px; font-size: 0.9em;">
+                                        показать
+                                    </a>
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
+                            <td>{{ dept.boss }}</td>
+                            {% if request.user.get_full_name in bosses %}
+                            <td class="col-edit" style="white-space:nowrap;">
+                                <a href="{% url 'unit_update' dept.id %}" title="Редактировать">
+                                    <img src="{% static 'edit.svg' %}" alt="Редактировать" style="width:20px;height:20px;">
+                                </a>
+                                <a
+                                    href="#"
+                                    class="delete-unit-link"
+                                    data-url="{% url 'unit_delete' dept.id %}"
+                                    title="Удалить"
+                                    style="margin-left:8px;"
+                                >
+                                    <img src="{% static 'delete.svg' %}" alt="Удалить" style="width:20px;height:20px;">
+                                </a>
+                            </td>
+                            {% endif %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% if request.user.get_full_name in bosses %}
+                    <div class="table-actions">
+                        <a href="{% url 'unit_create' %}" class="btn-active">
+                            <img style="height: 20px; margin-right: 5px;" src="{% static 'circle_plus.png' %}">
+                            Добавить отдел
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        {% else %}
+            <p class="text-left text-muted" style="font-size: 17px; margin-left: 5px; margin-top: 2px;">
+                Отделы не найдены.
+            </p>
+        {% endif %}
+
+        <form id="delete-unit-form" method="post" style="display:none;">
+            {% csrf_token %}
+        </form>
+
+    {% elif active_tab == 'tags' %}
+        {% if tags_data %}
+            <div style="display: flex; align-items: center; margin-bottom: 10px; font-size: 18px; font-weight: 500;">
+                <div>Все теги</div>
+                <span class="number-badge">
+                    {{ tags_data|length }}
+                </span>
+            </div>
+            
+            <div class="table-container" style="display: block;">
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                        <th>Тег</th>
+                        <th>Сотрудников, чел.</th>
+                        {% if request.user.get_full_name in bosses %}
+                        <th class="col-edit">Действия</th>
+                        {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for tag in tags_data %}
+                        <tr>
+                            <td>{{ tag.name }}</td>
+                            <td>
+                                {% if tag.employees_count %}
+                                    {{ tag.employees_count }}
+                                    <a href="{% url 'employees' %}?tab=employees&tag={{ tag.name }}" class="archive-action-link" style="margin-left: 8px; font-size: 0.9em;">
+                                        показать
+                                    </a>
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
+                            {% if request.user.get_full_name in bosses %}
+                                <td class="col-edit" style="white-space: nowrap;">
+                                    <a href="{% url 'tag_update' tag.id %}" title="Редактировать">
+                                    <img src="{% static 'edit.svg' %}" alt="Редактировать" style="width:20px; height:20px;">
+                                    </a>
+                                    <a
+                                        href="#"
+                                        class="delete-link"
+                                        data-url="{% url 'tag_delete' tag.id %}"
+                                        title="Удалить"
+                                        style="margin-left:8px;"
+                                    >
+                                        <img src="{% static 'delete.svg' %}" alt="Удалить" style="width:20px; height:20px;">
+                                    </a>
+                                </td>
+                            {% endif %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% if request.user.get_full_name in bosses %}
+                    <div class="table-actions">
+                        <a href="{% url 'tag_create' %}" class="btn-active">
+                            <img style="height: 20px; margin-right: 5px;" src="{% static 'circle_plus.png' %}">
+                            Добавить тег
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        {% else %}
+            <p class="text-left text-muted" style="font-size: 17px; margin-left: 5px; margin-top: 2px;">
+                Теги не найдены.
+            </p>
+        {% endif %}
+        
+        <form id="delete-tag-form" method="post" style="display:none;">
+            {% csrf_token %}
+        </form>
+
+    {% elif active_tab == 'archive' %}
+        <form method="post" action="#">
+            {% csrf_token %}
+            {% if archived_data %}
+                <div style="display: flex; align-items: center; margin-bottom: 10px; font-size: 18px; font-weight: 500;">
+                    <div>Архив сотрудников</div>
+                    <span class="number-badge">
+                        {{ archived_data|length }}
+                    </span>
+                </div>
+
+                <div class="table-container" style="display: block;">
+                    <div style="width: 100%; padding: 10px; padding-bottom: 0;">
+                        <div id="search-container" style="width: 100%;">
+                            <input
+                                type="text"
+                                id="search-arch-input"
+                                name="search_arch"
+                                placeholder="Поиск по имени..."
+                                value="{{ request.GET.search_arch }}"
+                                oninput="filterArchived()"
+                            >
+                        </div>
+                    </div>
+
+                    <table class="custom-table" id="archive-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 1%;"><input type="checkbox" id="select-all-arch"></th>
+                                <th>Сотрудник</th>
+                                <th>Должность</th>
+                                <th>Отдел</th>
+                                <th class="col-edit">Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for emp in archived_data %}
+                            <tr>
+                                <td class="checkbox-cell">
+                                <input type="checkbox" name="ids" value="{{ emp.id }}" class="select-arch">
+                                </td>
+                                <td style="white-space: nowrap;">{{ emp.full_name }}</td>
+                                <td>
+                                    <div class="ellipsis" title="{{ emp.position }}">{{ emp.position }}</div>
+                                </td>
+                                <td title="{{ emp.department }}">{{ emp.department }}</td>
+                                <td class="col-edit" style="white-space: nowrap;">
+                                <a
+                                    href="#"
+                                    class="archive-action-link"
+                                    data-url="{% url 'employees' %}?tab=archive"
+                                    data-action="restore"
+                                    data-ids="{{ emp.id }}"
+                                    title="Восстановить"
+                                >вернуть из архива</a>
+                                
+                                <a
+                                    href="#"
+                                    class="archive-action-link"
+                                    data-url="{% url 'employees' %}?tab=archive"
+                                    data-action="delete"
+                                    data-ids="{{ emp.id }}"
+                                    title="Удалить"
+                                    style="margin-left: 10px;"
+                                >
+                                    <img src="{% static 'delete.svg' %}" alt="Удалить" style="width:20px; height:20px;">
+                                </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+
+                    <div class="table-actions">
+                        <button
+                            type="submit"
+                            name="action"
+                            value="restore"
+                            class="btn-active"
+                            id="restore-selected"
+                            disabled
+                            onclick="return confirm('Активировать сотрудников?')"
+                        >
+                            Активировать
+                        </button>
+                        <button
+                            type="submit"
+                            name="action"
+                            value="delete"
+                            class="btn-delete"
+                            id="delete-selected"
+                            disabled
+                            style="margin-left: 10px;"
+                            onclick="return confirm('Удалить выбранных сотрудников?')"
+                        >
+                            Удалить
+                        </button>
+                    </div>
+                </div>
+            {% else %}
+                <p class="text-left text-muted" style="font-size: 17px; margin-left: 5px; margin-top: 2px;">
+                Архив сотрудников пуст.
+                </p>
+            {% endif %}
+        </form>
+
+        <form id="archive-action-form" method="post" style="display:none;">
+            {% csrf_token %}
+        </form>
+
+    {% elif active_tab == 'managers' %}
+        {% if managers_data %}
+            <div style="display: flex; align-items: center; margin-bottom: 10px; font-size: 18px; font-weight: 500;">
+                <div>Все руководители</div>
+                <span class="number-badge">
+                    {{ managers_data|length }}
+                </span>
+            </div>
+            
+            <div class="table-container" style="display: block;">
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th>Сотрудник</th>
+                            <th>Отделы</th>
+                            <th class="col-edit">Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for mng in managers_data %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'profile' mng.id %}" class="employee-link">
+                                        {{ mng.full_name }}
+                                    </a>
+                                </td>
+                                <td>
+                                    {% for dept_title in mng.departments %}
+                                        {{ dept_title }}{% if not forloop.last %}, {% endif %}
+                                    {% endfor %}
+                                </td>
+
+                                <td class="col-edit" style="white-space: nowrap;">
+                                    <a href="{% url 'manager_edit' mng.id %}" title="Редактировать">
+                                        <img src="{% static 'edit.svg' %}" alt="Редактировать" style="width:20px; height:20px;">
+                                    </a>
+                                    <a
+                                        href="#"
+                                        class="delete-manager-link"
+                                        data-url="{% url 'manager_delete' mng.id %}"
+                                        title="Удалить"
+                                        style="margin-left:8px;"
+                                    >
+                                        <img src="{% static 'delete.svg' %}" alt="Удалить" style="width:20px; height:20px;">
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-left text-muted" style="font-size: 17px; margin-left: 5px; margin-top: 2px;">
+                Нет назначенных руководителей.
+            </p>
+        {% endif %}
+
+        <form id="delete-manager-form" method="post" style="display:none;">
+            {% csrf_token %}
+        </form>
+    {% endif %}
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Переключение вкладок
+        const tabs = document.querySelectorAll('.header-tab');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function () {
+                const tabType = this.getAttribute('data-tab');
+                const currentUrl = new URL(window.location.href);
+                currentUrl.searchParams.set('tab', tabType);
+                currentUrl.searchParams.delete('dept');
+                currentUrl.searchParams.delete('tag');
+                window.location.href = currentUrl;
+            });
+        });
+        const urlParams = new URLSearchParams(window.location.search);
+        const activeTab = urlParams.get('tab') || 'employees';
+        tabs.forEach(tab => {
+            tab.classList.toggle('active', tab.getAttribute('data-tab') === activeTab);
+        });
+
+        // Выбор сотрудников
+        const selectAll = document.getElementById('select-all');
+        if (selectAll) {
+            const checkboxes = document.querySelectorAll('.select-row');
+            const archiveBtn = document.getElementById('archive-selected');
+
+            function updateArchiveButton() {
+                if (!archiveBtn) return;
+                const anyChecked = Array.from(checkboxes).some(cb => cb.checked);
+                archiveBtn.disabled = !anyChecked;
+            }
+
+            selectAll.addEventListener('change', () => {
+                checkboxes.forEach(cb => cb.checked = selectAll.checked);
+                updateArchiveButton();
+            });
+            checkboxes.forEach(cb => {
+                cb.addEventListener('change', () => {
+                    if (!cb.checked) selectAll.checked = false;
+                    updateArchiveButton();
+                });
+            });
+        }
+
+        // Выбор архивных сотрудников
+        const selectAllArch = document.getElementById('select-all-arch');
+        if (selectAllArch) {
+            const archCheckboxes = document.querySelectorAll('.select-arch');
+            const restoreBtn = document.getElementById('restore-selected');
+            const deleteBtn  = document.getElementById('delete-selected');
+
+            function updateArchiveBulkButtons() {
+                const anyChecked = Array.from(archCheckboxes).some(cb => cb.checked);
+                restoreBtn.disabled = !anyChecked;
+                deleteBtn.disabled  = !anyChecked;
+            }
+
+            selectAllArch.addEventListener('change', () => {
+                archCheckboxes.forEach(cb => cb.checked = selectAllArch.checked);
+                updateArchiveBulkButtons();
+            });
+            archCheckboxes.forEach(cb => {
+                cb.addEventListener('change', () => {
+                    if (!cb.checked) selectAllArch.checked = false;
+                    updateArchiveBulkButtons();
+                });
+            });
+        }
+
+        // Фильтрация активных сотрудников
+        window.filterEmployees = function() {
+            const term = document.getElementById('search-input').value.toLowerCase();
+            document.querySelectorAll('table tbody tr').forEach(tr => {
+                const links = tr.querySelectorAll('a');
+                if (links.length === 0) {
+                    tr.style.display = '';
+                    return;
+                }
+                const nameText = links[0].textContent.toLowerCase();
+                tr.style.display = nameText.includes(term) ? '' : 'none';
+            });
+        };
+
+        // Фильтрация архивных сотрудников
+        window.filterArchived = function() {
+            const term = document.getElementById('search-arch-input').value.toLowerCase();
+            document.querySelectorAll('#archive-table tbody tr').forEach(tr => {
+                const nameCell = tr.querySelector('td:nth-child(2)');
+                if (!nameCell) return;
+                tr.style.display = nameCell.textContent.toLowerCase().includes(term) ? '' : 'none';
+            });
+        };
+
+        // Удаление тега
+        const tagForm = document.getElementById('delete-tag-form');
+        document.querySelectorAll('.delete-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const url = this.dataset.url;
+                const name = this.closest('tr').querySelector('td').textContent.trim();
+                if (!confirm(`Удалить этот тег?`)) return;
+                tagForm.setAttribute('action', url);
+                tagForm.submit();
+            });
+        });
+
+        // Удаление отдела
+        const unitForm = document.getElementById('delete-unit-form');
+        document.querySelectorAll('.delete-unit-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const url = this.dataset.url;
+                const name = this.closest('tr').querySelector('td').textContent.trim();
+                if (!confirm(`Удалить этот отдел?`)) return;
+                unitForm.setAttribute('action', url);
+                unitForm.submit();
+            });
+        });
+
+        const managerForm = document.getElementById('delete-manager-form');
+        document.querySelectorAll('.delete-manager-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const url = this.dataset.url;
+                const name = this.closest('tr').querySelector('td').textContent.trim();
+                if (!confirm(`Удалить руководителя ${name}? Это снимет его с должности руководителя подразделения у всех подчинённых.`)) {
+                    return;
+                }
+                managerForm.setAttribute('action', url);
+                managerForm.submit();
+            });
+        });
+
+        // Действия над архивными сотрудниками (восстановление/удаление)
+        const archiveForm = document.getElementById('archive-action-form');
+        document.querySelectorAll('.archive-action-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const url    = link.dataset.url;
+                const action = link.dataset.action;
+                const ids    = link.dataset.ids;
+
+                const name = link.closest('tr').querySelector('td:nth-child(2)').textContent.trim();
+                const msg  = action === 'delete'
+                            ? `Удалить сотрудника? Также удалится история отпусков сотрудника и это действие нельзя будет отменить!`
+                            : `Вернуть этого сотрудника в список активных?`;
+                if (!confirm(msg)) return;
+
+                archiveForm.querySelectorAll('input[name="action"], input[name="ids"], input[name="archive_ids"]')
+                    .forEach(i => i.remove());
+                
+                archiveForm.setAttribute('action', link.dataset.url);
+
+                const a1 = document.createElement('input');
+                a1.type  = 'hidden';
+                a1.name  = 'action';
+                a1.value = action;
+                archiveForm.appendChild(a1);
+
+                const nameField = action === 'restore' ? 'ids' : 'archive_ids';
+                const a2 = document.createElement('input');
+                a2.type  = 'hidden';
+                a2.name  = nameField;
+                a2.value = ids;
+                archiveForm.appendChild(a2);
+
+                archiveForm.submit();
+            });
+        });
+    });
+</script>
+{% endblock %}
