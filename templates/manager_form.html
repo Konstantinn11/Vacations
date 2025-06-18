@@ -82,6 +82,10 @@
         border: 1px solid #15a362; 
     }
 
+    .btn-edit:focus { 
+        outline: none;
+    }
+
     .form-label { 
         font-size: 18px; 
         color: #5d6778; 
@@ -102,7 +106,7 @@
     }
 
     .table-container .select2-container--default .select2-selection--single {
-        height: 45px;
+        height: 43px;
         font-size: 18px;
         border: 1px solid #ccc;
         border-radius: 5px;
@@ -113,7 +117,7 @@
     }
 
     .table-container .select2-container--default .select2-selection--multiple {
-        min-height: 45px;
+        min-height: 43px;
         max-height: 135px;
         font-size: 18px;
         border: 1px solid #ccc;
@@ -155,8 +159,8 @@
     .select2-container--default .select2-selection--multiple .select2-search__field {
         padding: 0;
         margin: 0;
-        height: 45px;
-        line-height: 45px;
+        height: 43px;
+        line-height: 43px;
         color: #5d6778;
         vertical-align: middle;
         box-sizing: border-box;
@@ -168,7 +172,7 @@
 
     .select2-container--default.select2-container--focus .select2-selection--single,
     .select2-container--default .select2-selection--single {
-        height: 45px;
+        height: 43px;
         padding-left: 8px;
         font-size: 18px;
         border: 1px solid #ccc;
@@ -181,6 +185,17 @@
     .select2-selection__rendered {
         padding-left: 0 !important;
         color: #5d6778 !important;
+    }
+
+    .table-container
+    .select2-container--default
+    .select2-selection--multiple
+    .select2-selection__choice {
+        max-width: 500px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: inline-block;
     }
 </style>
 {% endblock %}
@@ -226,7 +241,7 @@
             <a class="btn-my-vacations" href="{% url 'employees' %}?tab=managers">Отмена</a>
         </div>
 
-        <div style="margin-top: 20px;">
+        <div style="margin-top: 15px;">
             <span style="color: red;">*</span>
             <span style="font-style: italic; color: #5d6778;"> — обязательные поля.</span>
         </div>

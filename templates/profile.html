@@ -39,7 +39,7 @@
         box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.2);
         background-color: #fff;
         border-radius: 5px;
-        font-size: 19px;
+        font-size: 18px;
         color: #5d6778;
     }
 
@@ -66,8 +66,8 @@
     }
 
     .circle {
-        width: 60px; 
-        height: 60px;
+        width: 50px; 
+        height: 50px;
         background-color: rgba(21, 163, 98, 0.2);
         border-radius: 50%; 
         display: flex;
@@ -77,14 +77,14 @@
     }
 
     .circle img {
-        width: 60%; 
-        height: 60%;
+        width: 50%; 
+        height: 50%;
         object-fit: cover;
     }
 
     .header-title {
         color: black;
-        font-size: 26px;
+        font-size: 23px;
         margin: 0;
     }
 
@@ -93,9 +93,9 @@
         font-family: 'Calibri';
         font-style: normal;
         font-weight: 400;
-        width: 180px;
-        height: 40px;
-        font-size: 20px;
+        width: 170px;
+        height: 38px;
+        font-size: 19px;
         border-radius: 5px;
         color: #5d6778;
         text-align: center;
@@ -116,7 +116,7 @@
 
     .darker { 
         color: #15a362; 
-        font-size: 19px; 
+        font-size: 18px; 
         text-decoration: underline;
         font-style: italic;
     }
@@ -243,7 +243,7 @@
                         <img src="{% static 'gear_profile.svg' %}" alt="Edit" style="height: 20px; margin-right: 8px;">Редактировать
                     </a>
                     {% if request.user.is_superuser or is_own_profile %}
-                    <a class="btn-edit" href="{% url 'password_change' %}">Изменить пароль</a>
+                    <a class="btn-edit" style="margin-left: 30px;" href="{% url 'password_change' %}">Изменить пароль</a>
                     {% endif %}
                 </div>
             </td>

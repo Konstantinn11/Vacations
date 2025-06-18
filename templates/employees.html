@@ -768,7 +768,7 @@
                     <thead>
                         <tr>
                             <th>Сотрудник</th>
-                            <th>Отделы</th>
+                            <th style="max-width: 600px;">Отделы</th>
                             <th class="col-edit">Действия</th>
                         </tr>
                     </thead>
@@ -780,7 +780,7 @@
                                         {{ mng.full_name }}
                                     </a>
                                 </td>
-                                <td>
+                                <td style="max-width: 600px;">
                                     {% for dept_title in mng.departments %}
                                         {{ dept_title }}{% if not forloop.last %}, {% endif %}
                                     {% endfor %}

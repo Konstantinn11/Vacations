@@ -6,14 +6,14 @@
 {% block header %}
 <title>Графики отпусков</title>
 <div style="display: flex; flex-direction: row; justify-content: left; align-items: center; flex-wrap: nowrap;">
-    <a style="color: black; font-weight: bold; font-size: 34px; text-align: left; line-height: 50px; white-space: nowrap; margin-left: 358px;">Графики отпусков</a>
+    <a style="color: black; font-weight: bold; font-size: 28px; text-align: left; line-height: 50px; white-space: nowrap; margin-left: 358px;">Графики отпусков</a>
     {% if request.user.get_full_name in bosses %}
-    <div style="display: flex; flex-direction: row; align-items: center; margin-left: 515px; gap: 20px; justify-content: flex-end;">
-        <a class="btn sib" style="background-color:#15a362; font-family: 'Calibri'; font-style: normal; font-weight: 400; width: 220px; height: 44px; font-size: 20px;
+    <div style="display: flex; flex-direction: row; align-items: center; margin-left: 605px; gap: 20px; justify-content: flex-end;">
+        <a class="btn sib" style="background-color:#15a362; font-family: 'Calibri'; font-style: normal; font-weight: 400; width: 200px; height: 40px; font-size: 18px;
             padding: 0 10px; border-radius: 5px; color: white; text-align: center; display: flex; align-items: center; justify-content: center;" href="{% url 'import_vacations' %}">
             <img style="height: 19px; margin-right: 5px; vertical-align: middle;" src="{% static 'box-arrow-in-down.svg' %}">Импорт отпусков
         </a>
-        <a class="btn sib" id="exportBtn" style="background-color:#15a362; font-family: 'Calibri'; font-style: normal; font-weight: 400; width: 220px; height: 44px; font-size: 20px; padding: 0 10px; border-radius: 5px; color: white; text-align: center; display: flex; align-items: center; justify-content: center;"
+        <a class="btn sib" id="exportBtn" style="background-color:#15a362; font-family: 'Calibri'; font-style: normal; font-weight: 400; width: 200px; height: 40px; font-size: 18px; padding: 0 10px; border-radius: 5px; color: white; text-align: center; display: flex; align-items: center; justify-content: center;"
         href="javascript:void(0);">
             <img style="height: 19px; margin-right: 5px; vertical-align: middle;" src="{% static 'printer-svgrepo.svg' %}">
             Экспорт отпусков
@@ -66,7 +66,7 @@
         justify-content: center;
         font-weight: bold;
         cursor: pointer;
-        font-size: 19px;
+        font-size: 18px;
         transition: background-color 0.3s ease;
         color: #5d6778;
     }
@@ -123,7 +123,7 @@
     .header-cell {
         font-weight: bold;
         padding: 0 10px;
-        font-size: 22px;
+        font-size: 20px;
         text-align: left;
         border-bottom: 2px solid #ddd;
         height: 52px;
@@ -133,7 +133,7 @@
     .column-cell {
         padding: 10px;
         color: #828d9f;
-        font-size: 18px;
+        font-size: 17px;
         padding-left: 25px;
         padding-top: 25px;
         padding-right: 25px;
@@ -142,7 +142,7 @@
     .no-data {
         padding: 10px;
         color: #5d6778;
-        font-size: 18px;
+        font-size: 17px;
         font-weight: normal;
         padding: 25px;
     }
@@ -150,7 +150,7 @@
     .cell {
         padding: 10px;
         padding-left: 25px;
-        font-size: 18px;
+        font-size: 17px;
     }
 
     .clickable {
@@ -201,7 +201,7 @@
     .export-select {
         font-size: 14px;
         padding: 8px 10px;
-        width: 200px;
+        width: 180px;
         border: 1px solid #5d6778;
         border-radius: 4px;
         color: #5d6778;
@@ -230,7 +230,7 @@
 {% endblock %}
 
 {% block content %}
-<div id="year-slider-container" style="display: flex; align-items: center; justify-content: center; margin-top: 30px; margin-left: 403px; width: 105%;">
+<div id="year-slider-container" style="display: flex; align-items: center; justify-content: center; margin-top: 20px; margin-left: 403px; width: 105%;">
     <button id="prev-year" style="outline: none; background: white; border: none; border-radius: 50%; width: 60px; height: 60px; box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.2); display: flex; align-items: center; justify-content: center; cursor: pointer; margin-right: 35px;">
         <img src="{% static 'arrow-left.svg' %}" alt="Previous" style="width: 25px; height: 25px;">
     </button>
@@ -238,13 +238,13 @@
     <div id="year-slider" style="display: flex; gap: 40px; width: auto;">
         {% for year, count in years_vacations_count.items %}
         <a href="{% url 'vac_2' year=year otd=0 %}" class="year-card" data-year="{{ year }}" style="background-color: white; box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.2); border-radius: 5px; width: 300px; height: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-decoration: none; transition: transform 0.3s ease;">
-            <span style="color: black; font-size: 35px; font-weight: bold;">{{ year }}</span>
+            <span style="color: black; font-size: 32px; font-weight: bold;">{{ year }}</span>
             {% if count > 0 %}
-                <span style="color: #15a362; font-size: 18px;">Все отпуска ({{ count }})</span>
+                <span style="color: #15a362; font-size: 17px;">Все отпуска ({{ count }})</span>
             {% else %}
-                <span style="color: #dc3545; font-size: 18px;">еще нет отпусков</span>
+                <span style="color: #dc3545; font-size: 17px;">еще нет отпусков</span>
             {% endif %}
-            <span style="color: #828d9f; font-size: 18px; display: flex; align-items: center; justify-content: center;">
+            <span style="color: #828d9f; font-size: 16px; display: flex; align-items: center; justify-content: center;">
                 {% with holidays_loaded|get_item:year as is_loaded %}
                     {% if is_loaded %}
                         <img src="{% static 'check-square.svg' %}" style="width: 20px; height: 20px; margin-right: 5px;">
@@ -274,7 +274,7 @@
             {% endif %}
         {% endfor %}
     {% else %}
-        <div style="display: flex; align-items: center; justify-content: left; height: 100%; width: 100%; color: #5d6778; font-size: 21px; padding-left: 15px;">
+        <div style="display: flex; align-items: center; justify-content: left; height: 100%; width: 100%; color: #5d6778; font-size: 20px; padding-left: 15px;">
             Отпусков еще не добавлено.
         </div>
     {% endif %}
@@ -332,7 +332,7 @@
 </div>
 {% endif %}
 
-<div style="text-align: left; font-size: 19px; color: #5d6778; margin-top: 35px; margin-left: 358px; width: 100%;">
+<div style="text-align: left; font-size: 18px; color: #5d6778; margin-top: 30px; margin-left: 358px; width: 100%;">
     <span style="font-weight: bold; font-style: italic;">Подсказки:</span>
     <ul style="margin-top: 10px; list-style-type: disc;">
         <li>Чтобы просматривать графики по произвольным сотрудникам, присвойте им <a href="{% url 'employees' %}?tab=tags" style="color: #15a362; text-decoration: underline;">теги</a>;</li>

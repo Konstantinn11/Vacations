@@ -6,31 +6,32 @@
 {% block header %}
 <title>Добавление отпуска</title>
 <div style="display: flex; flex-direction: row; justify-content: left; align-items: center; flex-wrap: nowrap;">
-    <a style="color: black; font-weight: bold; font-size: 35px; text-align: left; line-height: 50px; white-space: nowrap; margin-left: 358px;">Добавление отпуска на {{ year }}</a>
+    <a style="color: black; font-weight: bold; font-size: 28px; text-align: left; line-height: 50px; white-space: nowrap; margin-left: 358px;">Добавление отпуска на {{ year }}</a>
 </div>
 
 <style>
-    .table-container { width: 850px; margin: 0 auto; margin-top: 20px; margin-left: 358px; padding: 30px; background-color: white; box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.2); border-radius: 5px; }
-	.btn-edit { background-color: #15a362; font-family: 'Calibri'; font-style: normal; width: 200px; height: 44px; font-weight: 700; font-size: 20px; padding: 0 10px; border-radius: 5px; color: white; text-align: center; display: flex; align-items: center; justify-content: center; text-decoration: none; text-transform: none; margin: 0;}
-	.btn-my-vacations { background-color: white; color: #5d6778; border: 1px solid #ccc; font-family: 'Calibri'; font-style: normal; font-weight: 700; width: 130px; height: 44px; font-size: 20px; padding: 0 10px; border-radius: 5px; text-align: center; display: flex; align-items: center; justify-content: center; text-decoration: none; margin-left: 30px; }
+    .table-container { width: 780px; margin: 0 auto; margin-top: 20px; margin-left: 358px; padding: 30px; background-color: white; box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.2); border-radius: 5px; }
+	.btn-edit { background-color: #15a362; font-family: 'Calibri'; font-style: normal; width: 180px; height: 40px; font-weight: 700; font-size: 18px; padding: 0 10px; border-radius: 5px; color: white; text-align: center; display: flex; align-items: center; justify-content: center; text-decoration: none; text-transform: none; margin: 0;}
+	.btn-my-vacations { background-color: white; color: #5d6778; border: 1px solid #ccc; font-family: 'Calibri'; font-style: normal; font-weight: 700; width: 110px; height: 40px; font-size: 18px; padding: 0 10px; border-radius: 5px; text-align: center; display: flex; align-items: center; justify-content: center; text-decoration: none; margin-left: 30px; }
 	.btn-edit:hover { background-color: rgba(21, 163, 98, 0.8); text-decoration: none; color: white; }
+    .btn-edit:focus { outline: none; }
 	.btn-my-vacations:hover { text-decoration: none; color: #15a362 !important; border: 1px solid #15a362; }
-    .darker { color: #15a362; font-size: 19px; text-decoration: underline; cursor: pointer; }
+    .darker { color: #15a362; font-size: 17px; text-decoration: underline; cursor: pointer; }
     .darker:hover { color: green; }
     .tooltip-container { position: relative; display: inline-block; }
     .tooltip-text { visibility: hidden; width: 200px; background-color: rgba(0, 0, 0, 0.9); color: white; text-align: center; border-radius: 5px; padding: 5px; position: absolute; z-index: 2; bottom: 120%; left: 50%; transform: translateX(-50%); opacity: 0; transition: opacity 0.3s; font-size: 15px; }
     .tooltip-container:hover .tooltip-text { visibility: visible; opacity: 1; }
     .tooltip-text::after { content: ""; position: absolute; bottom: -9px; left: 50%; transform: translateX(-50%); width: 0; height: 0; z-index: 1; border-left: 7px solid transparent; border-right: 7px solid transparent; border-top: 9px solid rgba(0, 0, 0, 0.9); }
-    .input-with-icon { background-image: url("{% static 'keyboard_arrow_down.svg' %}"); background-repeat: no-repeat; background-position: right 10px center; background-size: 24px; padding-right: 50px; font-size: 19px; width: 520px; border-radius: 5px; border: 1px solid #ddd; background-color: white;
+    .input-with-icon { background-image: url("{% static 'keyboard_arrow_down.svg' %}"); background-repeat: no-repeat; background-position: right 10px center; background-size: 24px; padding-right: 50px; font-size: 18px; width: 520px; border-radius: 5px; border: 1px solid #ddd; background-color: white;
     height: 45px; font-weight: normal; text-align: left; padding-left: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
     .input-with-icon:focus { border-color: #0d6efd; outline: none; }
-    select#employee { font-size: 19px; width: 520px; border-radius: 5px; border: 1px solid #ddd; background-color: white; height: 45px; font-weight: normal; text-align: left; padding-left: 10px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transition: border-color 0.3s ease;
+    select#employee { font-size: 18px; width: 480px; border-radius: 5px; border: 1px solid #ddd; background-color: white; height: 43px; font-weight: normal; text-align: left; padding-left: 10px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transition: border-color 0.3s ease;
     background-image: url("{% static 'keyboard_arrow_down.svg' %}"); background-repeat: no-repeat; background-position: right 10px center; background-size: 24px; padding-right: 50px; }
     select#employee:focus { border-color: #0d6efd; outline: none; }
-    select#department { font-size: 19px; width: 520px; border-radius: 5px; border: 1px solid #ddd; background-color: white; height: 45px; font-weight: normal; text-align: left; padding-left: 10px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transition: border-color 0.3s ease;
+    select#department { font-size: 18px; width: 480px; border-radius: 5px; border: 1px solid #ddd; background-color: white; height: 43px; font-weight: normal; text-align: left; padding-left: 10px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transition: border-color 0.3s ease;
     background-image: url("{% static 'keyboard_arrow_down.svg' %}"); background-repeat: no-repeat; background-position: right 10px center; background-size: 24px; padding-right: 50px; }
     select#department:focus { border-color: #0d6efd; outline: none; }
-    .form-control { width: 340px !important; height: 45px !important; font-size: 19px; background-color: white !important; border: 1px solid #ddd; border-radius: 5px; padding-left: 10px; transition: border-color 0.3s ease; }
+    .form-control { width: 270px !important; height: 43px !important; font-size: 18px; background-color: white !important; border: 1px solid #ddd; border-radius: 5px; padding-left: 10px; transition: border-color 0.3s ease; }
     .form-control:focus { border-color: #0d6efd; outline: none; box-shadow: none; }
 </style>
 {% endblock %}
@@ -46,8 +47,8 @@
 
         {% if is_boss %}
             {% if len_boss_departments > 1 %}
-                <div style="display: flex; align-items: center; margin-bottom: 30px;">
-                    <label for="department" style="font-size: 21px; flex: 0 0 250px; text-align: left; color: #5d6778;">
+                <div style="display: flex; align-items: center; margin-bottom: 20px;">
+                    <label for="department" style="font-size: 19px; flex: 0 0 230px; text-align: left; color: #5d6778;">
                         Отдел
                     </label>
                     <select name="department" id="department">
@@ -67,8 +68,8 @@
                 </div>
             {% endif %}
         
-            <div style="display: flex; align-items: center; margin-bottom: 30px;">
-                <label for="employee" style="font-size: 21px; flex: 0 0 250px; text-align: left; color: #5d6778;">
+            <div style="display: flex; align-items: center; margin-bottom: 20px;">
+                <label for="employee" style="font-size: 19px; flex: 0 0 230px; text-align: left; color: #5d6778;">
                     Сотрудник<span style="color: red;">&nbsp;*</span>
                 </label>
                 <select name="employee" id="employee">
@@ -87,14 +88,14 @@
         {% endif %}
 
         {% for field in form %}
-            <div style="display: flex; align-items: center; margin-bottom: 30px;">
-                <label for="{{ field.id_for_label }}" style="font-size: 21px; flex: 0 0 250px; text-align: left; color: #5d6778;">
+            <div style="display: flex; align-items: center; margin-bottom: 20px;">
+                <label for="{{ field.id_for_label }}" style="font-size: 19px; flex: 0 0 230px; text-align: left; color: #5d6778;">
                     {{ field.label }}
                     {% if field.name in "day_start day_end" %}
                         <span style="color: red;">*</span>
                     {% elif field.name == "how_long" %}
                         <span class="tooltip-container">
-                            <img src="{% static 'question.svg' %}" alt="info" style="width: 24px; height: 24px; cursor: pointer;">
+                            <img src="{% static 'question.svg' %}" alt="info" style="width: 21px; height: 21px; cursor: pointer;">
                             <span class="tooltip-text">Чтобы не вводить дату окончания отпуска вручную, укажите количество дней и нажмите 'рассчитать дату окончания'</span>
                         </span>
                     {% endif %}
@@ -119,7 +120,7 @@
             </div>
             
             {% if field.name in "how_long" %}
-                <div style="display: flex; justify-content: flex-start; margin-left: 254px; margin-top: -25px; margin-bottom: 20px;">
+                <div style="display: flex; justify-content: flex-start; margin-left: 234px; margin-top: -20px; margin-bottom: 20px;">
                     <a href="#" id="calculate_end_date" class="darker">
                         рассчитать дату окончания
                     </a>

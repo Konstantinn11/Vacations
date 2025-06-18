@@ -7,9 +7,9 @@
 {% block header %}
 <title>Ближайшие отпуска</title>
 <div style="display: flex; flex-direction: row; justify-content: left; align-items: center; flex-wrap: nowrap;">
-    <a style="color: black; font-weight: bold; font-size: 38px; text-align: left; line-height: 50px; white-space: nowrap; margin-left: 358px;">Ближайшие отпуска коллег</a>
+    <a style="color: black; font-weight: bold; font-size: 28px; text-align: left; line-height: 50px; white-space: nowrap; margin-left: 358px;">Ближайшие отпуска коллег</a>
     <div style="display: flex; flex-direction: row; align-items: center; margin-left: 20px; gap: 20px; flex-grow: 1; justify-content: flex-end;">
-        <a class="btn sib" style="background-color:#15a362; font-family: 'Calibri'; font-style: normal; font-weight: 400; width: 280px; height: 44px; font-size: 21px;
+        <a class="btn sib" style="background-color:#15a362; font-family: 'Calibri'; font-style: normal; font-weight: 400; width: 250px; height: 42px; font-size: 20px;
         padding: 0 10px; margin-right: -524px; border-radius: 5px; color: white; text-align: center; display: flex; align-items: center; justify-content: center;" href="{% url 'vac_my_vacations' %}">
             Перейти к моим отпускам
         </a>
@@ -18,15 +18,14 @@
 
 <style>
     .btn.sib:hover { background-color: rgba(21, 163, 98, 0.8) !important; }
-    .table-container { width: 1275px; display: flex; flex-direction: row; margin-top: 20px; margin-left: 360px; box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.2); border-radius: 5px; }
+    .table-container { width: 1275px; display: flex; flex-direction: row; margin-top: 15px; margin-left: 360px; box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.2); border-radius: 5px; }
     .custom-table { width: 1275px; border-collapse: collapse; }
-    .custom-table th, .custom-table td { text-align: left; border-bottom: 1px solid rgb(187, 185, 185); padding: 10px; font-size: 18px; vertical-align: middle; }
+    .custom-table th, .custom-table td { text-align: left; border-bottom: 1px solid rgb(187, 185, 185); padding: 10px; font-size: 17px; vertical-align: middle; color: #5d6778;}
     .custom-table .employee-cell { display: flex; flex-direction: row; justify-content: left; align-items: center; }
-    .custom-table th { color: #5d6778; }
     .employee-color { width: 15px; height: 15px; border: 1px solid black; margin-right: 6px; }
     .on-vacation-label { background-color: #15a362; color: white; padding: 3px 8px; margin-left: 15px; border-radius: 4px; font-size: 14px; font-weight: bold; }
     .vacation-row { background-color: #d4e2f9; }
-    .darker { color: #15a362; font-size: 19px; text-decoration: underline; }
+    .darker { color: #15a362; font-size: 17px; text-decoration: underline; }
     .darker:hover { color: green; }
     .vacation-cell:not(.vacation-row):hover { background-color: rgba(0, 0, 0, 0.01); transition: background-color 0.3s ease; }
     .custom-table tr:last-child td { border-bottom: none; }
@@ -83,12 +82,24 @@
                     {% endif %}
                 </div>
             </td>
-            <td style="font-size: 18px;">{{ value.otd }}</td>
+            <td 
+                style="
+                    max-width: 380px;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    font-size: 17px;
+                    cursor: default;
+                "
+                title="{{ value.otd }}"
+            >
+                {{ value.otd }}
+            </td>
             <td>
-                <div style="display: inline-block; color: black; font-style: italic; font-size: 18px;">
+                <div style="display: inline-block; color: black; font-style: italic; font-size: 17px;">
                     {% for period in value.vacation_periods %}
                         {% if value.name == request.user.get_full_name or request.user.get_full_name in bosses %}
-                        <a href="{% url 'vacation_detail' vac_id=value.dates.0.vac_id %}?from=vac_all" class="darker" style="font-style: italic; font-size: 18px;">{{ period }}</a><br>
+                        <a href="{% url 'vacation_detail' vac_id=value.dates.0.vac_id %}?from=vac_all" class="darker">{{ period }}</a><br>
                         {% else %}
                             <span style="display: inline-block; color: black; font-style: italic;">{{ period }}</span><br>
                         {% endif %}
@@ -98,7 +109,7 @@
             <td>
                 <div>
                     {% for start_date, days_count in value.vacation_start_dates %}
-                    <span style="font-size: 19px;">{{ days_count }}</span><br>
+                    <span style="font-size: 17px;">{{ days_count }}</span><br>
                     {% endfor %}
                 </div>
             </td>
@@ -106,7 +117,7 @@
         {% endfor %}
         {% else %}
         <tr>
-            <td colspan="4" style="text-align: left; font-size: 20px; color: #5d6778;">Не найдено ближайших отпусков.</td>
+            <td colspan="4" style="text-align: left; font-size: 18px; color: #5d6778;">Не найдено ближайших отпусков.</td>
         </tr>
         {% endif %}
     </table>

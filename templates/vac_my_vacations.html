@@ -6,19 +6,17 @@
 {% block header %}
 <title>Мои отпуска</title>
 <div style="display: flex; flex-direction: row; justify-content: left; align-items: center; flex-wrap: nowrap;">
-    <a style="color: black; font-weight: bold; font-size: 35px; text-align: left; line-height: 50px; white-space: nowrap; margin-left: 358px;">Мои отпуска</a>
+    <a style="color: black; font-weight: bold; font-size: 28px; text-align: left; line-height: 50px; white-space: nowrap; margin-left: 358px;">Мои отпуска</a>
 </div>
 
 <style>
-    /* Стили таблицы и кнопок */
     .btn-icon { border: none; background: none; cursor: pointer; }
-    .btn-icon img { width: 24px; height: 24px; }
-    .table-container { width: 1275px; display: flex; flex-direction: row; margin-top: 20px; margin-left: 360px; box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.2); border-collapse: collapse; border-radius: 5px; }
+    .btn-icon img { width: 21px; height: 21px; }
+    .table-container { width: 1275px; display: flex; flex-direction: row; margin-top: 10px; margin-left: 360px; box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.2); border-collapse: collapse; border-radius: 5px; }
     .custom-table { width: 1275px; border-collapse: collapse; }
-    .custom-table th, .custom-table td { text-align: left; border-bottom: 1px solid rgb(187, 185, 185); padding: 10px; font-size: 18px; vertical-align: middle; }
-    .custom-table th { color: #5d6778; }
+    .custom-table th, .custom-table td { text-align: left; border-bottom: 1px solid rgb(187, 185, 185); padding: 10px; font-size: 17px; vertical-align: middle; color: #5d6778; }
     .custom-table .employee-cell { display: flex; flex-direction: row; justify-content: left; align-items: center; }
-    .darker { color: #15a362; font-size: 19px; text-decoration: underline; font-style: italic; }
+    .darker { color: #15a362; font-size: 17px; text-decoration: underline; font-style: italic; }
     .darker:hover { color: green; }
     .vacation-cell:not(.vacation-row):hover { background-color: rgba(0, 0, 0, 0.01); transition: background-color 0.3s ease; }
     #leave-dropdown-my ul li a { text-decoration: none; color: #000; font-size: 16px; transition: color 0.3s ease; }
@@ -53,7 +51,7 @@
                 <a class="darker" href="{% url 'vacation_detail' vacation.id %}">{{ vacation.period }}</a>
             </td>
             <td>
-                <span style="font-size: 19px;">{{ vacation.days_count }}</span>
+                <span>{{ vacation.days_count }}</span>
             </td>
             <td>
                 <div style="display: flex; gap: 10px;">
@@ -70,7 +68,7 @@
         {% endfor %}
         {% else %}
         <tr class="no-border-row">
-            <td colspan="3" style="text-align: left; font-size: 20px; color: #5d6778;">Не найдено отпусков.</td>
+            <td colspan="3" style="text-align: left; font-size: 18px; color: #5d6778;">Не найдено отпусков.</td>
         </tr>
         {% endif %}
         <tr>

@@ -21,7 +21,7 @@
     .table-container { 
         width: 650px; 
         margin: 0 auto; 
-        margin-top: 20px; 
+        margin-top: 20px;
         margin-left: 358px; 
         padding: 25px; 
         background-color: white; 
@@ -83,6 +83,10 @@
         border: 1px solid #15a362; 
     }
 
+    .btn-edit:focus { 
+        outline: none;
+    }
+
     .form-label { 
         font-size: 18px; 
         color: #5d6778; 
@@ -103,7 +107,7 @@
         padding: 8px; 
         width: 100%; 
         max-width: 520px; 
-        height: 45px; 
+        height: 43px; 
         border: 1px solid #ccc; 
         border-radius: 5px; 
         overflow: hidden; 
@@ -128,13 +132,13 @@
     }
 
     .select2-container--default .select2-selection--single {
-        height: 45px !important;
+        height: 43px !important;
         border: 1px solid #ccc !important;
         border-radius: 5px !important;
     }
 
     .select2-container--default .select2-selection--single .select2-selection__rendered {
-        line-height: 45px;
+        line-height: 43px;
         color: #5d6778;
         font-size: 18px;
         text-align: left;
@@ -199,7 +203,7 @@
             <a class="btn-my-vacations" href="{% url 'employees' %}?tab=departments">Отмена</a>
         </div>
 
-        <div style="margin-top: 20px;">
+        <div style="margin-top: 15px;">
             <span style="color: red;">*</span>
             <span style="font-style: italic; color: #5d6778;"> — обязательные поля.</span>
         </div>

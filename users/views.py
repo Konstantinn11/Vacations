@@ -337,10 +337,10 @@ def vac_calendars(request, otd, year=None):
     today = dt.datetime.today().date()
     bosses = get_bosses_dict()
 
-    year = request.GET.get('year', current_year)
-    year = int(year)
+    year = int(request.GET.get('year', current_year))
 
     years_in_vacations = set(Vacation.objects.values_list('year', flat=True))  # Исключаем дубликаты
+    years_in_vacations.update([str(current_year)])
     years_in_vacations.update([str(y) for y in future_years])
     years_range = sorted([int(y) for y in years_in_vacations], reverse=True)
 
@@ -1405,11 +1405,10 @@ def employees(request):
     
     managers_data = []
     if active_tab == 'managers':
-        sup_ids = (
+        sup_ids = set(
             User_info.objects
             .filter(supervisor__isnull=False)
             .values_list('supervisor_id', flat=True)
-            .distinct()
         )
         for sup_id in sup_ids:
             sup_user = User.objects.filter(id=sup_id).first()

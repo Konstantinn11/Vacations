@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="{% static 'css/select2.min.css' %}">
 <script src="{% static 'libs/select2.min.js' %}"></script>
 <div style="display: flex; flex-direction: row; justify-content: left; align-items: center; flex-wrap: nowrap; width: 100%;">
-    <a style="color: black; font-weight: bold; font-size: 38px; text-align: left; line-height: 50px; white-space: nowrap;">Календарь отпусков на {{year}}</a>
+    <a style="color: black; font-weight: bold; font-size: 35px; text-align: left; line-height: 50px; white-space: nowrap;">Календарь отпусков на {{year}}</a>
     <div style="display: flex; flex-direction: row; align-items: center; margin-left: 20px; gap: 20px; flex-grow: 1; justify-content: flex-end;">
         <div class="flex-container">
 			<button id="filter-toggle" type="button" class="filter-button">
@@ -723,6 +723,37 @@
 	.my-swal-button-error:hover {
 		filter: brightness(1.2);
 	}
+
+	.vac-tags {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: flex-start;
+		gap: 4px 8px;
+		margin-top: 6px;
+	}
+
+	.vac-tags span {
+		display: inline-block;
+		background-color: #5b99ea;
+		color: white;
+		border-radius: 5px;
+		padding: 2px 6px;
+		font-size: 0.7em;
+		white-space: nowrap;
+		font-weight: 500;
+	}
+
+	.vacation-cell th,
+	.vacation-cell td {
+		padding-bottom: 7px;
+		padding-top: 7px;
+		vertical-align: top;
+	}
+
+	table th:nth-child(3),
+	table td:nth-child(3) {
+		padding-right: 20px;
+	}
 </style>
 <div style="width: 110%; display: flex; flex-direction: row;">
 	<div style="margin: 5px 20px 5px 0px;">{% include "includes/vac_month_table.html" with key="Январь" value=Январь %}</div>
@@ -763,7 +794,7 @@
 				data-start-date="{% for start_date, days_count in value.vacation_start_dates %}{{start_date}}{% if not forloop.last %}, {% endif %}{% endfor %}" 
 				data-end-date="{% for end_date in value.vacation_end_dates %}{{end_date}}{% if not forloop.last %}, {% endif %}{% endfor %}"
 				data-vac-id="{% for vac in value.dates %}{{ vac.vac_id }}{% if not forloop.last %}, {% endif %}{% endfor %}">
-				<th style="text-align: left; vertical-align: top; padding-top: 7px;">
+				<th style="text-align: left;">
 					<div style="display: flex; flex-direction: row; justify-content: left; align-items: center;">
 						<div style="width: 15px; height: 15px; background: {{value.color}}; border: 1px solid black; margin-right: 6px;"></div>
 						<a style="color: black" href="#" onclick="filtrByUser(this)">{{value.user.get_full_name}}</a>
@@ -772,29 +803,17 @@
 					{% for ui in employees %}
 						{% if ui.user.id == value.user_id %}
 							{% if ui.tags.all %}
-								<div>
-								{% for tag in ui.tags.all %}
-									<span style="
-									display: inline-block;
-									background-color: #5b99ea;
-									color: white;
-									border-radius: 5px;
-									padding: 2px 6px;
-									font-size: 0.7em;
-									white-space: nowrap;
-									font-weight: 500;
-									margin-bottom: 7px;
-									">
-									{{ tag.name }}
-									</span>
-								{% endfor %}
+								<div class="vac-tags">
+									{% for tag in ui.tags.all %}
+									<span class="tag">{{ tag.name }}</span>
+									{% endfor %}
 								</div>
 							{% endif %}
 						{% endif %}
 					{% endfor %}
 				</th>
-				<th style="vertical-align: top; padding-top: 7px;">{{value.otd }}</th>
-				<th style="vertical-align: top; padding-top: 7px;">{{value.sum }}</th>
+				<th>{{value.otd }}</th>
+				<th>{{value.sum }}</th>
 			</tr>
 		{% endfor %}
 	</table>
@@ -1119,13 +1138,20 @@
 				<div class="label-cell required">
 				<label for="vacation-employee">Сотрудник<span style="color: red;">&nbsp;*</span></label>
 				</div>
-				<select id="vacation-employee" class="swal2-input">
+				<select
+					id="vacation-employee"
+					class="swal2-input"
+					style="
+						white-space: nowrap;
+						overflow: hidden;
+						text-overflow: ellipsis;
+						width: 100%;
+					"
+					>
 					{% for emp in employees %}
-						<option value="{{ emp.user.id }}">
+						<option value="{{ emp.user.id }}" style="white-space: nowrap;">
 						{{ emp.user.get_full_name }}
-						{% if emp.position %}
-							({{ emp.position.position }})
-						{% endif %}
+						{% if emp.position %} ({{ emp.position.position }}){% endif %}
 						</option>
 					{% endfor %}
 				</select>
