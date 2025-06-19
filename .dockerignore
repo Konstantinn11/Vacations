@@ -1,0 +1,33 @@
+# Локальные настройки
+.env.local
+.env
+
+# Виртуальные окружения и кэш Python
+venv/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Базы данных и логи
+*.db
+*.log
+
+# Собранные артефакты
+build/
+dist/
+*.egg-info/
+pip-wheel-metadata/
+
+# Статические файлы
+staticfiles/
+
+# Системные файлы и IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Git
+.git/
+.gitignore

@@ -35,8 +35,7 @@ def get_bosses_dict():
     """
     Возвращает словарь вида:
       {
-        "ФИО руководителя 1": [название_отдела_A, название_отдела_B, ...],
-        "ФИО руководителя 2": [...],
+        "ФИО руководителя 1": [название_отдела_A, ...],
         ...
       }
     """
@@ -44,35 +43,41 @@ def get_bosses_dict():
 
     User = get_user_model()
     temp = defaultdict(set)
-    
+
+    # Заполняем из Unit и User_info
     for boss_id, dept_desc in Unit.objects.filter(boss__isnull=False) \
                                           .values_list('boss_id', 'description'):
         if dept_desc:
             temp[boss_id].add(dept_desc)
-    
+
     qs = User_info.objects.filter(supervisor__isnull=False, otd_number__isnull=False) \
                           .select_related('otd_number')
     for ui in qs:
-        sup_id = ui.supervisor_id
-        dept_desc = ui.otd_number.description
-        if dept_desc:
-            temp[sup_id].add(dept_desc)
-    
-    all_depts_list = [desc for desc in Unit.objects.values_list('description', flat=True) if desc]
+        if ui.otd_number.description:
+            temp[ui.supervisor_id].add(ui.otd_number.description)
+
+    # Берём все описания отделов
+    all_depts_list = [
+        desc for desc in Unit.objects.values_list('description', flat=True)
+        if desc
+    ]
+
+    # Гарантируем, что даже при пустом all_depts_list у пользователя с id=1 появится ключ в temp
+    temp[1]
+
+    # Обрабатываем суперюзеров
     for su in User.objects.filter(is_superuser=True):
-        sup_id = su.id
-        existing = temp.get(sup_id, set())
+        dept_set = temp[su.id]
         for desc in all_depts_list:
-            if desc not in existing:
-                temp[sup_id].add(desc)
-    
+            dept_set.add(desc)
+
+    # Собираем итоговый словарь
     bosses_dict = {}
     for user_id, dept_set in temp.items():
         try:
             user = User.objects.get(pk=user_id)
         except User.DoesNotExist:
             continue
-        fio = user.get_full_name()
-        bosses_dict[fio] = sorted(dept_set)
+        bosses_dict[user.get_full_name()] = sorted(dept_set)
 
     return bosses_dict

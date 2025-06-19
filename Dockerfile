@@ -1,7 +1,7 @@
-# Используем Python 3.11-slim в качестве базового образа
+# Dockerfile
 FROM python:3.11-slim
 
-# Устанавливаем системные пакеты для сборки psycopg2
+# Системные зависимости для psycopg2
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
       build-essential \
@@ -17,12 +17,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Копируем весь код проекта
 COPY . .
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
 
-# Собираем статику
-RUN python manage.py collectstatic --noinput
-
-# Открываем порт приложения
-EXPOSE 8000
-
-# Запускаем Gunicorn
-CMD ["gunicorn", "vacations.wsgi:application", "--bind", "0.0.0.0:8000"]
+# Запускаем entrypoint, а затем gunicorn из CMD
+ENTRYPOINT ["/app/entrypoint.sh"]
+CMD ["gunicorn", "vacations.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3"]

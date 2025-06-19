@@ -145,14 +145,16 @@
 
     .department-link, 
     .employee-link,
-    .archive-action-link {
+    .archive-action-link,
+    .show-link {
         color: #15a362;
         text-decoration: underline;
     }
 
     .department-link:hover, 
     .employee-link:hover,
-    .archive-action-link:hover {
+    .archive-action-link:hover,
+    .show-link:hover {
         text-decoration: underline;
         color: green;
     }
@@ -371,7 +373,7 @@
         <form method="post" action="#">
             {% csrf_token %}
             {% if employees_data %}
-                <div style="display: flex; align-items: center; flex-wrap: nowrap; margin-bottom: 10px; font-size: 18px; font-weight: 500;">
+                <div style="display: flex; align-items: center; flex-wrap: nowrap; margin-bottom: 10px; font-size: 18px; font-weight: 500; white-space: nowrap;">
                     {% if selected_tag_name %}
                         <div>Сотрудники с тегом «{{ selected_tag_name }}»</div>
                     {% elif selected_dept_title %}
@@ -389,11 +391,11 @@
                             показать всех
                         </a>
                     {% else %}
-                        <a 
-                            href="{% url 'employees' %}?dept={{ current_dept_id }}"
-                            {% if not current_dept_id %}class="disabled"{% endif %} class="filter-link">
-                            показать мой отдел
-                        </a>
+                        {% if current_dept_id %}
+                            <a href="{% url 'employees' %}?dept={{ current_dept_id }}" class="filter-link">
+                                показать мой отдел
+                            </a>
+                        {% endif %}
                     {% endif %}
                 </div>
                 
@@ -524,7 +526,7 @@
                             <td>
                                 {% if dept.count %}
                                     {{ dept.count }}
-                                    <a href="{% url 'employees' %}?tab=employees&dept={{ dept.id }}" class="archive-action-link" style="margin-left: 8px; font-size: 0.9em;">
+                                    <a href="{% url 'employees' %}?tab=employees&dept={{ dept.id }}" class="show-link" style="margin-left: 8px; font-size: 0.9em;">
                                         показать
                                     </a>
                                 {% else %}
@@ -598,7 +600,7 @@
                             <td>
                                 {% if tag.employees_count %}
                                     {{ tag.employees_count }}
-                                    <a href="{% url 'employees' %}?tab=employees&tag={{ tag.name }}" class="archive-action-link" style="margin-left: 8px; font-size: 0.9em;">
+                                    <a href="{% url 'employees' %}?tab=employees&tag={{ tag.name }}" class="show-link" style="margin-left: 8px; font-size: 0.9em;">
                                         показать
                                     </a>
                                 {% else %}

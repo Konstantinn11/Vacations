@@ -290,31 +290,37 @@
     {% endif %}
 {% else %}
     <div class="table-container">
-        <table class="custom-table">
-            <thead>
-                <tr>
-                    <th colspan="2" style="color: #5d6778; text-align: left; font-size: 19px; font-weight: normal;">
-                        Выберите год для показа отпусков:
-                    </th>
-                </tr>
-                <tr>
-                    <th>Год</th>
-                    <th>Отпусков</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for year, count in years_vacations_count.items %}
-                <tr>
-                    <td>
-                        <a href="{% url 'vac_all_vacations' %}?year={{ year }}" class="darker">
-                            {{ year }}
-                        </a>
-                    </td>
-                    <td>{{ count }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        {% if years_vacations_count %}
+            <table class="custom-table">
+                <thead>
+                    <tr>
+                        <th colspan="2" style="color: #5d6778; text-align: left; font-size: 19px; font-weight: normal;">
+                            Выберите год для показа отпусков:
+                        </th>
+                    </tr>
+                    <tr>
+                        <th>Год</th>
+                        <th>Отпусков</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for year, count in years_vacations_count.items %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'vac_all_vacations' %}?year={{ year }}" class="darker">
+                                {{ year }}
+                            </a>
+                        </td>
+                        <td>{{ count }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p style="font-size:19px; color:#5d6778; text-align:left;">
+                Отпусков еще не добавлено.
+            </p>
+        {% endif %}
     </div>
 {% endif %}
 

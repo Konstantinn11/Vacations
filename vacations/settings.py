@@ -17,7 +17,7 @@ from dotenv import load_dotenv
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-load_dotenv(BASE_DIR / '.env.docker')
+load_dotenv(BASE_DIR / '.env')
 load_dotenv(BASE_DIR / '.env.local', override=True)
 
 # Quick-start development settings - unsuitable for production
@@ -129,13 +129,9 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# Для разработки
-if DEBUG:
-    STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
-
-# Для продакшн
-else:
-    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',
+]
 
 LOGIN_URL = '/auth/login/'
 LOGIN_REDIRECT_URL = '/'
