@@ -22,6 +22,7 @@ def holiday_list(request):
 
     # Получаем годы, в которых есть отпуска
     years_in_vacations = set(Vacation.objects.values_list('year', flat=True))
+    years_in_vacations.update([str(current_year)])
     years_in_vacations.update([str(y) for y in future_years])
     years_range = sorted([int(y) for y in years_in_vacations], reverse=True)
 

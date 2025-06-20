@@ -8,7 +8,7 @@
 <div style="display: flex; flex-direction: row; justify-content: left; align-items: center; flex-wrap: nowrap;">
     <a style="color: black; font-weight: bold; font-size: 28px; text-align: left; line-height: 50px; white-space: nowrap; margin-left: 358px;">Графики отпусков</a>
     {% if request.user.get_full_name in bosses %}
-    <div style="display: flex; flex-direction: row; align-items: center; margin-left: 605px; gap: 20px; justify-content: flex-end;">
+    <div style="display: flex; flex-direction: row; align-items: center; margin-left: 608px; gap: 20px; justify-content: flex-end;">
         <a class="btn sib" style="background-color:#15a362; font-family: 'Calibri'; font-style: normal; font-weight: 400; width: 200px; height: 40px; font-size: 18px;
             padding: 0 10px; border-radius: 5px; color: white; text-align: center; display: flex; align-items: center; justify-content: center;" href="{% url 'import_vacations' %}">
             <img style="height: 19px; margin-right: 5px; vertical-align: middle;" src="{% static 'box-arrow-in-down.svg' %}">Импорт отпусков

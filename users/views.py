@@ -1845,7 +1845,7 @@ def employee_create(request):
         last_name = request.POST.get("last_name", "").strip()
         first_name = request.POST.get("first_name", "").strip()
         patronymic = request.POST.get("patronymic", "").strip()
-        email = request.POST.get("email", "").strip().lower()
+        email = request.POST.get("email", "").strip()
         position_nm = request.POST.get("position", "").strip()
         dept_id = request.POST.get("department", "").strip()
         tag_ids = request.POST.getlist("tags")
@@ -1860,7 +1860,12 @@ def employee_create(request):
             messages.error(request, "Пользователь с таким email уже существует.")
             return render(request, 'employee_create.html', context)
 
-        username = email.split("@")[0]
+        base_username = email.split('@')[0]
+        username = base_username
+        counter = 1
+        while User.objects.filter(username=username).exists():
+            username = f"{base_username}{counter}"
+            counter += 1
         # Генерация пароля
         temp_password = User.objects.make_random_password()
 
@@ -1902,8 +1907,8 @@ def employee_create(request):
                         except Tag.DoesNotExist:
                             continue
 
-        except IntegrityError:
-            messages.error(request, "Ошибка при создании пользователя. Попробуйте ещё раз.")
+        except IntegrityError as e:
+            messages.error(request, "Ошибка при создании пользователя: {e}. Попробуйте ещё раз.")
             return render(request, 'employee_create.html', context)
 
         full_name = " ".join(filter(None, [last_name, first_name, patronymic]))
@@ -1922,7 +1927,7 @@ def employee_create(request):
             "С уважением,\n"
             "Администратор ресурса."
         )
-        send_mail(subject, message, None, [email], fail_silently=False)
+        send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [email], fail_silently=False)
 
         messages.success(request, f"Сотрудник {full_name} успешно создан.")
         return redirect(f"{reverse('employees')}?tab=employees")

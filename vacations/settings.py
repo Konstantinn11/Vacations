@@ -31,6 +31,13 @@ DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
 
+CSRF_TRUSTED_ORIGINS = [
+    origin for origin in os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',')
+    if origin
+]
+
+CSRF_COOKIE_DOMAIN = os.getenv('CSRF_COOKIE_DOMAIN', None)
+
 
 # Application definition
 
@@ -151,10 +158,10 @@ if ON_LOCALHOST:
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 else:
     EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-    EMAIL_HOST = 'mail.uac-ic.ru'
+    EMAIL_HOST = 'v-exchange.oak.cc'
     EMAIL_PORT = 587  
     EMAIL_USE_TLS = True
     EMAIL_HOST_USER = 'rrz'
     EMAIL_HOST_PASSWORD = 'Vrh545htb@1fg129%'
-    DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
-    SERVER_EMAIL = EMAIL_HOST_USER
+    DEFAULT_FROM_EMAIL = 'rrz@ic.yakovlev.ru'
+    SERVER_EMAIL = DEFAULT_FROM_EMAIL

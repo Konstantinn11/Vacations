@@ -33,11 +33,12 @@
     .custom-btn-container {
         position: relative;
         display: inline-block;
+        width: 150px;
     }
 
     .custom-btn-container select {
         position: absolute;
-        top: 0;
+        top: -20px;
         left: 0;
         width: 100%;
         height: 100%;
@@ -48,6 +49,7 @@
         -webkit-appearance: none;
         -moz-appearance: none;
         appearance: none;
+        z-index: 1000;
     }
 
     .table-container { 
@@ -131,7 +133,7 @@
               </td>
             </tr>
             {% empty %}
-            <tr><td colspan="3">Записей не добавлено.</td></tr>
+            <tr><td colspan="3" style="color: #5d6778;">Записей не добавлено.</td></tr>
             {% endfor %}
           </tbody>
         </table>
