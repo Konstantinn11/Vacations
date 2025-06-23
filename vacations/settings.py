@@ -165,3 +165,7 @@ else:
     EMAIL_HOST_PASSWORD = 'Vrh545htb@1fg129%'
     DEFAULT_FROM_EMAIL = 'rrz@ic.yakovlev.ru'
     SERVER_EMAIL = DEFAULT_FROM_EMAIL
+
+# Настройка куки
+SESSION_COOKIE_NAME = os.getenv('SESSION_COOKIE_NAME', 'sessionid_vacations')
+CSRF_COOKIE_NAME = os.getenv('CSRF_COOKIE_NAME', 'csrftoken_vacations')
