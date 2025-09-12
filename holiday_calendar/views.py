@@ -4,6 +4,7 @@ from .forms import HolidayForm
 from users.utils import get_bosses_dict
 from users.models import Vacation
 import datetime as dt
+from django.urls import reverse
 
 def superuser_required(view_func):
     def _wrapped_view(request, *args, **kwargs):
@@ -18,13 +19,20 @@ def holiday_list(request):
     bosses = get_bosses_dict()
     current_year = dt.datetime.now().year
     future_years = [current_year + 1, current_year + 2]
-    year = int(request.GET.get('year', current_year))
+
+    # Получаем выбранный год
+    try:
+        year = int(request.GET.get('year', current_year))
+    except (TypeError, ValueError):
+        year = current_year
 
     # Получаем годы, в которых есть отпуска
-    years_in_vacations = set(Vacation.objects.values_list('year', flat=True))
-    years_in_vacations.update([str(current_year)])
-    years_in_vacations.update([str(y) for y in future_years])
-    years_range = sorted([int(y) for y in years_in_vacations], reverse=True)
+    years_in_vacations = set(int(y) for y in Vacation.objects.values_list('year', flat=True))
+    years_in_vacations.update([current_year])
+    years_in_vacations.update(future_years)
+    years_in_vacations.add(year)
+
+    years_range = sorted(years_in_vacations, reverse=True)
 
     # Фильтруем праздники по году
     holidays = Holiday.objects.filter(date__year=year).order_by('date')
@@ -43,9 +51,12 @@ def holiday_edit(request, pk=None):
     instance = get_object_or_404(Holiday, pk=pk) if pk else None
     form = HolidayForm(request.POST or None, instance=instance)
     if form.is_valid():
-        form.save()
+        holiday = form.save()
+        year = holiday.date.year if getattr(holiday, 'date', None) else None
+        if year:
+            return redirect(f"{reverse('holiday_calendar:holiday_list')}?year={year}")
         return redirect('holiday_calendar:holiday_list')
-    
+
     context = {
         'form': form,
         'bosses': list(bosses.keys()),
@@ -57,9 +68,13 @@ def holiday_delete(request, pk):
     bosses = get_bosses_dict()
     holiday = get_object_or_404(Holiday, pk=pk)
     if request.method == 'POST':
+        # Сохраняем год до удаления
+        year = holiday.date.year if getattr(holiday, 'date', None) else None
         holiday.delete()
+        if year:
+            return redirect(f"{reverse('holiday_calendar:holiday_list')}?year={year}")
         return redirect('holiday_calendar:holiday_list')
-    
+
     context = {
         'holiday': holiday,
         'bosses': list(bosses.keys()),
