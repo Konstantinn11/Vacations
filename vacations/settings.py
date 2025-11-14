@@ -155,7 +155,7 @@ else:
     EMAIL_PORT = 587  
     EMAIL_USE_TLS = True
     EMAIL_HOST_USER = 'rrz'
-    EMAIL_HOST_PASSWORD = 'Vrh545htb@1fg129%'
+    EMAIL_HOST_PASSWORD = 'N#sN438df!uEP'
     DEFAULT_FROM_EMAIL = 'rrz@ic.yakovlev.ru'
     SERVER_EMAIL = DEFAULT_FROM_EMAIL
 

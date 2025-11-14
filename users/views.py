@@ -22,7 +22,8 @@ from openpyxl import load_workbook
 import urllib.parse
 import copy
 import re
-import pymorphy2
+from pymorphy3 import MorphAnalyzer
+_MORPH = MorphAnalyzer(lang='ru')
 from openpyxl.styles import Alignment, Border, Side, Font
 from holiday_calendar.utils import get_calendar_data
 from .utils import calculate_end_date, calculate_working_days, get_bosses_dict
@@ -30,6 +31,7 @@ from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.db.models import Count, Q
 from django.core.mail import send_mail
 from django.db import IntegrityError, transaction
+import logging
 
 class CustomPasswordResetView(PasswordResetView):
     form_class = PasswordResetForm
@@ -1514,8 +1516,8 @@ def export_vacations(request, year, otd):
         return HttpResponse("Такой отдел не найден", status=404)
     
     # Преобразуем title отдела в родительный падеж
-    morph = pymorphy2.MorphAnalyzer()
-    title = otd_obj.title
+    # Используем pymorphy3 (инициализатор _MORPH сверху)
+    title = otd_obj.title or ""
     match = re.match(r"(.+?)(\s*\(.*\))?$", title)
     if match:
         text_part = match.group(1).strip()
@@ -1526,18 +1528,47 @@ def export_vacations(request, year, otd):
         
     words = text_part.split()
     inflected_words = []
-    for word in words:
-        parsed = morph.parse(word)[0]
-        inflected = parsed.inflect({'gent'})
-        if inflected:
-            inflected_words.append(inflected.word)
-        else:
-            inflected_words.append(word)
-    title_gen = " ".join(inflected_words) + num_part
 
+    for word in words:
+        # если MorphAnalyzer не инициализирован, просто оставляем слово как есть
+        if not _MORPH:
+            inflected_words.append(word)
+            continue
+
+        try:
+            # В pymorphy3 анализатор вызывается как функция: morph(word)
+            parsed = _MORPH(word)[0]
+            # Пробуем склонить в родительный (gent)
+            inflected = parsed.inflect({'gent'})
+            if inflected:
+                # inflected может иметь разные атрибуты в зависимости от версии: .word, .normal_form, str(...)
+                new_word = None
+                if hasattr(inflected, 'word'):
+                    new_word = getattr(inflected, 'word')
+                elif hasattr(inflected, 'normal_form'):
+                    new_word = getattr(inflected, 'normal_form')
+                else:
+                    # безопасный fallback — привести к строке
+                    try:
+                        new_word = str(inflected)
+                    except Exception:
+                        new_word = None
+
+                if new_word:
+                    inflected_words.append(new_word)
+                else:
+                    inflected_words.append(word)
+            else:
+                inflected_words.append(word)
+        except Exception:
+            # на случай неожиданных ошибок в анализе — логируем и ставим оригинал
+            logging.getLogger(__name__).exception("Ошибка при склонении слова %r", word)
+            inflected_words.append(word)
+
+    title_gen = " ".join(inflected_words) + num_part
     ws['A2'] = f"График отпусков на {year} год {title_gen}"
 
-    # Получаем пользователей отдела
+    # --- остальной код без изменений ---
     otd_users = User_info.active.filter(otd_number=otd_obj)
     user_ids = [user.user_id for user in otd_users]
     vacations = Vacation.objects.filter(user_id__in=user_ids, year=str(year))
