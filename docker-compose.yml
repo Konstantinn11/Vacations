@@ -33,8 +33,7 @@ services:
     image: nginx:1.21.3-alpine
     restart: unless-stopped
     ports:
-      - "80:80"
-      - "8001:8001"
+      - "8001:80"
     depends_on:
       - web
     volumes:
