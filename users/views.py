@@ -1724,27 +1724,104 @@ def save_vacations(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-            for vacation_data in data:
-                user_id = vacation_data.get('employee')
-                if not User_info.active.filter(user_id=user_id).exists():
-                    continue
-                
-                # Создаем объект с валидацией
-                vacation = Vacation(
-                    user_id=vacation_data.get('employee'),
-                    day_start=vacation_data.get('day_start'),
-                    day_end=vacation_data.get('day_end')
-                )               
-                # Вызываем полную валидацию
-                vacation.full_clean()
-                vacation.save()
-                
+            errors = []
+            
+            for idx, vacation_data in enumerate(data, 1):
+                try:
+                    user_id = vacation_data.get('employee')
+                    if not user_id:
+                        errors.append(f"Отпуск #{idx}: не указан сотрудник")
+                        continue
+                        
+                    if not User_info.active.filter(user_id=user_id).exists():
+                        errors.append(f"Отпуск #{idx}: сотрудник с ID {user_id} не найден или неактивен")
+                        continue
+                    
+                    day_start_str = vacation_data.get('day_start')
+                    day_end_str = vacation_data.get('day_end')
+                    
+                    if not day_start_str or not day_end_str:
+                        errors.append(f"Отпуск #{idx}: не указаны даты начала или окончания")
+                        continue
+                    
+                    # Преобразуем строки в объекты date
+                    try:
+                        if isinstance(day_start_str, str):
+                            day_start = dt.datetime.strptime(day_start_str, '%Y-%m-%d').date()
+                        else:
+                            day_start = day_start_str
+                            
+                        if isinstance(day_end_str, str):
+                            day_end = dt.datetime.strptime(day_end_str, '%Y-%m-%d').date()
+                        else:
+                            day_end = day_end_str
+                    except (ValueError, TypeError) as e:
+                        errors.append(f"Отпуск #{idx}: неверный формат даты - {str(e)}")
+                        continue
+                    
+                    # Валидация: начало должно быть раньше конца
+                    if day_start >= day_end:
+                        errors.append(f"Отпуск #{idx}: дата начала должна быть раньше даты окончания")
+                        continue
+                    
+                    # Валидация: отпуск не может переходить на следующий год
+                    if day_start.year != day_end.year:
+                        errors.append(f"Отпуск #{idx}: отпуск не может переходить на следующий календарный год")
+                        continue
+                    
+                    # Проверка на существующий отпуск (предотвращение дублирования)
+                    existing_vacation = Vacation.objects.filter(
+                        user_id=user_id,
+                        day_start=day_start,
+                        day_end=day_end
+                    ).exists()
+                    
+                    if existing_vacation:
+                        errors.append(f"Отпуск #{idx}: такой отпуск уже существует")
+                        continue
+                    
+                    # Создаем объект с валидацией
+                    vacation = Vacation(
+                        user_id=user_id,
+                        day_start=day_start,
+                        day_end=day_end
+                    )
+                    
+                    # Вызываем полную валидацию
+                    vacation.full_clean()
+                    vacation.save()
+                    
+                except ValidationError as e:
+                    error_msg = f"Отпуск #{idx}: "
+                    if hasattr(e, 'error_dict'):
+                        for field, field_errors in e.error_dict.items():
+                            error_msg += f"{field}: {', '.join([str(err) for err in field_errors])}; "
+                    else:
+                        error_msg += str(e)
+                    errors.append(error_msg.strip())
+                except Exception as e:
+                    errors.append(f"Отпуск #{idx}: {str(e)}")
+            
+            if errors:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Ошибки при сохранении отпусков:\n' + '\n'.join(errors)
+                }, status=400)
+            
             return JsonResponse({'status': 'success'})
-        except ValidationError as e:
-            return JsonResponse({'status': 'error', 'message': dict(e)})
+            
+        except json.JSONDecodeError as e:
+            return JsonResponse({
+                'status': 'error',
+                'message': f'Ошибка парсинга JSON: {str(e)}'
+            }, status=400)
         except Exception as e:
-            return JsonResponse({'status': 'error', 'message': str(e)})
-    return JsonResponse({'status': 'invalid method'})
+            logging.exception("Unexpected error in save_vacations")
+            return JsonResponse({
+                'status': 'error',
+                'message': f'Неожиданная ошибка: {str(e)}'
+            }, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Метод не поддерживается'}, status=405)
 
 
 def tag_create(request):

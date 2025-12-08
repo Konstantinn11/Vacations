@@ -57,7 +57,7 @@
                     {% elif field.name == "how_long" %}
                         <span class="tooltip-container">
                             <img src="{% static 'question.svg' %}" alt="info" style="width: 21px; height: 21px; cursor: pointer;">
-                            <span class="tooltip-text">Чтобы не вводить дату окончания отпуска вручную, укажите количество дней и нажмите 'рассчитать дату окончания'</span>
+                            <span class="tooltip-text">Укажите количество календарных дней и дата окончания рассчитается автоматически.</span>
                         </span>
                     {% endif %}
                 </label>
@@ -80,13 +80,6 @@
                 </div>
             </div>
             
-            {% if field.name in "how_long" %}
-                <div style="display: flex; justify-content: flex-start; margin-left: 234px; margin-top: -20px; margin-bottom: 20px;">
-                    <a href="#" id="calculate_end_date" class="darker">
-                        рассчитать дату окончания
-                    </a>
-                </div>
-            {% endif %}
         {% endfor %}
 
         <div style="display: flex; justify-content: flex-start; margin-top: 30px;">
@@ -127,6 +120,126 @@
     $(document).ready(function() {
         var year = {{ year }};
 
+        // Функция для расчета количества рабочих дней между двумя датами
+        function calculateWorkingDays(startDateStr, endDateStr) {
+            if (!startDateStr || !endDateStr) {
+                return 0;
+            }
+
+            const monthNames = [
+                'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+                'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
+            ];
+
+            const startDateParts = startDateStr.split('-');
+            const endDateParts = endDateStr.split('-');
+
+            if (startDateParts.length !== 3 || endDateParts.length !== 3) {
+                return 0;
+            }
+
+            // Устанавливаем даты с нулевым временем для точности
+            let currentDate = new Date(Date.UTC(startDateParts[0], startDateParts[1] - 1, startDateParts[2]));
+            const endDate = new Date(Date.UTC(endDateParts[0], endDateParts[1] - 1, endDateParts[2]));
+
+            if (currentDate > endDate) {
+                return 0;
+            }
+
+            let workingDays = 0;
+
+            while (currentDate <= endDate) {
+                const currentMonthName = monthNames[currentDate.getUTCMonth()];
+                const currentDay = currentDate.getUTCDate();
+                const monthHolidays = holidays[currentMonthName] || [];
+
+                // Если день не является праздником, учитываем его
+                if (!monthHolidays.includes(currentDay)) {
+                    workingDays++;
+                }
+
+                currentDate.setUTCDate(currentDate.getUTCDate() + 1);
+            }
+
+            return workingDays;
+        }
+
+        // Функция для расчета даты окончания по количеству дней
+        function calculateEndDate(startDateStr, daysCount) {
+            if (!startDateStr) return null;
+            
+            const monthNames = [
+                'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+                'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
+            ];
+
+            const startDateParts = startDateStr.split('-');
+            if (startDateParts.length !== 3) {
+                return null;
+            }
+
+            let remaining = parseInt(daysCount, 10);
+            if (isNaN(remaining) || remaining < 1) {
+                return startDateStr;
+            }
+
+            let currentDate = new Date(Date.UTC(startDateParts[0], startDateParts[1] - 1, startDateParts[2]));
+            remaining--;
+
+            while (remaining > 0) {
+                currentDate.setUTCDate(currentDate.getUTCDate() + 1);
+
+                const currentMonthName = monthNames[currentDate.getUTCMonth()];
+                const currentDay = currentDate.getUTCDate();
+                const monthHolidays = holidays[currentMonthName] || [];
+
+                if (!monthHolidays.includes(currentDay)) {
+                    remaining--;
+                }
+            }
+
+            const yyyy = currentDate.getUTCFullYear();
+            const mm = String(currentDate.getUTCMonth() + 1).padStart(2, '0');
+            const dd = String(currentDate.getUTCDate()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}`;
+        }
+
+        // Функция для автоматического обновления количества дней
+        function updateWorkingDays() {
+            const startDateStr = $('#id_day_start').val();
+            const endDateStr = $('#id_day_end').val();
+
+            if (startDateStr && endDateStr) {
+                const workingDays = calculateWorkingDays(startDateStr, endDateStr);
+                if (workingDays > 0) {
+                    $('#id_how_long').val(workingDays);
+                } else {
+                    $('#id_how_long').val('');
+                }
+            } else {
+                $('#id_how_long').val('');
+            }
+        }
+
+        // Функция для автоматического обновления даты окончания при изменении количества дней
+        function updateEndDate() {
+            const startDateStr = $('#id_day_start').val();
+            const daysCountStr = $('#id_how_long').val();
+
+            if (startDateStr && daysCountStr) {
+                const endDateStr = calculateEndDate(startDateStr, daysCountStr);
+                if (endDateStr) {
+                    $('#id_day_end').val(endDateStr);
+                    const endInput = document.getElementById('id_day_end');
+                    if (endInput && endInput._flatpickr) {
+                        endInput._flatpickr.setDate(endDateStr);
+                    }
+                    // Пересчитываем дни после обновления даты
+                    setTimeout(updateWorkingDays, 100);
+                }
+            }
+        }
+
         function setDatepicker(year) {
             var minDate = new Date(year, 0, 1);
             var maxDate = new Date(year, 11, 31);
@@ -139,6 +252,10 @@
                 altInput: true,
                 altFormat: "d.m.Y",
                 allowInput: true,
+                onChange: function(selectedDates, dateStr, instance) {
+                    updateWorkingDays();
+                    updateEndDate();
+                },
             });
 
             flatpickr('#id_day_end', {
@@ -149,92 +266,87 @@
                 altInput: true,
                 altFormat: "d.m.Y",
                 allowInput: true,
-            });
-        }
-
-        function updateEndDatePicker(endDate) {
-            var minDate = new Date(year, 0, 1);
-            var maxDate = new Date(year, 11, 31);
-
-            flatpickr('#id_day_end', {
-                defaultDate: endDate,
-                minDate: minDate,
-                maxDate: maxDate,
-                locale: 'ru',
-                dateFormat: "Y-m-d",
-                altInput: true,
-                altFormat: "d.m.Y",
+                onChange: function(selectedDates, dateStr, instance) {
+                    updateWorkingDays();
+                },
             });
         }
 
         setDatepicker(year);
 
-        $('#calculate_end_date').click(function(e) {
-            e.preventDefault();
-
-            const startDateStr = $('#id_day_start').val();
-            const vacationDaysStr = $('#id_how_long').val();
-            const vacationDays = parseInt(vacationDaysStr);
-
-            if (!startDateStr) {
-                alert('Укажите дату начала отпуска.');
-                return;
-            }
-
-            // Если количество дней не указано или указано некорректно, дата окончания равна дате начала
-            if (!vacationDaysStr || isNaN(vacationDays) || vacationDays <= 0) {
-                $('#id_day_end').val(startDateStr);
-                updateEndDatePicker(startDateStr);
-                return;
-            }
-
-            const monthNames = [
-                'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
-                'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
-            ];
-
-            const startDateParts = startDateStr.split('-');
-            if (startDateParts.length !== 3) {
-                alert('Неверный формат даты начала.');
-                return;
-            }
-
-            // Устанавливаем дату с нулевым временем для точности
-            let currentDate = new Date(Date.UTC(startDateParts[0], startDateParts[1] - 1, startDateParts[2]));
-            let daysLeft = vacationDays;
-
-            while (daysLeft > 0) {
-
-                const currentMonthName = monthNames[currentDate.getUTCMonth()];
-                const currentDay = currentDate.getUTCDate();
-                const monthHolidays = holidays[currentMonthName] || [];
-
-                if (!monthHolidays.includes(currentDay)) {
-                    daysLeft--;
-                }
-
-                currentDate.setUTCDate(currentDate.getUTCDate() + 1);
-            }
-
-            currentDate.setUTCDate(currentDate.getUTCDate() - 1);
-
-            const endDateStr = currentDate.toISOString().split('T')[0];
-            $('#id_day_end').val(endDateStr);
-            updateEndDatePicker(endDateStr);
+        // Добавляем обработчики для ручного ввода дат
+        $('#id_day_start').on('blur change', function() {
+            updateWorkingDays();
+            updateEndDate();
+        });
+        $('#id_day_end').on('blur change', function() {
+            updateWorkingDays();
         });
 
+        // Добавляем обработчик для автоматического расчета даты окончания при изменении количества дней
+        $('#id_how_long').on('input change', function() {
+            updateEndDate();
+        });
+
+        // Инициализируем количество дней при загрузке страницы, если даты уже заполнены
+        setTimeout(function() {
+            updateWorkingDays();
+        }, 100);
+
+        // Функция для получения реального значения даты из flatpickr (формат YYYY-MM-DD)
+        function getRealDateValue(inputId) {
+            var input = document.getElementById(inputId);
+            if (!input) return null;
+            
+            if (input._flatpickr) {
+                // Если есть выбранная дата, форматируем её в YYYY-MM-DD
+                if (input._flatpickr.selectedDates.length > 0) {
+                    return input._flatpickr.formatDate(input._flatpickr.selectedDates[0], 'Y-m-d');
+                }
+                if (input._flatpickr.input) {
+                    var realValue = input._flatpickr.input.value;
+                    if (realValue) return realValue;
+                }
+            }
+            
+            var value = $('#' + inputId).val();
+            // Если значение в формате дд.мм.гггг, конвертируем в YYYY-MM-DD
+            if (value && value.match(/^\d{2}\.\d{2}\.\d{4}$/)) {
+                var parts = value.split('.');
+                return parts[2] + '-' + parts[1] + '-' + parts[0];
+            }
+            return value;
+        }
+
         $('form').submit(function(event) {
-            var startDate = $('#id_day_start').val();
-            var endDate = $('#id_day_end').val();
+            var startDate = getRealDateValue('id_day_start');
+            var endDate = getRealDateValue('id_day_end');
+            
+            if (!startDate || !endDate) {
+                return true; // Разрешаем стандартную валидацию формы
+            }
 
             var startParts = startDate.split('-');
             var endParts = endDate.split('-');
 
+            if (startParts.length !== 3 || endParts.length !== 3) {
+                return true;
+            }
+
             var start = new Date(startParts[0], startParts[1] - 1, startParts[2]);
             var end = new Date(endParts[0], endParts[1] - 1, endParts[2]);
+            var startYear = parseInt(startParts[0], 10);
+            var endYear = parseInt(endParts[0], 10);
 
             if (start > end) {
                 alert('Дата начала должна быть до даты окончания отпуска.');
+                event.preventDefault();
+                return false;
+            }
+            
+            // Проверка на пересечение годов
+            if (startYear !== endYear) {
+                alert('Отпуск не может переходить на следующий календарный год.');
                 event.preventDefault();
                 return false;
             }

@@ -1236,8 +1236,8 @@
 				}
 
 				// Настройка flatpickr
-				const initFlatpickr = (element) => {
-					flatpickr(element, {
+				const initFlatpickr = (element, onChangeCallback) => {
+					const fpConfig = {
 						dateFormat: "Y-m-d",
 						altInput: true,
         				altFormat: "d.m.Y",
@@ -1257,14 +1257,14 @@
 								calendar.style.position = 'fixed';
 							}
 						}
-					});
+					};
+					
+					if (onChangeCallback) {
+						fpConfig.onChange = onChangeCallback;
+					}
+					
+					return flatpickr(element, fpConfig);
 				};
-
-				const startInputs = popup.querySelectorAll('.start-date');
-				const endInputs = popup.querySelectorAll('.end-date');
-				
-				startInputs.forEach(input => initFlatpickr(input));
-				endInputs.forEach(input => initFlatpickr(input));
 
 				const closeBtn = Swal.getCloseButton();
 				if (closeBtn) {
@@ -1274,6 +1274,64 @@
 
 				if (document.activeElement) {
 				document.activeElement.blur();
+				}
+
+				// Функция для получения реального значения даты из flatpickr
+				function getRealDateValueFromInput(input) {
+					if (input._flatpickr) {
+						if (input._flatpickr.selectedDates.length > 0) {
+							return input._flatpickr.formatDate(input._flatpickr.selectedDates[0], 'Y-m-d');
+						}
+						if (input._flatpickr.input) {
+							const realValue = input._flatpickr.input.value;
+							if (realValue) return realValue;
+						}
+					}
+					let value = input.value;
+					if (value && value.match(/^\d{2}\.\d{2}\.\d{4}$/)) {
+						const [d, m, y] = value.split('.');
+						return `${y}-${m}-${d}`;
+					}
+					return value;
+				}
+
+				// Функция для расчета количества рабочих дней между двумя датами
+				function calculateWorkingDays(startDateStr, endDateStr) {
+					if (!startDateStr || !endDateStr) {
+						return 0;
+					}
+
+					const startDateParts = startDateStr.split('-');
+					const endDateParts = endDateStr.split('-');
+
+					if (startDateParts.length !== 3 || endDateParts.length !== 3) {
+						return 0;
+					}
+
+					// Устанавливаем даты с нулевым временем для точности
+					let currentDate = new Date(Date.UTC(startDateParts[0], startDateParts[1] - 1, startDateParts[2]));
+					const endDate = new Date(Date.UTC(endDateParts[0], endDateParts[1] - 1, endDateParts[2]));
+
+					if (currentDate > endDate) {
+						return 0;
+					}
+
+					let workingDays = 0;
+
+					while (currentDate <= endDate) {
+						const mName = fullMonthNames[currentDate.getUTCMonth()];
+						const dNum = currentDate.getUTCDate();
+						const monthHolidays = Array.isArray(modalHolidays[mName]) ? modalHolidays[mName] : [];
+
+						// Если день не является праздником, учитываем его
+						if (!monthHolidays.includes(dNum)) {
+							workingDays++;
+						}
+
+						currentDate.setUTCDate(currentDate.getUTCDate() + 1);
+					}
+
+					return workingDays;
 				}
 
 				function calculateEndDate(startISO, daysCount) {
@@ -1323,15 +1381,62 @@
 					const endInput   = popup.querySelector(`.end-date.vacation-row-${rowIndex}`);
 					if (!startInput || !daysInput || !endInput) return;
 
-					function updateEnd() {
-						if (startInput.value && daysInput.value) {
-							endInput.value = calculateEndDate(startInput.value, daysInput.value);
-							// Обновляем календарь конечной даты
-							endInput._flatpickr.setDate(endInput.value);
+					// Функция для автоматического обновления количества дней при изменении дат
+					function updateWorkingDays() {
+						const startDateValue = getRealDateValueFromInput(startInput);
+						const endDateValue = getRealDateValueFromInput(endInput);
+						
+						if (startDateValue && endDateValue) {
+							const workingDays = calculateWorkingDays(startDateValue, endDateValue);
+							if (workingDays > 0) {
+								daysInput.value = workingDays;
+							} else {
+								daysInput.value = '';
+							}
+						} else {
+							daysInput.value = '';
 						}
 					}
-					startInput.addEventListener('change', updateEnd);
+
+					// Функция для обновления даты окончания по количеству дней
+					function updateEnd() {
+						const startDateValue = getRealDateValueFromInput(startInput);
+						if (startDateValue && daysInput.value) {
+							const endDateValue = calculateEndDate(startDateValue, daysInput.value);
+							if (endInput._flatpickr) {
+								endInput._flatpickr.setDate(endDateValue);
+							} else {
+								endInput.value = endDateValue;
+							}
+							// После обновления даты окончания пересчитываем дни
+							setTimeout(updateWorkingDays, 100);
+						}
+					}
+
+					// Инициализируем flatpickr с обработчиками onChange
+					if (!startInput._flatpickr) {
+						initFlatpickr(startInput, () => {
+							updateWorkingDays();
+							updateEnd();
+						});
+					}
+					
+					if (!endInput._flatpickr) {
+						initFlatpickr(endInput, () => {
+							updateWorkingDays();
+						});
+					}
+
+					// Обработчики для расчета даты окончания по количеству дней
+					startInput.addEventListener('change', () => {
+						updateEnd();
+						updateWorkingDays();
+					});
 					daysInput.addEventListener('input', updateEnd);
+
+					// Обработчики для автоматического расчета количества дней при ручном вводе
+					startInput.addEventListener('blur', updateWorkingDays);
+					endInput.addEventListener('blur', updateWorkingDays);
 				}
 
 				setupRowListeners(1);
@@ -1339,12 +1444,6 @@
 				const addBtn = popup.querySelector('#add-vacation-button');
 				addBtn.addEventListener('click', () => {
 					setTimeout(() => {
-						// Инициализация flatpickr для новых полей
-						const newStart = popup.querySelector(`.start-date.vacation-row-${vacationCounter}`);
-						const newEnd = popup.querySelector(`.end-date.vacation-row-${vacationCounter}`);
-						if (newStart) initFlatpickr(newStart);
-						if (newEnd) initFlatpickr(newEnd);
-						
 						setupRowListeners(vacationCounter);
 					}, 0);
 				});
@@ -1389,34 +1488,94 @@
 	}
 	
 	async function processVacationForm() {
-		const employeeId = document.getElementById('vacation-employee').value;
-		const starts = document.querySelectorAll('.start-date');
-		const ends   = document.querySelectorAll('.end-date');
-		const vacations = [];
-
-		if (starts.length !== ends.length) {
-			Swal.showValidationMessage('Неправильное количество полей даты начала/окончания');
+		const popup = Swal.getPopup();
+		if (!popup) {
 			return false;
 		}
 
-		for (let i = 0; i < starts.length; i++) {
-			const startDate = starts[i].value;
-			const endDate   = ends[i].value;
+		const employeeId = popup.querySelector('#vacation-employee').value;
+		
+		// Находим все уникальные строки отпусков по классу vacation-row-X
+		const vacationRows = new Set();
+		const allInputs = popup.querySelectorAll('[class*="vacation-row-"]');
+		
+		allInputs.forEach(input => {
+			const rowClass = Array.from(input.classList).find(cls => cls.startsWith('vacation-row-'));
+			if (rowClass) {
+				vacationRows.add(rowClass);
+			}
+		});
+
+		const vacations = [];
+		const vacationSet = new Set(); // Для предотвращения дубликатов
+
+		// Функция для получения реального значения даты из flatpickr (формат YYYY-MM-DD)
+		const getRealDateValue = (input) => {
+			if (input._flatpickr) {
+				const fp = input._flatpickr;
+				
+				// Если есть выбранная дата, форматируем её в YYYY-MM-DD
+				if (fp.selectedDates.length > 0) {
+					return fp.formatDate(fp.selectedDates[0], 'Y-m-d');
+				}
+				if (fp.input && fp.input.value) {
+					return fp.input.value;
+				}
+			}
+			
+			let value = input.value;
+			// Если значение в формате дд.мм.гггг, конвертируем в YYYY-MM-DD
+			if (value && value.match(/^\d{2}\.\d{2}\.\d{4}$/)) {
+				const [d, m, y] = value.split('.');
+				return `${y}-${m}-${d}`;
+			}
+			return value;
+		};
+
+		// Обрабатываем каждую строку отпуска
+		for (const rowClass of vacationRows) {
+			const allStartInputs = Array.from(popup.querySelectorAll(`.start-date.${rowClass}`));
+			const allEndInputs = Array.from(popup.querySelectorAll(`.end-date.${rowClass}`));
+			
+			let startInput = allStartInputs.find(inp => inp._flatpickr) || allStartInputs[0];
+			let endInput = allEndInputs.find(inp => inp._flatpickr) || allEndInputs[0];
+			
+			if (!startInput || !endInput) {
+				continue; // Пропускаем неполные строки
+			}
+			
+			let startDate = getRealDateValue(startInput);
+			let endDate = getRealDateValue(endInput);
 
 			if (!startDate || !endDate) {
 				Swal.showValidationMessage('Заполните все обязательные поля');
 				return false;
 			}
 
+			// Валидация дат
 			if (new Date(startDate) > new Date(endDate)) {
 				Swal.showValidationMessage('Дата начала не может быть позже даты окончания');
 				return false;
 			}
+			
+			// Создаем уникальный ключ для проверки дубликатов
+			const vacationKey = `${employeeId}_${startDate}_${endDate}`;
+			if (vacationSet.has(vacationKey)) {
+				continue;
+			}
+			vacationSet.add(vacationKey);
+			
 			vacations.push({
-			employee: employeeId,
-			day_start: startDate,
-			day_end: endDate
+				employee: employeeId,
+				day_start: startDate,
+				day_end: endDate
 			});
+		}
+
+		// Проверяем, что есть хотя бы один отпуск для сохранения
+		if (vacations.length === 0) {
+			Swal.showValidationMessage('Не указано ни одного отпуска для сохранения');
+			return false;
 		}
 
 		try {
@@ -1431,38 +1590,55 @@
 			body: JSON.stringify(vacations)
 			});
 
-			if (response.ok) {
-			Swal.fire({
-				title: 'Успешно!',
-				text: 'Отпуска добавлены',
-				icon: 'success',
+			const responseData = await response.json();
+			
+			if (response.ok && responseData.status === 'success') {
+				Swal.fire({
+					title: 'Успешно!',
+					text: 'Отпуска добавлены',
+					icon: 'success',
 
-				customClass: {
-					popup: 'my-swal-popup',
-					title: 'my-swal-title-success',
-					content: 'my-swal-content',
-					confirmButton: 'my-swal-button-success'
-				},
+					customClass: {
+						popup: 'my-swal-popup',
+						title: 'my-swal-title-success',
+						content: 'my-swal-content',
+						confirmButton: 'my-swal-button-success'
+					},
 
-				confirmButtonText: 'Отлично',
-				background: 'white',
-			})
-				.then(() => window.location.reload());
+					confirmButtonText: 'Отлично',
+					background: 'white',
+				})
+					.then(() => window.location.reload());
 			} else {
-			Swal.fire({
-				title: 'Ошибка!',
-				text: 'Произошла ошибка при сохранении',
-				icon: 'error',
+				// Получаем детали ошибки от сервера
+				let errorMessage = 'Произошла ошибка при сохранении';
+				if (responseData && responseData.message) {
+					if (typeof responseData.message === 'string') {
+						errorMessage = responseData.message;
+					} else if (typeof responseData.message === 'object') {
+						// Если сообщение - объект
+						const errors = [];
+						for (const [field, messages] of Object.entries(responseData.message)) {
+							errors.push(`${field}: ${Array.isArray(messages) ? messages.join(', ') : messages}`);
+						}
+						errorMessage = 'Ошибки валидации:\n' + errors.join('\n');
+					}
+				}
+				
+				Swal.fire({
+					title: 'Ошибка!',
+					html: errorMessage.replace(/\n/g, '<br>'),
+					icon: 'error',
 
-				customClass: {
-					popup: 'my-swal-popup',
-					title: 'my-swal-title-error',
-					content: 'my-swal-content',
-					confirmButton: 'my-swal-button-error'
-				},
+					customClass: {
+						popup: 'my-swal-popup',
+						title: 'my-swal-title-error',
+						content: 'my-swal-content',
+						confirmButton: 'my-swal-button-error'
+					},
 
-				confirmButtonText: 'Понятно',
-				background: 'white',
+					confirmButtonText: 'Понятно',
+					background: 'white',
 				});
 			}
 		} catch (error) {

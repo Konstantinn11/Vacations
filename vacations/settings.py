@@ -31,6 +31,10 @@ DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
 
+CSRF_TRUSTED_ORIGINS = [
+    origin for origin in os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',')
+    if origin
+]
 
 # Application definition
 
@@ -162,19 +166,3 @@ else:
 # Настройка куки
 SESSION_COOKIE_NAME = os.getenv('SESSION_COOKIE_NAME', 'sessionid_vacations')
 CSRF_COOKIE_NAME = os.getenv('CSRF_COOKIE_NAME', 'csrftoken_vacations')
-
-if DEBUG:
-    CSRF_TRUSTED_ORIGINS = [
-        'http://localhost:8000',
-        'http://127.0.0.1:8000',
-    ]
-    CSRF_COOKIE_SECURE  = False
-    SESSION_COOKIE_SECURE = False
-else:
-    CSRF_COOKIE_DOMAIN = os.getenv('CSRF_COOKIE_DOMAIN', None)
-    CSRF_TRUSTED_ORIGINS = [
-        origin for origin in os.getenv('CSRF_TRUSTED_ORIGINS','').split(',')
-        if origin
-    ]
-    CSRF_COOKIE_SECURE  = True
-    SESSION_COOKIE_SECURE = True

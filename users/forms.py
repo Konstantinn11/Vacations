@@ -2,6 +2,18 @@ from django import forms
 from .models import Vacation, Tag, Unit, CustomUser, User_info
 
 class VacationForm(forms.ModelForm):
+    unpaid = forms.BooleanField(
+        required=False,
+        label='Без содержания',
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
+    )
+
+    extra = forms.BooleanField(
+        required=False,
+        label='Дополнительный',
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
+    )
+    
     how_long = forms.IntegerField(
         required=False,
         label='Кол-во дней',
@@ -18,7 +30,7 @@ class VacationForm(forms.ModelForm):
     
     class Meta:
         model = Vacation
-        exclude = ['user', 'year']
+        exclude = ['user', 'year', 'vacation_type']
         widgets = {
             'id': forms.Textarea(attrs={"cols": 40, "rows": 1}),
             'day_start': forms.DateInput(
@@ -49,7 +61,13 @@ class VacationForm(forms.ModelForm):
         self.fields['day_end'].widget.attrs.update({'required': 'required'})
 
         # Перестановка полей
-        self.order_fields(['day_start', 'how_long', 'day_end'])
+        self.order_fields(['day_start', 'how_long', 'day_end', 'unpaid', 'extra'])
+
+        # Если форма создается для редактирования — выставляем начальные значения чекбоксов
+        if self.instance and self.instance.pk:
+            vt = getattr(self.instance, 'vacation_type', None)
+            self.fields['unpaid'].initial = (vt == Vacation.VacationType.UNPAID)
+            self.fields['extra'].initial = (vt == Vacation.VacationType.EXTRA)
 
     def clean(self):
         cleaned = super().clean()
@@ -69,7 +87,36 @@ class VacationForm(forms.ModelForm):
                 'Отпуск не может переходить на следующий календарный год.'
             )
 
+        unpaid = cleaned.get('unpaid')
+        extra  = cleaned.get('extra')
+        if unpaid and extra:
+            raise forms.ValidationError(
+                'Нельзя одновременно выбирать отпуска "Без содержания" и "Дополнительный".'
+            )
+
         return cleaned
+    
+
+    def save(self, commit=True):
+        """
+        Преобразует чекбоксы в единое поле instance.vacation_type
+        """
+        instance = super().save(commit=False)
+
+        unpaid = self.cleaned_data.get('unpaid')
+        extra  = self.cleaned_data.get('extra')
+
+        if unpaid:
+            instance.vacation_type = Vacation.VacationType.UNPAID
+        elif extra:
+            instance.vacation_type = Vacation.VacationType.EXTRA
+        else:
+            instance.vacation_type = None
+
+        if commit:
+            instance.save()
+
+        return instance
     
 
 class TagForm(forms.ModelForm):

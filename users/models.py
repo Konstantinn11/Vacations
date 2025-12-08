@@ -162,6 +162,10 @@ class Position(models.Model):
 
 
 class Vacation(models.Model):
+    class VacationType(models.TextChoices):
+        UNPAID = 'UNPAID', 'Без содержания'
+        EXTRA = 'EXTRA', 'Дополнительный'
+
     user = models.ForeignKey(
         CustomUser,
         on_delete=models.CASCADE,
@@ -191,6 +195,14 @@ class Vacation(models.Model):
         verbose_name='Период'
     )
 
+    vacation_type = models.CharField(
+        max_length=10,
+        choices=VacationType.choices,
+        blank=True,
+        null=True,
+        verbose_name='Тип отпуска'
+    )
+
     class Meta:
         ordering = ('user', 'day_start', )
         verbose_name = 'Отпуск'
@@ -207,3 +219,11 @@ class Vacation(models.Model):
             self.year = str(self.day_start.year)
 
         super().save(*args, **kwargs)
+
+    @property
+    def is_unpaid(self):
+        return self.vacation_type == self.VacationType.UNPAID
+
+    @property
+    def is_extra(self):
+        return self.vacation_type == self.VacationType.EXTRA
