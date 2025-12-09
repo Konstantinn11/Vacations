@@ -192,6 +192,22 @@
         text-align: center;
         display: inline-block;
     }
+
+    .vac-badge {
+        display: inline-block;
+        background-color: #5b99ea;
+        color: white;
+        border-radius: 5px;
+        padding: 2px 5px;
+        font-size: 0.65em;
+        white-space: nowrap;
+        font-weight: 500;
+        text-decoration: none;
+        margin-left: 6px;
+    }
+
+    .vac-badge.unpaid { background-color: #d26d69; }
+    .vac-badge.extra { background-color: #5b99ea; }
 </style>
 {% endblock %}
 
@@ -262,6 +278,11 @@
                                 <a href="{% url 'vacation_detail' vac_id=vac.id %}?from=all_vacations" class="darker" style="font-weight: normal; font-style: italic;">
                                     {{ vac.period }}
                                 </a>
+                                {% if vac.is_unpaid %}
+                                    <span class="vac-badge unpaid">б/с</span>
+                                {% elif vac.is_extra %}
+                                    <span class="vac-badge extra">д/о</span>
+                                {% endif %}
                             </td>
                             <td>{{ vac.days_count }}</td>
                             <td

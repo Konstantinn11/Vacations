@@ -13,7 +13,7 @@
     }
 
     .vacation_day:hover {
-        box-shadow: rgb(23, 54, 255) 0px 0px 0px 3px inset;
+        box-shadow: rgb(23, 54, 255) 0px 0px 0px 3px inset !important;
     }
 
     .day_in_week { background: transparent; }
@@ -84,7 +84,7 @@
                     background-repeat: no-repeat;"
                     {% else %}
                         {% for key, value in el.data.items %}
-                        style="background: {{value.color}}; color: white;"
+                        style="background: {{value.color}}; color: white;{% if el.data|dict_len == 1 and value.vac_type %}{% if value.vac_type == 'UNPAID' %} box-shadow: 0 0 0 2px #5c3317 inset;{% elif value.vac_type == 'EXTRA' %} box-shadow: 0 0 0 2px #5c3317 inset;{% endif %}{% endif %}"
                         {% endfor %}
                     {% endif %} href="#" role="button">
                         {% if el.data|dict_len > 0 %}
@@ -106,7 +106,7 @@
                     background-repeat: no-repeat;"
                     {% else %}
                         {% for key, value in el.data.items %}
-                        style="background: {{value.color}}; color: white;"
+                        style="background: {{value.color}}; color: white;{% if el.data|dict_len == 1 and value.vac_type %}{% if value.vac_type == 'UNPAID' %} box-shadow: 0 0 0 2px #5c3317 inset;{% elif value.vac_type == 'EXTRA' %} box-shadow: 0 0 0 2px #5c3317 inset;{% endif %}{% endif %}"
                         {% endfor %}
                     {% endif %} href="#" role="button">
                     {% if el.data|dict_len > 0 %}
@@ -133,7 +133,7 @@
                                 background-repeat: no-repeat;"
                                 {% else %}
                                     {% for key, value in el.data.items %}
-                                    style="background: {{value.color}}; color: white; "
+                                    style="background: {{value.color}}; color: white;{% if el.data|dict_len == 1 and value.vac_type %}{% if value.vac_type == 'UNPAID' %} box-shadow: 0 0 0 2px #5c3317 inset;{% elif value.vac_type == 'EXTRA' %} box-shadow: 0 0 0 2px #5c3317 inset;{% endif %}{% endif %} "
                                     {% endfor %}
                                 {% endif %} href="#" role="button">
                                 {% if el.data|dict_len > 0 %}
@@ -155,7 +155,7 @@
                                 background-repeat: no-repeat;"
                                 {% else %}
                                     {% for key, value in el.data.items %}
-                                    style="background: {{value.color}}; color: white;"
+                                    style="background: {{value.color}}; color: white;{% if el.data|dict_len == 1 and value.vac_type %}{% if value.vac_type == 'UNPAID' %} box-shadow: 0 0 0 2px #5c3317 inset;{% elif value.vac_type == 'EXTRA' %} box-shadow: 0 0 0 2px #5c3317 inset;{% endif %}{% endif %}"
                                     {% endfor %}
                                 {% endif %} href="#" role="button">
                                 {% if el.data|dict_len > 0 %}
@@ -180,7 +180,7 @@
                     background-repeat: no-repeat;"
                     {% else %}
                         {% for key, value in el.data.items %}
-                        style="background: {{value.color}}; color: white;"
+                        style="background: {{value.color}}; color: white;{% if el.data|dict_len == 1 and value.vac_type %}{% if value.vac_type == 'UNPAID' %} box-shadow: 0 0 0 2px #5c3317 inset;{% elif value.vac_type == 'EXTRA' %} box-shadow: 0 0 0 2px #5c3317 inset;{% endif %}{% endif %}"
                         {% endfor %}
                     {% endif %} href="#" role="button">
                         {% if el.data|dict_len > 0 %}

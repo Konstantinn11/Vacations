@@ -585,6 +585,7 @@ def vac_2(request, year, otd):
                                 'date': f"{vac.day_start} - {vac.day_end}",
                                 'color': users_colors[vac.user_id],
                                 'vac_id': vac.id,
+                                'vac_type': vac.vacation_type,
                             }
                     m = [k for k, v in month_num_str.items() if v == month][0]
                     date = today.replace(year=int(year), month=m, day=int(days_in_week[i]))
@@ -935,6 +936,8 @@ def vac_all_vacations(request):
             'is_current': start_date <= today.date() <= end_date,
             'department': department,
             'color': user_colors[uid],
+            'is_unpaid': vac.vacation_type == Vacation.VacationType.UNPAID,
+            'is_extra': vac.vacation_type == Vacation.VacationType.EXTRA,
         })
 
     return render(
@@ -983,6 +986,8 @@ def vac_my_vacations(request):
             'id': vac.id,
             'vacation_year': vac.day_start.year,
             'is_current': start_date <= today <= end_date,
+            'is_unpaid': vac.vacation_type == Vacation.VacationType.UNPAID,
+            'is_extra': vac.vacation_type == Vacation.VacationType.EXTRA,
         })
 
     # Определяем год для отображения
@@ -1168,6 +1173,8 @@ def profile_view(request, user_id):
             'id': vac.id,
             'is_current': start <= today <= end,
             'vacation_year': start.year,
+            'is_unpaid': vac.vacation_type == Vacation.VacationType.UNPAID,
+            'is_extra': vac.vacation_type == Vacation.VacationType.EXTRA,
         })
     
     vacation_year = vacations_list[0]['vacation_year'] if vacations_list else None

@@ -29,6 +29,9 @@
     .custom-table tr:last-child td { border-bottom: none; }
     .no-border-row td { border-bottom: none !important; padding-bottom: 5px; }
     .vacation-row { background-color: #d4e2f9; }
+    .vac-badge { display: inline-block; background-color: #5b99ea; color: white; border-radius: 5px; padding: 2px 5px; font-size: 0.65em; white-space: nowrap; font-weight: 500; text-decoration: none; margin-left: 6px; }
+    .vac-badge.unpaid { background-color: #d26d69; }
+    .vac-badge.extra { background-color: #5b99ea; }
 </style>
 {% endblock %}
 
@@ -49,6 +52,11 @@
         <tr class="vacation-cell {% if vacation.is_current %}vacation-row{% endif %}">
             <td>
                 <a class="darker" href="{% url 'vacation_detail' vacation.id %}">{{ vacation.period }}</a>
+                {% if vacation.is_unpaid %}
+                    <span class="vac-badge unpaid">б/с</span>
+                {% elif vacation.is_extra %}
+                    <span class="vac-badge extra">д/о</span>
+                {% endif %}
             </td>
             <td>
                 <span>{{ vacation.days_count }}</span>

@@ -278,6 +278,22 @@
 		font-family: 'Calibri', sans-serif;
 	}
 
+	.vac-badge {
+		display: inline-block;
+		background-color: #5b99ea;
+		color: white;
+		border-radius: 5px;
+		padding: 2px 5px;
+		font-size: 0.65em;
+		white-space: nowrap;
+		font-weight: 500;
+		text-decoration: none;
+		margin-left: 6px;
+		font-style: normal;
+	}
+	.vac-badge.unpaid { background-color: #d26d69; }
+	.vac-badge.extra { background-color: #5b99ea; }
+
 	.filter-footer {
 		text-align: left;
 		margin-top: -14px;
@@ -974,7 +990,8 @@
 				let user_name = user_names[user_id] || "Неизвестный пользователь";
 				let period = formatVacationPeriod(info['date']);
 				let department = getEmployeeDepartment(user_id);
-				vacationData.push({ user_id: user_id, name: user_name, period, department, color: info['color'], vac_id: info['vac_id'] });
+				let vacType = info['vac_type'];
+				vacationData.push({ user_id: user_id, name: user_name, period, department, color: info['color'], vac_id: info['vac_id'], vac_type: vacType });
 			}
 		}
 
@@ -1003,6 +1020,7 @@
 					<td>
 						<span class="ellipsis-cell" title="${entry.period}" style="font-style: italic; ${isBoss(currentUser) || currentUser === entry.name ? 'text-decoration: underline; color: #15a362;' : 'color: black;'}">
 							${isBoss(currentUser) || currentUser === entry.name ? `<a href="${editUrl}" style="color: inherit; text-decoration: inherit;">${entry.period}</a>` : entry.period}
+							${entry.vac_type === 'UNPAID' ? '<span class="vac-badge unpaid">б/с</span>' : entry.vac_type === 'EXTRA' ? '<span class="vac-badge extra">д/о</span>' : ''}
 						</span>
 					</td>
 				</tr>`;
@@ -1064,9 +1082,14 @@
 				let [day1, month1] = start.split('-').reverse();
 				let [day2, month2] = end.split('-').reverse();
 				let user_name = user_names[user_id] || "Неизвестный пользователь";
+				let department = getEmployeeDepartment(user_id);
+				const vacType = v['vac_type'];
+				const typeLabel = vacType === 'UNPAID' ? ' (без содержания)' : vacType === 'EXTRA' ? ' (дополнительный)' : '';
 
 				tooltipContent += `<div style="color: ${v['color']};">${user_name}</div>
-					<div>${day1} ${getMonthName(month1)} - ${day2} ${getMonthName(month2)}</div>`;
+					<div style="color: white;">${department}</div>
+					<div>${day1} ${getMonthName(month1)} - ${day2} ${getMonthName(month2)}</div>
+					${typeLabel ? `<div>${typeLabel}</div>` : ''}`;
 			}
 			tooltip.innerHTML = tooltipContent;
 			tooltip.style.display = 'block';
