@@ -284,7 +284,12 @@ def vac_all(request, otd):
         })
         formatted_start = f"{vac.day_start.day} {months_ru[vac.day_start.month]} {vac.day_start.year}"
         formatted_end = f"{vac.day_end.day} {months_ru[vac.day_end.month]} {vac.day_end.year}"
-        vacations_by_user[uid]['vacation_periods'].append(f"{formatted_start} - {formatted_end}")
+        vacations_by_user[uid]['vacation_periods'].append({
+            'label': f"{formatted_start} - {formatted_end}",
+            'vac_id': vac.id,
+            'is_unpaid': vac.vacation_type == Vacation.VacationType.UNPAID,
+            'is_extra': vac.vacation_type == Vacation.VacationType.EXTRA,
+        })
 
     # Сортировка
     sort_otd    = request.GET.get('sort_otd')              

@@ -33,6 +33,9 @@
     .sort-arrow:hover,
     .sort-arrow:focus,
     .sort-arrow:active { color: #5d6778; text-decoration: none; }
+    .vac-badge { display: inline-block; background-color: #5b99ea; color: white; border-radius: 5px; padding: 2px 5px; font-size: 0.65em; white-space: nowrap; font-weight: 500; text-decoration: none; margin-left: 6px; font-style: normal;}
+    .vac-badge.unpaid { background-color: #d26d69; }
+    .vac-badge.extra { background-color: #5b99ea; }
 </style>
 {% endblock %}
 
@@ -98,11 +101,18 @@
             <td>
                 <div style="display: inline-block; color: black; font-style: italic; font-size: 17px;">
                     {% for period in value.vacation_periods %}
-                        {% if value.name == request.user.get_full_name or request.user.get_full_name in bosses %}
-                        <a href="{% url 'vacation_detail' vac_id=value.dates.0.vac_id %}?from=vac_all" class="darker">{{ period }}</a><br>
-                        {% else %}
-                            <span style="display: inline-block; color: black; font-style: italic;">{{ period }}</span><br>
-                        {% endif %}
+                        <span style="display: inline-block; margin-bottom: 2px;">
+                            {% if value.name == request.user.get_full_name or request.user.get_full_name in bosses %}
+                                <a href="{% url 'vacation_detail' vac_id=period.vac_id %}?from=vac_all" class="darker">{{ period.label}}</a>
+                            {% else %}
+                                <span style="display: inline-block; color: black; font-style: italic;">{{ period.label }}</span>
+                            {% endif %}
+                            {% if period.is_unpaid %}
+                                <span class="vac-badge unpaid">б/с</span>
+                            {% elif period.is_extra %}
+                                <span class="vac-badge extra">д/о</span>
+                            {% endif %}
+                        </span><br>
                     {% endfor %}
                 </div>
             </td>
