@@ -229,7 +229,7 @@
         <tr>
             <td style="padding-top: 20px;"><strong>Теги</strong></td>
         </tr>
-        <tr>
+        <tr style="border-bottom: 1px solid #ddd;">
             <td style="padding-bottom: 20px;">
                 {% for tag in user_info.tags.all %}
                     <a href="{% url 'employees' %}?tab=employees&tag={{ tag.name }}" style="
@@ -251,7 +251,7 @@
         {% endif %}
 
         {% if request.user.get_full_name in bosses or is_own_profile %}
-        <tr style="border-top: 1px solid #ddd;">
+        <tr>
             <td colspan="3" style="padding: 20px;">
                 <div class="buttons-container">
                     <a class="btn-edit" href="{% url 'profile_edit' user_info.user.id %}?from=profile">
